@@ -70,3 +70,10 @@ logs/
 models/
 checkpoints/
 artifacts/
+
+
+backend/app/components/Component02/dataset/
+backend/app/components/Component02/models/
+backend/app/components/Component02/runs/
+backend/app/components/Component02/uploads/
+backend/app/components/Component02/venv/
