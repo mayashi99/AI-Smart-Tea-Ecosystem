@@ -70,6 +70,17 @@ logs/
 models/
 checkpoints/
 artifacts/
+backend/plantation_health_dataset/
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.svg
 
 
 backend/app/components/Component02/dataset/
