@@ -44,7 +44,7 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = (
     BASE_DIR
     / "runs"
-    / "plantation_health_yolo11n_clean_50epochs"
+    / "plantation_health_yolo11n_updated_50epochs_v2"
     / "weights"
     / "best.pt"
 )

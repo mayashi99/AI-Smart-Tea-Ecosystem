@@ -11,15 +11,16 @@ BASE_DIR = Path(__file__).resolve().parent
 
 
 # ============================================================
-# PATHS
+# MODEL PATH
 # ============================================================
 
 # IMPORTANT:
-# This is the CLEAN model trained on the leakage-free dataset.
+# This is the NEW model trained after adding the new
+# Low Health images to the dataset.
 MODEL_PATH = (
     BASE_DIR
     / "runs"
-    / "plantation_health_yolo11n_clean_50epochs"
+    / "plantation_health_yolo11n_updated_50epochs_v2"
     / "weights"
     / "best.pt"
 )
@@ -32,14 +33,21 @@ MODEL_PATH = (
 if not MODEL_PATH.exists():
     raise FileNotFoundError(
         f"""
-Trained model not found.
+============================================================
+TRAINED MODEL NOT FOUND
+============================================================
 
 Expected model:
 {MODEL_PATH}
 
-Please make sure:
-runs/plantation_health_yolo11n_clean_50epochs/weights/best.pt
-exists.
+Please make sure this file exists:
+
+runs/
+└── plantation_health_yolo11n_updated_50epochs_v2/
+    └── weights/
+        └── best.pt
+
+============================================================
 """
     )
 
@@ -51,18 +59,49 @@ model = YOLO(str(MODEL_PATH))
 # MODEL INFORMATION
 # ============================================================
 
+print()
 print("=" * 70)
 print("COMPONENT 02 - PLANTATION HEALTH PREDICTION")
 print("=" * 70)
 
 print()
 print("Model loaded successfully")
-print(f"Model : {MODEL_PATH}")
+print(f"Model   : {MODEL_PATH}")
 print(f"Classes : {model.names}")
 
 print()
-print("Using CLEAN trained model")
-print("Training experiment : plantation_health_yolo11n_clean_50epochs")
+print("Using NEW UPDATED trained model")
+print(
+    "Training experiment : "
+    "plantation_health_yolo11n_updated_50epochs_v2"
+)
+
+print("=" * 70)
+
+
+# ============================================================
+# DEVICE
+# ============================================================
+
+# Apple Silicon Mac:
+# MPS = Metal Performance Shaders
+#
+# If MPS is not available, automatically use CPU.
+
+try:
+    import torch
+
+    if torch.backends.mps.is_available():
+        DEVICE = "mps"
+    else:
+        DEVICE = "cpu"
+
+except Exception:
+    DEVICE = "cpu"
+
+
+print()
+print(f"Prediction device : {DEVICE}")
 print("=" * 70)
 
 
@@ -71,38 +110,97 @@ print("=" * 70)
 # ============================================================
 
 def predict_image(image_path):
+    """
+    Predict plantation health from a single image.
+
+    Classes:
+        0 = healthy
+        1 = low_health
+    """
 
     image_path = Path(image_path)
 
-    # --------------------------------------------------------
-    # Check image
-    # --------------------------------------------------------
+
+    # ========================================================
+    # CHECK IMAGE EXISTS
+    # ========================================================
 
     if not image_path.exists():
         raise FileNotFoundError(
-            f"Image not found:\n{image_path}"
+            f"""
+Image not found:
+
+{image_path}
+"""
         )
 
-    # --------------------------------------------------------
-    # Run prediction
-    # --------------------------------------------------------
+
+    # ========================================================
+    # CHECK FILE TYPE
+    # ========================================================
+
+    allowed_extensions = {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp"
+    }
+
+    if image_path.suffix.lower() not in allowed_extensions:
+        raise ValueError(
+            f"""
+Unsupported image format:
+
+{image_path.suffix}
+
+Supported formats:
+.jpg
+.jpeg
+.png
+.webp
+"""
+        )
+
+
+    # ========================================================
+    # RUN MODEL PREDICTION
+    # ========================================================
 
     results = model.predict(
         source=str(image_path),
         imgsz=224,
-        device="mps",
+        device=DEVICE,
         verbose=False
     )
 
+
+    # ========================================================
+    # GET RESULT
+    # ========================================================
+
     result = results[0]
 
-    # --------------------------------------------------------
-    # Classification probabilities
-    # --------------------------------------------------------
+
+    # ========================================================
+    # CHECK CLASSIFICATION RESULT
+    # ========================================================
+
+    if result.probs is None:
+        raise RuntimeError(
+            "Model did not return classification probabilities."
+        )
+
 
     probabilities = result.probs
 
-    predicted_class_id = int(probabilities.top1)
+
+    # ========================================================
+    # TOP PREDICTION
+    # ========================================================
+
+    predicted_class_id = int(
+        probabilities.top1
+    )
 
     confidence = float(
         probabilities.top1conf
@@ -114,7 +212,28 @@ def predict_image(image_path):
 
 
     # ========================================================
-    # PRINT RESULT
+    # CLASS PROBABILITIES
+    # ========================================================
+
+    probability_dict = {}
+
+    for class_id, probability in enumerate(
+        probabilities.data
+    ):
+
+        class_name = model.names[class_id]
+
+        probability_value = float(
+            probability
+        )
+
+        probability_dict[class_name] = (
+            probability_value
+        )
+
+
+    # ========================================================
+    # DISPLAY RESULT
     # ========================================================
 
     print()
@@ -130,15 +249,14 @@ def predict_image(image_path):
         f"{confidence * 100:.2f}%"
     )
 
-    # --------------------------------------------------------
-    # Class probabilities
-    # --------------------------------------------------------
+
+    # ========================================================
+    # DISPLAY CLASS PROBABILITIES
+    # ========================================================
 
     print()
     print("CLASS PROBABILITIES")
     print("-" * 70)
-
-    probability_dict = {}
 
     for class_id, probability in enumerate(
         probabilities.data
@@ -150,19 +268,72 @@ def predict_image(image_path):
             probability
         )
 
-        probability_percentage = (
-            probability_value * 100
-        )
-
-        probability_dict[class_name] = (
-            probability_value
-        )
-
         print(
             f"{class_name:<15} : "
-            f"{probability_percentage:.2f}%"
+            f"{probability_value * 100:.2f}%"
         )
 
+
+    print("=" * 70)
+
+
+    # ========================================================
+    # HUMAN-READABLE HEALTH STATUS
+    # ========================================================
+
+    normalized_prediction = (
+        str(predicted_class)
+        .strip()
+        .lower()
+        .replace("-", "_")
+        .replace(" ", "_")
+    )
+
+
+    if normalized_prediction == "healthy":
+
+        health_status = "Healthy"
+
+        recommendation = (
+            "The tea plantation appears healthy. "
+            "Continue regular monitoring and "
+            "normal plantation management."
+        )
+
+    elif normalized_prediction == "low_health":
+
+        health_status = "Low Health"
+
+        recommendation = (
+            "The tea plantation shows signs of low health. "
+            "Further inspection and appropriate "
+            "plantation management are recommended."
+        )
+
+    else:
+
+        health_status = predicted_class
+
+        recommendation = (
+            "Please perform further inspection."
+        )
+
+
+    # ========================================================
+    # DISPLAY HEALTH STATUS
+    # ========================================================
+
+    print()
+    print("HEALTH ASSESSMENT")
+    print("-" * 70)
+
+    print(
+        f"Health Status : {health_status}"
+    )
+
+    print(
+        f"Recommendation: {recommendation}"
+    )
 
     print("=" * 70)
 
@@ -173,9 +344,29 @@ def predict_image(image_path):
 
     return {
         "image": image_path.name,
+
         "prediction": predicted_class,
+
+        "health_status": health_status,
+
         "confidence": confidence,
+
+        "confidence_percentage": (
+            confidence * 100
+        ),
+
         "probabilities": probability_dict,
+
+        "recommendation": recommendation,
+
+        "model": (
+            "plantation_health_yolo11n_"
+            "updated_50epochs_v2"
+        ),
+
+        "model_path": str(MODEL_PATH),
+
+        "device": DEVICE
     }
 
 
@@ -197,12 +388,25 @@ if __name__ == "__main__":
         "2d7a5962ac11643e6b7a587b65e1db3f.jpg"
     )
 
+
     # --------------------------------------------------------
-    # Run prediction
+    # RUN PREDICTION
     # --------------------------------------------------------
 
-    result = predict_image(IMAGE_PATH)
+    result = predict_image(
+        IMAGE_PATH
+    )
+
+
+    # --------------------------------------------------------
+    # PRINT RETURNED RESULT
+    # --------------------------------------------------------
 
     print()
-    print("Returned result:")
+    print("=" * 70)
+    print("RETURNED RESULT")
+    print("=" * 70)
+
     print(result)
+
+    print("=" * 70)

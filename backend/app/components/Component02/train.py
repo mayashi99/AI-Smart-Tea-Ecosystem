@@ -71,7 +71,7 @@ RUNS_DIR = (
 # This is a NEW experiment after fixing data leakage.
 
 EXPERIMENT_NAME = (
-    "plantation_health_yolo11n_clean_50epochs"
+    "plantation_health_yolo11n_updated_50epochs_v2"
 )
 
 

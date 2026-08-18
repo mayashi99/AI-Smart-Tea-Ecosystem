@@ -28,22 +28,22 @@ TEST_DIR = DATASET_DIR / "test"
 
 
 # ============================================================
-# CLEAN TRAINED MODEL
+# NEW UPDATED TRAINED MODEL
 # ============================================================
 
 # IMPORTANT:
-# This is the NEW model trained using the leakage-free dataset.
-#
-# Training:
-#   50 epochs
+# This is the NEW model trained after adding the
+# additional Low Health images and re-training the dataset.
 #
 # Experiment:
-#   plantation_health_yolo11n_clean_50epochs
+# plantation_health_yolo11n_updated_50epochs_v2
+
+EXPERIMENT_NAME = "plantation_health_yolo11n_updated_50epochs_v2"
 
 MODEL_PATH = (
     BASE_DIR
     / "runs"
-    / "plantation_health_yolo11n_clean_50epochs"
+    / EXPERIMENT_NAME
     / "weights"
     / "best.pt"
 )
@@ -56,7 +56,7 @@ MODEL_PATH = (
 EVALUATION_DIR = (
     BASE_DIR
     / "runs"
-    / "plantation_health_yolo11n_clean_50epochs"
+    / EXPERIMENT_NAME
     / "evaluation"
 )
 
@@ -96,11 +96,11 @@ print()
 print("Evaluation configuration:")
 print("-" * 75)
 print("Model       : YOLO11n-CLS")
-print("Experiment  : plantation_health_yolo11n_clean_50epochs")
+print(f"Experiment  : {EXPERIMENT_NAME}")
 print("Dataset     : Plantation Health")
 print("Test split  : 10%")
-print("Image size  : 224")
-print("Device      : MPS")
+print(f"Image size  : {IMAGE_SIZE}")
+print(f"Device      : {DEVICE}")
 print("-" * 75)
 
 
@@ -119,12 +119,12 @@ Trained model not found:
 
 {MODEL_PATH}
 
-Please make sure the clean 50-epoch training
-was completed successfully.
+Please make sure the NEW 50-epoch training
+was completed successfully and best.pt exists.
 """
     )
 
-print("✓ best.pt found")
+print("✓ NEW best.pt found")
 print(f"Model: {MODEL_PATH}")
 
 
@@ -222,45 +222,19 @@ print(f"Total test images : {total_images}")
 
 
 # ============================================================
-# EXPECTED DATASET SIZE
-# ============================================================
-
-EXPECTED_TEST_IMAGES = 707
-
-if total_images != EXPECTED_TEST_IMAGES:
-
-    print()
-    print(
-        f"⚠️ WARNING: Expected {EXPECTED_TEST_IMAGES} "
-        f"test images, but found {total_images}."
-    )
-
-else:
-
-    print()
-    print(
-        f"✓ Test dataset contains expected "
-        f"{EXPECTED_TEST_IMAGES} images"
-    )
-
-
-# ============================================================
 # LOAD MODEL
 # ============================================================
 
 print()
 print("=" * 75)
-print("LOADING CLEAN MODEL")
+print("LOADING NEW MODEL")
 print("=" * 75)
 
 model = YOLO(str(MODEL_PATH))
 
 print()
 print("✓ YOLO11 classification model loaded")
-
-print(
-    f"Model classes: {model.names}"
-)
+print(f"Model classes: {model.names}")
 
 
 # ============================================================
@@ -345,6 +319,10 @@ print()
 print("=" * 75)
 print("RUNNING TEST DATASET EVALUATION")
 print("=" * 75)
+
+print()
+print(f"Model being evaluated:")
+print(MODEL_PATH)
 
 print()
 print(f"Total images to evaluate: {total_images}")
@@ -907,9 +885,7 @@ metrics = {
 
     "model_name": "YOLO11n-CLS",
 
-    "experiment": (
-        "plantation_health_yolo11n_clean_50epochs"
-    ),
+    "experiment": EXPERIMENT_NAME,
 
     "model": str(MODEL_PATH),
 
@@ -1083,7 +1059,7 @@ with open(
 
     file.write(
         f"Experiment: "
-        f"plantation_health_yolo11n_clean_50epochs\n"
+        f"{EXPERIMENT_NAME}\n"
     )
 
     file.write(
@@ -1279,7 +1255,7 @@ print(
 
 print()
 print("=" * 75)
-print("✅ COMPONENT 02 CLEAN MODEL EVALUATION COMPLETED")
+print("✅ COMPONENT 02 NEW MODEL EVALUATION COMPLETED")
 print("=" * 75)
 
 print()
