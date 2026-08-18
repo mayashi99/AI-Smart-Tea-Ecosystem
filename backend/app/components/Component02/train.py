@@ -5,9 +5,14 @@ from ultralytics import YOLO
 # ============================================================
 # COMPONENT 02 - PLANTATION HEALTH CLASSIFICATION
 # MODEL: YOLO11n-CLS
+# DATASET: LEAKAGE-FREE DATASET
 # ============================================================
 
-# Current Component02 directory
+
+# ============================================================
+# BASE DIRECTORY
+# ============================================================
+
 BASE_DIR = Path(__file__).resolve().parent
 
 
@@ -31,29 +36,43 @@ BASE_DIR = Path(__file__).resolve().parent
 #         ├── healthy/
 #         └── low_health/
 
-DATASET_DIR = BASE_DIR / "plantation_health" / "data"
+DATASET_DIR = (
+    BASE_DIR
+    / "plantation_health"
+    / "data"
+)
 
 
 # ============================================================
 # PRETRAINED YOLO11 CLASSIFICATION MODEL
 # ============================================================
 
-MODEL_PATH = BASE_DIR / "yolo11n-cls.pt"
+MODEL_PATH = (
+    BASE_DIR
+    / "yolo11n-cls.pt"
+)
 
 
 # ============================================================
-# COMPONENT 02 ONLY OUTPUT DIRECTORY
+# OUTPUT DIRECTORY
 # ============================================================
 
-RUNS_DIR = BASE_DIR / "runs"
+RUNS_DIR = (
+    BASE_DIR
+    / "runs"
+)
 
 
 # ============================================================
-# EXPERIMENT NAME
+# CLEAN EXPERIMENT NAME
 # ============================================================
 
-# Keep this separate from the previous 20-epoch experiment.
-EXPERIMENT_NAME = "plantation_health_yolo11n_50epochs"
+# IMPORTANT:
+# This is a NEW experiment after fixing data leakage.
+
+EXPERIMENT_NAME = (
+    "plantation_health_yolo11n_clean_50epochs"
+)
 
 
 # ============================================================
@@ -61,95 +80,351 @@ EXPERIMENT_NAME = "plantation_health_yolo11n_50epochs"
 # ============================================================
 
 EPOCHS = 50
+
 IMAGE_SIZE = 224
+
 BATCH_SIZE = 16
+
 WORKERS = 2
 
-# Apple Silicon MacBook
 DEVICE = "mps"
 
+SEED = 42
+
 
 # ============================================================
-# CHECK REQUIRED PATHS
+# EXPECTED CLASSES
 # ============================================================
 
-print("=" * 70)
-print("COMPONENT 02 - PLANTATION HEALTH CLASSIFICATION")
-print("=" * 70)
+EXPECTED_CLASSES = [
+    "healthy",
+    "low_health"
+]
 
-print()
-print("Checking dataset...")
 
-if not DATASET_DIR.exists():
-    raise FileNotFoundError(
-        f"\nDataset not found:\n{DATASET_DIR}"
+# ============================================================
+# IMAGE EXTENSIONS
+# ============================================================
+
+IMAGE_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp"
+}
+
+
+# ============================================================
+# HELPER FUNCTION
+# ============================================================
+
+def count_images(folder):
+
+    if not folder.exists():
+        return 0
+
+    return sum(
+        1
+        for file in folder.rglob("*")
+        if (
+            file.is_file()
+            and file.suffix.lower()
+            in IMAGE_EXTENSIONS
+        )
     )
 
+
+# ============================================================
+# HEADER
+# ============================================================
+
+print()
+print("=" * 75)
+print("COMPONENT 02 - PLANTATION HEALTH CLASSIFICATION")
+print("MODEL: YOLO11n-CLS")
+print("=" * 75)
+
+
+# ============================================================
+# CHECK DATASET
+# ============================================================
+
+print()
+print("=" * 75)
+print("CHECKING DATASET")
+print("=" * 75)
+
+if not DATASET_DIR.exists():
+
+    raise FileNotFoundError(
+        f"\nDataset not found:\n"
+        f"{DATASET_DIR}"
+    )
+
+print()
 print(f"Dataset: {DATASET_DIR}")
 
 
+# ============================================================
+# CHECK MODEL
+# ============================================================
+
 print()
-print("Checking YOLO11 model...")
+print("=" * 75)
+print("CHECKING YOLO11 MODEL")
+print("=" * 75)
 
 if not MODEL_PATH.exists():
+
     raise FileNotFoundError(
-        f"\nYOLO11 classification model not found:\n{MODEL_PATH}"
+        f"\nYOLO11 classification model not found:\n"
+        f"{MODEL_PATH}"
     )
 
-print(f"Model: {MODEL_PATH}")
+print()
+print(f"✓ Model found: {MODEL_PATH}")
 
 
 # ============================================================
-# CHECK DATASET SPLITS
+# CHECK DATASET STRUCTURE
 # ============================================================
 
-for split in ["train", "val", "test"]:
+print()
+print("=" * 75)
+print("CHECKING DATASET STRUCTURE")
+print("=" * 75)
 
-    split_dir = DATASET_DIR / split
+
+dataset_statistics = {}
+
+
+for split in [
+    "train",
+    "val",
+    "test"
+]:
+
+    split_dir = (
+        DATASET_DIR
+        / split
+    )
+
+    # --------------------------------------------------------
+    # Check split
+    # --------------------------------------------------------
 
     if not split_dir.exists():
+
         raise FileNotFoundError(
-            f"\nMissing dataset split:\n{split_dir}"
+            f"\nMissing dataset split:\n"
+            f"{split_dir}"
         )
 
-    print(f"✓ {split} folder found")
+    print()
+    print(f"[{split.upper()}]")
+
+    dataset_statistics[split] = {}
+
+
+    # --------------------------------------------------------
+    # Check classes
+    # --------------------------------------------------------
+
+    for class_name in EXPECTED_CLASSES:
+
+        class_dir = (
+            split_dir
+            / class_name
+        )
+
+        if not class_dir.exists():
+
+            raise FileNotFoundError(
+                f"\nMissing class directory:\n"
+                f"{class_dir}"
+            )
+
+        count = count_images(
+            class_dir
+        )
+
+        if count == 0:
+
+            raise ValueError(
+                f"\nNo images found in:\n"
+                f"{class_dir}"
+            )
+
+        dataset_statistics[
+            split
+        ][class_name] = count
+
+        print(
+            f"  {class_name:<15}: "
+            f"{count}"
+        )
 
 
 # ============================================================
-# LOAD PRETRAINED YOLO11 CLASSIFICATION MODEL
+# DATASET TOTALS
 # ============================================================
 
 print()
-print("=" * 70)
-print("Loading YOLO11 Classification Model")
-print("=" * 70)
+print("=" * 75)
+print("DATASET TOTALS")
+print("=" * 75)
 
-model = YOLO(str(MODEL_PATH))
 
-print("✓ YOLO11 model loaded successfully")
+for split in [
+    "train",
+    "val",
+    "test"
+]:
+
+    total = sum(
+        dataset_statistics[
+            split
+        ].values()
+    )
+
+    print(
+        f"{split.upper():<10}: "
+        f"{total}"
+    )
 
 
 # ============================================================
-# TRAINING INFORMATION
+# EXPECTED DATASET TOTAL
+# ============================================================
+
+total_dataset_images = sum(
+    sum(
+        dataset_statistics[split].values()
+    )
+    for split in [
+        "train",
+        "val",
+        "test"
+    ]
+)
+
+
+print()
+print(
+    f"Total dataset images: "
+    f"{total_dataset_images}"
+)
+
+
+# ============================================================
+# CLASS BALANCE
+# ============================================================
+
+train_healthy = (
+    dataset_statistics[
+        "train"
+    ]["healthy"]
+)
+
+
+train_low_health = (
+    dataset_statistics[
+        "train"
+    ]["low_health"]
+)
+
+
+imbalance_ratio = (
+    train_low_health
+    / train_healthy
+)
+
+
+print()
+print("=" * 75)
+print("CLASS BALANCE")
+print("=" * 75)
+
+print()
+print(
+    f"Healthy images    : "
+    f"{train_healthy}"
+)
+
+print(
+    f"Low-health images : "
+    f"{train_low_health}"
+)
+
+print(
+    f"Low/Healthy ratio : "
+    f"{imbalance_ratio:.2f}x"
+)
+
+
+if imbalance_ratio > 3:
+
+    print()
+    print("⚠️ WARNING:")
+    print(
+        "The training dataset has significant "
+        "class imbalance."
+    )
+
+    print(
+        "Final evaluation should focus on "
+        "per-class Precision, Recall and F1-score."
+    )
+
+
+# ============================================================
+# LOAD YOLO11n-CLS
 # ============================================================
 
 print()
-print("=" * 70)
+print("=" * 75)
+print("LOADING YOLO11n-CLS")
+print("=" * 75)
+
+
+model = YOLO(
+    str(MODEL_PATH)
+)
+
+
+print()
+print("✓ YOLO11n-CLS loaded successfully")
+
+
+# ============================================================
+# TRAINING CONFIGURATION
+# ============================================================
+
+print()
+print("=" * 75)
 print("TRAINING CONFIGURATION")
-print("=" * 70)
+print("=" * 75)
 
+print()
 print(f"Dataset       : {DATASET_DIR}")
 print(f"Model         : {MODEL_PATH}")
 print(f"Epochs        : {EPOCHS}")
 print(f"Image size    : {IMAGE_SIZE}")
 print(f"Batch size    : {BATCH_SIZE}")
-print(f"Device        : {DEVICE}")
 print(f"Workers       : {WORKERS}")
+print(f"Device        : {DEVICE}")
+print(f"Seed          : {SEED}")
 print(f"Experiment    : {EXPERIMENT_NAME}")
 
 print()
 print("Early stopping: DISABLED")
 print("Training will run for the full 50 epochs.")
+
+print()
+print("IMPORTANT:")
+print("This training uses the leakage-free dataset.")
+print("Exact duplicate images were removed from cross-split leakage.")
+print("The TEST set will NOT be used during training.")
 
 
 # ============================================================
@@ -157,53 +432,96 @@ print("Training will run for the full 50 epochs.")
 # ============================================================
 
 print()
-print("=" * 70)
-print("STARTING COMPONENT 02 TRAINING")
-print("=" * 70)
+print("=" * 75)
+print("STARTING COMPONENT 02 CLEAN TRAINING")
+print("=" * 75)
+
+print()
 
 
 results = model.train(
 
-    # Dataset
-    data=str(DATASET_DIR),
+    # --------------------------------------------------------
+    # DATASET
+    # --------------------------------------------------------
 
-    # Training
+    data=str(
+        DATASET_DIR
+    ),
+
+
+    # --------------------------------------------------------
+    # TRAINING
+    # --------------------------------------------------------
+
     epochs=EPOCHS,
+
     imgsz=IMAGE_SIZE,
+
     batch=BATCH_SIZE,
 
-    # Apple Silicon GPU
+
+    # --------------------------------------------------------
+    # APPLE SILICON
+    # --------------------------------------------------------
+
     device=DEVICE,
 
-    # Data loading
+
+    # --------------------------------------------------------
+    # DATA LOADING
+    # --------------------------------------------------------
+
     workers=WORKERS,
 
+
     # --------------------------------------------------------
-    # IMPORTANT
-    # patience=0 disables EarlyStopping.
-    # Therefore all 50 epochs will run.
+    # EARLY STOPPING
     # --------------------------------------------------------
+
+    # 0 = disabled
     patience=0,
 
-    # --------------------------------------------------------
-    # Reproducibility
-    # --------------------------------------------------------
-    seed=42,
 
     # --------------------------------------------------------
-    # Save results inside Component02 only
+    # REPRODUCIBILITY
     # --------------------------------------------------------
-    project=str(RUNS_DIR),
+
+    seed=SEED,
+
+
+    # --------------------------------------------------------
+    # OUTPUT
+    # --------------------------------------------------------
+
+    project=str(
+        RUNS_DIR
+    ),
+
     name=EXPERIMENT_NAME,
 
-    # Save checkpoints
-    save=True,
-
-    # Do not overwrite existing experiment
     exist_ok=False,
 
-    # Show detailed training information
-    verbose=True,
+
+    # --------------------------------------------------------
+    # SAVE CHECKPOINTS
+    # --------------------------------------------------------
+
+    save=True,
+
+
+    # --------------------------------------------------------
+    # SAVE TRAINING PLOTS
+    # --------------------------------------------------------
+
+    plots=True,
+
+
+    # --------------------------------------------------------
+    # VERBOSE OUTPUT
+    # --------------------------------------------------------
+
+    verbose=True
 )
 
 
@@ -212,54 +530,181 @@ results = model.train(
 # ============================================================
 
 print()
-print("=" * 70)
-print("✅ COMPONENT 02 TRAINING COMPLETED")
-print("=" * 70)
+print("=" * 75)
+print("✅ COMPONENT 02 CLEAN TRAINING COMPLETED")
+print("=" * 75)
 
 
 # ============================================================
 # OUTPUT PATHS
 # ============================================================
 
-EXPERIMENT_DIR = RUNS_DIR / EXPERIMENT_NAME
-BEST_MODEL = EXPERIMENT_DIR / "weights" / "best.pt"
-LAST_MODEL = EXPERIMENT_DIR / "weights" / "last.pt"
+EXPERIMENT_DIR = (
+    RUNS_DIR
+    / EXPERIMENT_NAME
+)
 
+
+BEST_MODEL = (
+    EXPERIMENT_DIR
+    / "weights"
+    / "best.pt"
+)
+
+
+LAST_MODEL = (
+    EXPERIMENT_DIR
+    / "weights"
+    / "last.pt"
+)
+
+
+# ============================================================
+# PRINT OUTPUT PATHS
+# ============================================================
 
 print()
-print("Training output:")
-print(EXPERIMENT_DIR)
+print("=" * 75)
+print("TRAINING OUTPUT")
+print("=" * 75)
 
+print()
+print("Experiment directory:")
+print(
+    EXPERIMENT_DIR
+)
 
 print()
 print("Best model:")
-print(BEST_MODEL)
-
+print(
+    BEST_MODEL
+)
 
 print()
 print("Last model:")
-print(LAST_MODEL)
+print(
+    LAST_MODEL
+)
 
 
 # ============================================================
-# VERIFY OUTPUT
+# VERIFY BEST MODEL
 # ============================================================
 
 print()
+print("=" * 75)
+print("CHECKING TRAINING OUTPUT")
+print("=" * 75)
+
 
 if BEST_MODEL.exists():
-    print("✅ best.pt created successfully")
-else:
-    print("⚠️ best.pt was not found")
 
+    print()
+    print("✅ best.pt created successfully")
+
+else:
+
+    print()
+    print("❌ best.pt NOT FOUND")
+
+
+# ============================================================
+# VERIFY LAST MODEL
+# ============================================================
 
 if LAST_MODEL.exists():
-    print("✅ last.pt created successfully")
-else:
-    print("⚠️ last.pt was not found")
 
+    print()
+    print("✅ last.pt created successfully")
+
+else:
+
+    print()
+    print("❌ last.pt NOT FOUND")
+
+
+# ============================================================
+# FINAL INFORMATION
+# ============================================================
 
 print()
-print("=" * 70)
-print("COMPONENT 02 TRAINING FINISHED")
-print("=" * 70)
+print("=" * 75)
+print("COMPONENT 02 TRAINING SUMMARY")
+print("=" * 75)
+
+print()
+print("Dataset:")
+print(
+    DATASET_DIR
+)
+
+print()
+print("Experiment:")
+print(
+    EXPERIMENT_DIR
+)
+
+print()
+print("Best model:")
+print(
+    BEST_MODEL
+)
+
+print()
+print("Last model:")
+print(
+    LAST_MODEL
+)
+
+print()
+print("Classes:")
+print(
+    "0 = healthy"
+)
+
+print(
+    "1 = low_health"
+)
+
+print()
+print("Training:")
+print(
+    f"{EPOCHS} epochs"
+)
+
+print()
+print("Dataset split:")
+print(
+    "Train = 70%"
+)
+
+print(
+    "Validation = 20%"
+)
+
+print(
+    "Test = 10%"
+)
+
+print()
+print("Data leakage:")
+print(
+    "Cross-split duplicate check = 0"
+)
+
+print()
+print("Original dataset:")
+print(
+    "NOT modified"
+)
+
+print()
+print("Test set:")
+print(
+    "NOT used during training"
+)
+
+print()
+print("=" * 75)
+print("✅ COMPONENT 02 TRAINING FINISHED")
+print("=" * 75)

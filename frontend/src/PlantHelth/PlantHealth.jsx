@@ -21,6 +21,11 @@ const humanize = (value) =>
     .replace(/[_-]/g, ' ')
     .replace(/\b\w/g, (character) => character.toUpperCase())
 
+const normalizeHealthPrediction = (value) => {
+  const normalized = String(value || '').trim().toLowerCase().replace(/[- ]/g, '_')
+  return normalized === 'healthy' ? 'healthy' : 'low_health'
+}
+
 const statusTone = (value) => {
   const normalized = String(value || '').toLowerCase()
   if (normalized === 'low' || normalized === 'healthy' || normalized === 'no immediate risk') {
@@ -269,6 +274,7 @@ function PlantHealth() {
   const location = result?.location
   const climate = result?.climate
   const stress = result?.stress_assessment
+  const displayedPrediction = normalizeHealthPrediction(imageAnalysis?.prediction)
   const score = Number(imageAnalysis?.image_health_score)
   const healthScoreTone = healthTone(score)
   const climateRiskTone = riskTone(stress?.overall_climate_risk)
@@ -378,12 +384,12 @@ function PlantHealth() {
                 <img alt="Analyzed tea plantation" className="h-72 w-full object-cover sm:h-80 lg:h-full lg:min-h-[390px]" src={previewUrl} />
               </div>
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-                <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">AI visual assessment</p><h2 className="text-2xl font-black tracking-tight text-slate-950">Plantation Health</h2></div><Badge tone={healthScoreTone.badge}>{humanize(imageAnalysis?.prediction)}</Badge></div>
+                <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">AI visual assessment</p><h2 className="text-2xl font-black tracking-tight text-slate-950">Plantation Health</h2></div><Badge tone={healthScoreTone.badge}>{humanize(displayedPrediction)}</Badge></div>
                 <div className="mt-8 grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center">
                   <div className="relative flex h-40 w-40 items-center justify-center rounded-full" style={{ background: `conic-gradient(${score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444'} ${Math.max(0, Math.min(100, score))}%, #e2e8f0 0)` }}>
                     <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-white"><span className="text-3xl font-black text-slate-950">{formatNumber(score)}</span><span className="text-xs font-bold text-slate-400">/ 100 score</span></div>
                   </div>
-                  <div><p className="text-sm font-bold text-slate-500">Health confidence</p><p className="mt-1 text-4xl font-black text-slate-950">{formatNumber(imageAnalysis?.confidence)}<span className="text-xl text-slate-400">%</span></p><p className="mt-2 text-sm leading-6 text-slate-500">The visual model classified this plantation as <span className="font-bold text-slate-700">{humanize(imageAnalysis?.prediction).toLowerCase()}</span>.</p></div>
+                  <div><p className="text-sm font-bold text-slate-500">Health confidence</p><p className="mt-1 text-4xl font-black text-slate-950">{formatNumber(imageAnalysis?.confidence)}<span className="text-xl text-slate-400">%</span></p><p className="mt-2 text-sm leading-6 text-slate-500">The visual model classified this plantation as <span className="font-bold text-slate-700">{humanize(displayedPrediction).toLowerCase()}</span>.</p></div>
                 </div>
                 <div className="mt-8 border-t border-slate-100 pt-5"><p className="text-sm font-bold text-slate-800">AI Classification Confidence</p><ProgressBar label="Healthy" tone={statusTone('healthy')} value={imageAnalysis?.class_probabilities?.healthy} /><ProgressBar label="Low Health" tone={statusTone('low health')} value={imageAnalysis?.class_probabilities?.low_health} /></div>
               </div>
@@ -405,7 +411,7 @@ function PlantHealth() {
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><SectionTitle eyebrow="Next best actions" title="AI Recommendations" description="Recommendations generated from this assessment." icon="sparkles" /><div className="grid gap-3 md:grid-cols-2">{Array.isArray(result.recommendations) && result.recommendations.length > 0 ? result.recommendations.map((recommendation, index) => <article className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4" key={`${recommendation}-${index}`}><div className="flex items-start gap-3"><div className="mt-0.5 rounded-lg bg-white p-2 text-emerald-700"><Icon name="check" size={17} /></div><div><p className="text-xs font-bold uppercase tracking-wide text-emerald-700">AI Recommendation</p><p className="mt-2 text-sm leading-6 text-slate-700">{recommendation}</p></div></div></article>) : <p className="text-sm text-slate-500">No recommendations were returned for this assessment.</p>}</div></section>
 
-            <section className="rounded-3xl bg-emerald-950 p-5 text-white shadow-sm sm:p-7"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">Assessment complete</p><h2 className="text-2xl font-black tracking-tight">Analysis Summary</h2></div><Icon className="text-emerald-300" name="leaf" size={27} /></div><div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[['Plantation Health', humanize(imageAnalysis?.prediction)], ['Climate Risk', humanize(stress?.overall_climate_risk)], ['Early Warning', stress?.early_warning || 'Unavailable'], ['Data Source', climate?.source || 'Unavailable'], ['AI Model', imageAnalysis?.model || 'Unavailable']].map(([label, value]) => <div className="rounded-2xl bg-white/10 p-4" key={label}><p className="text-xs font-bold uppercase tracking-wide text-emerald-300">{label}</p><p className="mt-2 text-sm font-bold text-white">{value}</p></div>)}</div></section>
+            <section className="rounded-3xl bg-emerald-950 p-5 text-white shadow-sm sm:p-7"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">Assessment complete</p><h2 className="text-2xl font-black tracking-tight">Analysis Summary</h2></div><Icon className="text-emerald-300" name="leaf" size={27} /></div><div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[['Plantation Health', humanize(displayedPrediction)], ['Climate Risk', humanize(stress?.overall_climate_risk)], ['Early Warning', stress?.early_warning || 'Unavailable'], ['Data Source', climate?.source || 'Unavailable'], ['AI Model', imageAnalysis?.model || 'Unavailable']].map(([label, value]) => <div className="rounded-2xl bg-white/10 p-4" key={label}><p className="text-xs font-bold uppercase tracking-wide text-emerald-300">{label}</p><p className="mt-2 text-sm font-bold text-white">{value}</p></div>)}</div></section>
           </div>
         )}
       </div>

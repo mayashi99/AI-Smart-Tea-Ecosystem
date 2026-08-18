@@ -1,43 +1,246 @@
 from pathlib import Path
+import csv
+import json
+
 from ultralytics import YOLO
 
 
 # ============================================================
-# COMPONENT 02 - FULL MODEL EVALUATION
-# YOLO11 CLASSIFICATION
+# COMPONENT 02 - PLANTATION HEALTH
+# FULL MODEL EVALUATION
+# MODEL: YOLO11n-CLS
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# ------------------------------------------------------------
-# Paths
-# ------------------------------------------------------------
 
-DATASET_DIR = BASE_DIR / "plantation_health" / "data"
+# ============================================================
+# DATASET
+# ============================================================
 
-MODEL_PATH = (
+DATASET_DIR = (
     BASE_DIR
-    / "runs"
-    / "plantation_health_yolo11n_50epochs"
-    / "weights"
-    / "best.pt"
+    / "plantation_health"
+    / "data"
 )
 
 TEST_DIR = DATASET_DIR / "test"
 
 
 # ============================================================
-# CHECK PATHS
+# CLEAN TRAINED MODEL
 # ============================================================
 
+# IMPORTANT:
+# This is the NEW model trained using the leakage-free dataset.
+#
+# Training:
+#   50 epochs
+#
+# Experiment:
+#   plantation_health_yolo11n_clean_50epochs
+
+MODEL_PATH = (
+    BASE_DIR
+    / "runs"
+    / "plantation_health_yolo11n_clean_50epochs"
+    / "weights"
+    / "best.pt"
+)
+
+
+# ============================================================
+# EVALUATION OUTPUT DIRECTORY
+# ============================================================
+
+EVALUATION_DIR = (
+    BASE_DIR
+    / "runs"
+    / "plantation_health_yolo11n_clean_50epochs"
+    / "evaluation"
+)
+
+EVALUATION_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+
+# ============================================================
+# SETTINGS
+# ============================================================
+
+IMAGE_SIZE = 224
+
+# Apple Silicon MacBook
+DEVICE = "mps"
+
+IMAGE_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp"
+}
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+print()
+print("=" * 75)
+print("COMPONENT 02 - PLANTATION HEALTH MODEL EVALUATION")
+print("=" * 75)
+
+print()
+print("Evaluation configuration:")
+print("-" * 75)
+print("Model       : YOLO11n-CLS")
+print("Experiment  : plantation_health_yolo11n_clean_50epochs")
+print("Dataset     : Plantation Health")
+print("Test split  : 10%")
+print("Image size  : 224")
+print("Device      : MPS")
+print("-" * 75)
+
+
+# ============================================================
+# CHECK MODEL
+# ============================================================
+
+print()
+print("Checking trained model...")
+
 if not MODEL_PATH.exists():
+
     raise FileNotFoundError(
-        f"Model not found:\n{MODEL_PATH}"
+        f"""
+Trained model not found:
+
+{MODEL_PATH}
+
+Please make sure the clean 50-epoch training
+was completed successfully.
+"""
     )
 
+print("✓ best.pt found")
+print(f"Model: {MODEL_PATH}")
+
+
+# ============================================================
+# CHECK DATASET
+# ============================================================
+
+print()
+print("Checking test dataset...")
+
 if not TEST_DIR.exists():
+
     raise FileNotFoundError(
-        f"Test dataset not found:\n{TEST_DIR}"
+        f"""
+Test dataset not found:
+
+{TEST_DIR}
+"""
+    )
+
+
+# ============================================================
+# CHECK CLASS FOLDERS
+# ============================================================
+
+healthy_dir = TEST_DIR / "healthy"
+low_health_dir = TEST_DIR / "low_health"
+
+
+if not healthy_dir.exists():
+
+    raise FileNotFoundError(
+        f"""
+Healthy test folder not found:
+
+{healthy_dir}
+"""
+    )
+
+
+if not low_health_dir.exists():
+
+    raise FileNotFoundError(
+        f"""
+Low-health test folder not found:
+
+{low_health_dir}
+"""
+    )
+
+
+# ============================================================
+# GET TEST IMAGES
+# ============================================================
+
+healthy_images = sorted(
+    [
+        p
+        for p in healthy_dir.iterdir()
+        if p.is_file()
+        and p.suffix.lower() in IMAGE_EXTENSIONS
+    ]
+)
+
+
+low_health_images = sorted(
+    [
+        p
+        for p in low_health_dir.iterdir()
+        if p.is_file()
+        and p.suffix.lower() in IMAGE_EXTENSIONS
+    ]
+)
+
+
+# ============================================================
+# TEST DATASET INFORMATION
+# ============================================================
+
+print()
+print("=" * 75)
+print("TEST DATASET")
+print("=" * 75)
+
+print()
+print(f"Healthy images    : {len(healthy_images)}")
+print(f"Low-health images : {len(low_health_images)}")
+
+total_images = (
+    len(healthy_images)
+    + len(low_health_images)
+)
+
+print(f"Total test images : {total_images}")
+
+
+# ============================================================
+# EXPECTED DATASET SIZE
+# ============================================================
+
+EXPECTED_TEST_IMAGES = 707
+
+if total_images != EXPECTED_TEST_IMAGES:
+
+    print()
+    print(
+        f"⚠️ WARNING: Expected {EXPECTED_TEST_IMAGES} "
+        f"test images, but found {total_images}."
+    )
+
+else:
+
+    print()
+    print(
+        f"✓ Test dataset contains expected "
+        f"{EXPECTED_TEST_IMAGES} images"
     )
 
 
@@ -45,72 +248,77 @@ if not TEST_DIR.exists():
 # LOAD MODEL
 # ============================================================
 
-print("=" * 70)
-print("COMPONENT 02 - FULL MODEL EVALUATION")
-print("=" * 70)
+print()
+print("=" * 75)
+print("LOADING CLEAN MODEL")
+print("=" * 75)
 
 model = YOLO(str(MODEL_PATH))
 
 print()
-print("Model loaded successfully")
-print(f"Model: {MODEL_PATH}")
-print(f"Classes: {model.names}")
+print("✓ YOLO11 classification model loaded")
+
+print(
+    f"Model classes: {model.names}"
+)
 
 
 # ============================================================
-# CLASS INFORMATION
+# CLASS DEFINITIONS
 # ============================================================
 
-class_names = model.names
-
-healthy_dir = TEST_DIR / "healthy"
-low_health_dir = TEST_DIR / "low_health"
-
-healthy_images = list(healthy_dir.glob("*"))
-low_health_images = list(low_health_dir.glob("*"))
-
-healthy_images = [
-    p for p in healthy_images
-    if p.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]
-]
-
-low_health_images = [
-    p for p in low_health_images
-    if p.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]
-]
-
-
-print()
-print("TEST DATASET")
-print("-" * 70)
-print(f"Healthy images    : {len(healthy_images)}")
-print(f"Low-health images : {len(low_health_images)}")
-print(f"Total test images : {len(healthy_images) + len(low_health_images)}")
+CLASS_NAMES = {
+    0: "healthy",
+    1: "low_health"
+}
 
 
 # ============================================================
-# PREDICTION
+# PREPARE IMAGE LIST
 # ============================================================
 
 all_images = []
 
-for image in healthy_images:
-    all_images.append((image, 0))
 
-for image in low_health_images:
-    all_images.append((image, 1))
+# ------------------------------------------------------------
+# Healthy = class 0
+# ------------------------------------------------------------
+
+for image_path in healthy_images:
+
+    all_images.append(
+        {
+            "path": image_path,
+            "actual": 0
+        }
+    )
 
 
-correct = 0
-wrong = 0
+# ------------------------------------------------------------
+# Low Health = class 1
+# ------------------------------------------------------------
 
-# Confusion matrix
-#              Predicted
-#              healthy   low_health
+for image_path in low_health_images:
+
+    all_images.append(
+        {
+            "path": image_path,
+            "actual": 1
+        }
+    )
+
+
+# ============================================================
+# CONFUSION MATRIX VARIABLES
+# ============================================================
+
+#                    Predicted
 #
-# Actual
-# healthy         TN          FP
-# low_health      FN          TP
+#                 Healthy   Low Health
+#
+# Actual Healthy      0          0
+# Actual Low          0          0
+
 
 true_healthy_pred_healthy = 0
 true_healthy_pred_low = 0
@@ -118,27 +326,79 @@ true_healthy_pred_low = 0
 true_low_pred_healthy = 0
 true_low_pred_low = 0
 
+
+# ============================================================
+# BASIC COUNTERS
+# ============================================================
+
+correct = 0
+wrong = 0
+
 wrong_predictions = []
 
 
+# ============================================================
+# START EVALUATION
+# ============================================================
+
 print()
-print("Running predictions...")
-print("-" * 70)
+print("=" * 75)
+print("RUNNING TEST DATASET EVALUATION")
+print("=" * 75)
+
+print()
+print(f"Total images to evaluate: {total_images}")
+print()
 
 
-for index, (image_path, actual_class) in enumerate(all_images, start=1):
+# ============================================================
+# PREDICTION
+# ============================================================
+
+for index, item in enumerate(
+    all_images,
+    start=1
+):
+
+    image_path = item["path"]
+    actual_class = item["actual"]
+
+
+    # --------------------------------------------------------
+    # Prediction
+    # --------------------------------------------------------
 
     results = model.predict(
         source=str(image_path),
-        imgsz=224,
-        device="mps",
+        imgsz=IMAGE_SIZE,
+        device=DEVICE,
         verbose=False
     )
 
     result = results[0]
 
-    predicted_class = result.probs.top1
-    confidence = float(result.probs.top1conf)
+
+    # --------------------------------------------------------
+    # Get predicted class
+    # --------------------------------------------------------
+
+    predicted_class = int(
+        result.probs.top1
+    )
+
+
+    # --------------------------------------------------------
+    # Confidence
+    # --------------------------------------------------------
+
+    confidence = float(
+        result.probs.top1conf
+    )
+
+
+    # --------------------------------------------------------
+    # Correct / Wrong
+    # --------------------------------------------------------
 
     if predicted_class == actual_class:
 
@@ -148,93 +408,173 @@ for index, (image_path, actual_class) in enumerate(all_images, start=1):
 
         wrong += 1
 
-        wrong_predictions.append({
-            "image": image_path.name,
-            "actual": class_names[actual_class],
-            "predicted": class_names[predicted_class],
-            "confidence": confidence
-        })
+        wrong_predictions.append(
+            {
+                "image": image_path.name,
+                "image_path": str(image_path),
+                "actual_class": CLASS_NAMES[actual_class],
+                "predicted_class": CLASS_NAMES[predicted_class],
+                "confidence": round(
+                    confidence,
+                    6
+                )
+            }
+        )
 
 
     # --------------------------------------------------------
-    # Confusion matrix values
+    # Confusion Matrix
     # --------------------------------------------------------
 
-    if actual_class == 0 and predicted_class == 0:
-        true_healthy_pred_healthy += 1
+    if actual_class == 0:
 
-    elif actual_class == 0 and predicted_class == 1:
-        true_healthy_pred_low += 1
+        if predicted_class == 0:
 
-    elif actual_class == 1 and predicted_class == 0:
-        true_low_pred_healthy += 1
+            true_healthy_pred_healthy += 1
 
-    elif actual_class == 1 and predicted_class == 1:
-        true_low_pred_low += 1
+        else:
+
+            true_healthy_pred_low += 1
 
 
-    if index % 50 == 0 or index == len(all_images):
+    elif actual_class == 1:
+
+        if predicted_class == 0:
+
+            true_low_pred_healthy += 1
+
+        else:
+
+            true_low_pred_low += 1
+
+
+    # --------------------------------------------------------
+    # Progress
+    # --------------------------------------------------------
+
+    if (
+        index % 25 == 0
+        or index == total_images
+    ):
+
         print(
-            f"Processed {index}/{len(all_images)}"
+            f"Processed "
+            f"{index}/{total_images}"
         )
 
 
 # ============================================================
-# ACCURACY
+# BASIC METRICS
 # ============================================================
 
-total = len(all_images)
-
-accuracy = correct / total if total > 0 else 0
+accuracy = (
+    correct / total_images
+    if total_images > 0
+    else 0
+)
 
 
 # ============================================================
-# METRICS - HEALTHY
+# HEALTHY METRICS
 # ============================================================
 
-healthy_tp = true_healthy_pred_healthy
-healthy_fp = true_low_pred_healthy
-healthy_fn = true_healthy_pred_low
+healthy_tp = (
+    true_healthy_pred_healthy
+)
+
+healthy_fp = (
+    true_low_pred_healthy
+)
+
+healthy_fn = (
+    true_healthy_pred_low
+)
+
 
 healthy_precision = (
-    healthy_tp / (healthy_tp + healthy_fp)
-    if (healthy_tp + healthy_fp) > 0 else 0
+
+    healthy_tp
+    /
+    (healthy_tp + healthy_fp)
+
+    if (healthy_tp + healthy_fp) > 0
+    else 0
 )
+
 
 healthy_recall = (
-    healthy_tp / (healthy_tp + healthy_fn)
-    if (healthy_tp + healthy_fn) > 0 else 0
+
+    healthy_tp
+    /
+    (healthy_tp + healthy_fn)
+
+    if (healthy_tp + healthy_fn) > 0
+    else 0
 )
+
 
 healthy_f1 = (
-    2 * healthy_precision * healthy_recall /
+
+    2
+    * healthy_precision
+    * healthy_recall
+    /
     (healthy_precision + healthy_recall)
-    if (healthy_precision + healthy_recall) > 0 else 0
+
+    if (healthy_precision + healthy_recall) > 0
+    else 0
 )
 
 
 # ============================================================
-# METRICS - LOW HEALTH
+# LOW HEALTH METRICS
 # ============================================================
 
-low_tp = true_low_pred_low
-low_fp = true_healthy_pred_low
-low_fn = true_low_pred_healthy
+low_tp = (
+    true_low_pred_low
+)
+
+low_fp = (
+    true_healthy_pred_low
+)
+
+low_fn = (
+    true_low_pred_healthy
+)
+
 
 low_precision = (
-    low_tp / (low_tp + low_fp)
-    if (low_tp + low_fp) > 0 else 0
+
+    low_tp
+    /
+    (low_tp + low_fp)
+
+    if (low_tp + low_fp) > 0
+    else 0
 )
+
 
 low_recall = (
-    low_tp / (low_tp + low_fn)
-    if (low_tp + low_fn) > 0 else 0
+
+    low_tp
+    /
+    (low_tp + low_fn)
+
+    if (low_tp + low_fn) > 0
+    else 0
 )
 
+
 low_f1 = (
-    2 * low_precision * low_recall /
+
+    2
+    * low_precision
+    * low_recall
+    /
     (low_precision + low_recall)
-    if (low_precision + low_recall) > 0 else 0
+
+    if (low_precision + low_recall) > 0
+    else 0
 )
 
 
@@ -243,55 +583,238 @@ low_f1 = (
 # ============================================================
 
 macro_precision = (
-    healthy_precision + low_precision
+    healthy_precision
+    + low_precision
 ) / 2
+
 
 macro_recall = (
-    healthy_recall + low_recall
+    healthy_recall
+    + low_recall
 ) / 2
+
 
 macro_f1 = (
-    healthy_f1 + low_f1
+    healthy_f1
+    + low_f1
 ) / 2
 
 
 # ============================================================
-# FINAL REPORT
+# WEIGHTED AVERAGE
+# ============================================================
+
+healthy_support = len(
+    healthy_images
+)
+
+low_support = len(
+    low_health_images
+)
+
+
+if total_images > 0:
+
+    weighted_precision = (
+
+        (
+            healthy_precision
+            * healthy_support
+        )
+
+        +
+
+        (
+            low_precision
+            * low_support
+        )
+
+    ) / total_images
+
+
+    weighted_recall = (
+
+        (
+            healthy_recall
+            * healthy_support
+        )
+
+        +
+
+        (
+            low_recall
+            * low_support
+        )
+
+    ) / total_images
+
+
+    weighted_f1 = (
+
+        (
+            healthy_f1
+            * healthy_support
+        )
+
+        +
+
+        (
+            low_f1
+            * low_support
+        )
+
+    ) / total_images
+
+else:
+
+    weighted_precision = 0
+    weighted_recall = 0
+    weighted_f1 = 0
+
+
+# ============================================================
+# FINAL TEST RESULTS
 # ============================================================
 
 print()
-print("=" * 70)
-print("FINAL EVALUATION RESULTS")
-print("=" * 70)
+print("=" * 75)
+print("FINAL TEST SET RESULTS")
+print("=" * 75)
 
 print()
-print(f"Total Test Images : {total}")
-print(f"Correct           : {correct}")
-print(f"Wrong             : {wrong}")
-print(f"Accuracy          : {accuracy * 100:.2f}%")
+
+print(
+    f"Total Test Images : {total_images}"
+)
+
+print(
+    f"Correct           : {correct}"
+)
+
+print(
+    f"Wrong             : {wrong}"
+)
+
+print(
+    f"Accuracy          : "
+    f"{accuracy * 100:.2f}%"
+)
+
+
+# ============================================================
+# CLASSIFICATION METRICS
+# ============================================================
 
 print()
-print("=" * 70)
+print("=" * 75)
 print("CLASSIFICATION METRICS")
-print("=" * 70)
+print("=" * 75)
+
+
+# ------------------------------------------------------------
+# Healthy
+# ------------------------------------------------------------
 
 print()
 print("Healthy")
-print(f"  Precision : {healthy_precision * 100:.2f}%")
-print(f"  Recall    : {healthy_recall * 100:.2f}%")
-print(f"  F1-Score  : {healthy_f1 * 100:.2f}%")
+print("-" * 40)
+
+print(
+    f"Precision : "
+    f"{healthy_precision * 100:.2f}%"
+)
+
+print(
+    f"Recall    : "
+    f"{healthy_recall * 100:.2f}%"
+)
+
+print(
+    f"F1-Score  : "
+    f"{healthy_f1 * 100:.2f}%"
+)
+
+print(
+    f"Support   : "
+    f"{healthy_support}"
+)
+
+
+# ------------------------------------------------------------
+# Low Health
+# ------------------------------------------------------------
 
 print()
 print("Low Health")
-print(f"  Precision : {low_precision * 100:.2f}%")
-print(f"  Recall    : {low_recall * 100:.2f}%")
-print(f"  F1-Score  : {low_f1 * 100:.2f}%")
+print("-" * 40)
+
+print(
+    f"Precision : "
+    f"{low_precision * 100:.2f}%"
+)
+
+print(
+    f"Recall    : "
+    f"{low_recall * 100:.2f}%"
+)
+
+print(
+    f"F1-Score  : "
+    f"{low_f1 * 100:.2f}%"
+)
+
+print(
+    f"Support   : "
+    f"{low_support}"
+)
+
+
+# ------------------------------------------------------------
+# Macro Average
+# ------------------------------------------------------------
 
 print()
 print("Macro Average")
-print(f"  Precision : {macro_precision * 100:.2f}%")
-print(f"  Recall    : {macro_recall * 100:.2f}%")
-print(f"  F1-Score  : {macro_f1 * 100:.2f}%")
+print("-" * 40)
+
+print(
+    f"Precision : "
+    f"{macro_precision * 100:.2f}%"
+)
+
+print(
+    f"Recall    : "
+    f"{macro_recall * 100:.2f}%"
+)
+
+print(
+    f"F1-Score  : "
+    f"{macro_f1 * 100:.2f}%"
+)
+
+
+# ------------------------------------------------------------
+# Weighted Average
+# ------------------------------------------------------------
+
+print()
+print("Weighted Average")
+print("-" * 40)
+
+print(
+    f"Precision : "
+    f"{weighted_precision * 100:.2f}%"
+)
+
+print(
+    f"Recall    : "
+    f"{weighted_recall * 100:.2f}%"
+)
+
+print(
+    f"F1-Score  : "
+    f"{weighted_f1 * 100:.2f}%"
+)
 
 
 # ============================================================
@@ -299,22 +822,29 @@ print(f"  F1-Score  : {macro_f1 * 100:.2f}%")
 # ============================================================
 
 print()
-print("=" * 70)
+print("=" * 75)
 print("CONFUSION MATRIX")
-print("=" * 70)
+print("=" * 75)
 
 print()
-print("                    Predicted")
-print("                 Healthy   Low Health")
+
 print(
-    f"Actual Healthy     "
+    "                    Predicted"
+)
+
+print(
+    "                 Healthy   Low Health"
+)
+
+print(
+    f"Actual Healthy   "
     f"{true_healthy_pred_healthy:^8}   "
     f"{true_healthy_pred_low:^10}"
 )
 
 print(
-    f"Actual Low Health  "
-    f"{true_low_pred_healthy:^8}   "
+    f"Actual Low Health"
+    f" {true_low_pred_healthy:^8}   "
     f"{true_low_pred_low:^10}"
 )
 
@@ -324,22 +854,43 @@ print(
 # ============================================================
 
 print()
-print("=" * 70)
+print("=" * 75)
 print("WRONG PREDICTIONS")
-print("=" * 70)
+print("=" * 75)
+
 
 if len(wrong_predictions) == 0:
 
-    print("No wrong predictions found.")
+    print()
+    print("✓ No wrong predictions found.")
 
 else:
+
+    print()
+    print(
+        f"Total wrong predictions: "
+        f"{len(wrong_predictions)}"
+    )
 
     for item in wrong_predictions:
 
         print()
-        print(f"Image      : {item['image']}")
-        print(f"Actual     : {item['actual']}")
-        print(f"Predicted  : {item['predicted']}")
+
+        print(
+            f"Image      : "
+            f"{item['image']}"
+        )
+
+        print(
+            f"Actual     : "
+            f"{item['actual_class']}"
+        )
+
+        print(
+            f"Predicted  : "
+            f"{item['predicted_class']}"
+        )
+
         print(
             f"Confidence : "
             f"{item['confidence'] * 100:.2f}%"
@@ -347,10 +898,388 @@ else:
 
 
 # ============================================================
+# SAVE METRICS JSON
+# ============================================================
+
+metrics = {
+
+    "component": "Component 02",
+
+    "model_name": "YOLO11n-CLS",
+
+    "experiment": (
+        "plantation_health_yolo11n_clean_50epochs"
+    ),
+
+    "model": str(MODEL_PATH),
+
+    "dataset": str(TEST_DIR),
+
+    "image_size": IMAGE_SIZE,
+
+    "device": DEVICE,
+
+    "total_test_images": total_images,
+
+    "correct": correct,
+
+    "wrong": wrong,
+
+    "accuracy": accuracy,
+
+    "classes": {
+
+        "healthy": {
+
+            "precision": healthy_precision,
+
+            "recall": healthy_recall,
+
+            "f1_score": healthy_f1,
+
+            "support": healthy_support
+
+        },
+
+        "low_health": {
+
+            "precision": low_precision,
+
+            "recall": low_recall,
+
+            "f1_score": low_f1,
+
+            "support": low_support
+
+        }
+
+    },
+
+    "macro_average": {
+
+        "precision": macro_precision,
+
+        "recall": macro_recall,
+
+        "f1_score": macro_f1
+
+    },
+
+    "weighted_average": {
+
+        "precision": weighted_precision,
+
+        "recall": weighted_recall,
+
+        "f1_score": weighted_f1
+
+    },
+
+    "confusion_matrix": [
+
+        [
+            true_healthy_pred_healthy,
+            true_healthy_pred_low
+        ],
+
+        [
+            true_low_pred_healthy,
+            true_low_pred_low
+        ]
+
+    ]
+
+}
+
+
+# ============================================================
+# SAVE METRICS JSON
+# ============================================================
+
+METRICS_FILE = (
+    EVALUATION_DIR
+    / "evaluation_metrics.json"
+)
+
+
+with open(
+    METRICS_FILE,
+    "w",
+    encoding="utf-8"
+) as file:
+
+    json.dump(
+        metrics,
+        file,
+        indent=4
+    )
+
+
+# ============================================================
+# SAVE WRONG PREDICTIONS CSV
+# ============================================================
+
+WRONG_CSV = (
+    EVALUATION_DIR
+    / "wrong_predictions.csv"
+)
+
+
+with open(
+    WRONG_CSV,
+    "w",
+    newline="",
+    encoding="utf-8"
+) as file:
+
+    writer = csv.DictWriter(
+
+        file,
+
+        fieldnames=[
+            "image",
+            "image_path",
+            "actual_class",
+            "predicted_class",
+            "confidence"
+        ]
+    )
+
+    writer.writeheader()
+
+    writer.writerows(
+        wrong_predictions
+    )
+
+
+# ============================================================
+# SAVE TEXT REPORT
+# ============================================================
+
+REPORT_FILE = (
+    EVALUATION_DIR
+    / "evaluation_report.txt"
+)
+
+
+with open(
+    REPORT_FILE,
+    "w",
+    encoding="utf-8"
+) as file:
+
+    file.write(
+        "COMPONENT 02 - PLANTATION HEALTH\n"
+    )
+
+    file.write(
+        "YOLO11n-CLS MODEL EVALUATION\n"
+    )
+
+    file.write(
+        "=" * 70
+        + "\n\n"
+    )
+
+    file.write(
+        f"Experiment: "
+        f"plantation_health_yolo11n_clean_50epochs\n"
+    )
+
+    file.write(
+        f"Model: {MODEL_PATH}\n"
+    )
+
+    file.write(
+        f"Test Dataset: {TEST_DIR}\n"
+    )
+
+    file.write(
+        f"Image Size: {IMAGE_SIZE}\n"
+    )
+
+    file.write(
+        f"Device: {DEVICE}\n\n"
+    )
+
+    file.write(
+        f"Total Test Images: {total_images}\n"
+    )
+
+    file.write(
+        f"Correct: {correct}\n"
+    )
+
+    file.write(
+        f"Wrong: {wrong}\n"
+    )
+
+    file.write(
+        f"Accuracy: "
+        f"{accuracy * 100:.2f}%\n\n"
+    )
+
+
+    file.write(
+        "Healthy\n"
+    )
+
+    file.write(
+        f"Precision: "
+        f"{healthy_precision * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"Recall: "
+        f"{healthy_recall * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"F1-Score: "
+        f"{healthy_f1 * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"Support: "
+        f"{healthy_support}\n\n"
+    )
+
+
+    file.write(
+        "Low Health\n"
+    )
+
+    file.write(
+        f"Precision: "
+        f"{low_precision * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"Recall: "
+        f"{low_recall * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"F1-Score: "
+        f"{low_f1 * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"Support: "
+        f"{low_support}\n\n"
+    )
+
+
+    file.write(
+        "Macro Average\n"
+    )
+
+    file.write(
+        f"Precision: "
+        f"{macro_precision * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"Recall: "
+        f"{macro_recall * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"F1-Score: "
+        f"{macro_f1 * 100:.2f}%\n\n"
+    )
+
+
+    file.write(
+        "Weighted Average\n"
+    )
+
+    file.write(
+        f"Precision: "
+        f"{weighted_precision * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"Recall: "
+        f"{weighted_recall * 100:.2f}%\n"
+    )
+
+    file.write(
+        f"F1-Score: "
+        f"{weighted_f1 * 100:.2f}%\n\n"
+    )
+
+
+    file.write(
+        "Confusion Matrix\n"
+    )
+
+    file.write(
+        f"Healthy -> Healthy: "
+        f"{true_healthy_pred_healthy}\n"
+    )
+
+    file.write(
+        f"Healthy -> Low Health: "
+        f"{true_healthy_pred_low}\n"
+    )
+
+    file.write(
+        f"Low Health -> Healthy: "
+        f"{true_low_pred_healthy}\n"
+    )
+
+    file.write(
+        f"Low Health -> Low Health: "
+        f"{true_low_pred_low}\n"
+    )
+
+
+# ============================================================
+# FINAL OUTPUT
+# ============================================================
+
+print()
+print("=" * 75)
+print("EVALUATION FILES SAVED")
+print("=" * 75)
+
+print()
+
+print(
+    f"Evaluation folder:\n"
+    f"{EVALUATION_DIR}"
+)
+
+print()
+
+print(
+    f"Metrics JSON:\n"
+    f"{METRICS_FILE}"
+)
+
+print()
+
+print(
+    f"Wrong predictions CSV:\n"
+    f"{WRONG_CSV}"
+)
+
+print()
+
+print(
+    f"Text report:\n"
+    f"{REPORT_FILE}"
+)
+
+
+# ============================================================
 # COMPLETED
 # ============================================================
 
 print()
-print("=" * 70)
-print("✅ COMPONENT 02 FULL EVALUATION COMPLETED")
-print("=" * 70)
+print("=" * 75)
+print("✅ COMPONENT 02 CLEAN MODEL EVALUATION COMPLETED")
+print("=" * 75)
+
+print()

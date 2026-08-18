@@ -9,11 +9,17 @@ from ultralytics import YOLO
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# Trained best model
+
+# ============================================================
+# PATHS
+# ============================================================
+
+# IMPORTANT:
+# This is the CLEAN model trained on the leakage-free dataset.
 MODEL_PATH = (
     BASE_DIR
     / "runs"
-    / "plantation_health_yolo11n_50epochs"
+    / "plantation_health_yolo11n_clean_50epochs"
     / "weights"
     / "best.pt"
 )
@@ -25,18 +31,39 @@ MODEL_PATH = (
 
 if not MODEL_PATH.exists():
     raise FileNotFoundError(
-        f"Trained model not found:\n{MODEL_PATH}"
+        f"""
+Trained model not found.
+
+Expected model:
+{MODEL_PATH}
+
+Please make sure:
+runs/plantation_health_yolo11n_clean_50epochs/weights/best.pt
+exists.
+"""
     )
+
 
 model = YOLO(str(MODEL_PATH))
 
-print("=" * 60)
-print("COMPONENT 02 - PLANTATION HEALTH PREDICTION")
-print("=" * 60)
 
+# ============================================================
+# MODEL INFORMATION
+# ============================================================
+
+print("=" * 70)
+print("COMPONENT 02 - PLANTATION HEALTH PREDICTION")
+print("=" * 70)
+
+print()
 print("Model loaded successfully")
-print(f"Model: {MODEL_PATH}")
-print(f"Classes: {model.names}")
+print(f"Model : {MODEL_PATH}")
+print(f"Classes : {model.names}")
+
+print()
+print("Using CLEAN trained model")
+print("Training experiment : plantation_health_yolo11n_clean_50epochs")
+print("=" * 70)
 
 
 # ============================================================
@@ -47,10 +74,18 @@ def predict_image(image_path):
 
     image_path = Path(image_path)
 
+    # --------------------------------------------------------
+    # Check image
+    # --------------------------------------------------------
+
     if not image_path.exists():
         raise FileNotFoundError(
             f"Image not found:\n{image_path}"
         )
+
+    # --------------------------------------------------------
+    # Run prediction
+    # --------------------------------------------------------
 
     results = model.predict(
         source=str(image_path),
@@ -61,41 +96,86 @@ def predict_image(image_path):
 
     result = results[0]
 
+    # --------------------------------------------------------
     # Classification probabilities
+    # --------------------------------------------------------
+
     probabilities = result.probs
 
-    predicted_class_id = probabilities.top1
-    confidence = float(probabilities.top1conf)
+    predicted_class_id = int(probabilities.top1)
 
-    predicted_class = model.names[predicted_class_id]
+    confidence = float(
+        probabilities.top1conf
+    )
+
+    predicted_class = model.names[
+        predicted_class_id
+    ]
+
+
+    # ========================================================
+    # PRINT RESULT
+    # ========================================================
 
     print()
-    print("=" * 60)
+    print("=" * 70)
     print("PREDICTION RESULT")
-    print("=" * 60)
+    print("=" * 70)
 
+    print()
     print(f"Image      : {image_path.name}")
     print(f"Prediction : {predicted_class}")
-    print(f"Confidence : {confidence * 100:.2f}%")
+    print(
+        f"Confidence : "
+        f"{confidence * 100:.2f}%"
+    )
+
+    # --------------------------------------------------------
+    # Class probabilities
+    # --------------------------------------------------------
 
     print()
-    print("Class probabilities:")
+    print("CLASS PROBABILITIES")
+    print("-" * 70)
 
-    for class_id, probability in enumerate(probabilities.data):
+    probability_dict = {}
+
+    for class_id, probability in enumerate(
+        probabilities.data
+    ):
+
         class_name = model.names[class_id]
-        probability_value = float(probability)
 
-        print(
-            f"  {class_name:<12} : "
-            f"{probability_value * 100:.2f}%"
+        probability_value = float(
+            probability
         )
 
-    print("=" * 60)
+        probability_percentage = (
+            probability_value * 100
+        )
+
+        probability_dict[class_name] = (
+            probability_value
+        )
+
+        print(
+            f"{class_name:<15} : "
+            f"{probability_percentage:.2f}%"
+        )
+
+
+    print("=" * 70)
+
+
+    # ========================================================
+    # RETURN RESULT
+    # ========================================================
 
     return {
         "image": image_path.name,
         "prediction": predicted_class,
         "confidence": confidence,
+        "probabilities": probability_dict,
     }
 
 
@@ -105,7 +185,24 @@ def predict_image(image_path):
 
 if __name__ == "__main__":
 
-    # CHANGE THIS PATH TO YOUR TEST IMAGE
-    IMAGE_PATH = Path('/Users/gayan/Desktop/SLIIT SE/RESEARCH/dataset/plantation_health_dataset/Low_helth/IMG_20230612_165244_jpg.rf.2d7a5962ac11643e6b7a587b65e1db3f.jpg')
+    # --------------------------------------------------------
+    # CHANGE THIS PATH TO THE IMAGE YOU WANT TO TEST
+    # --------------------------------------------------------
 
-    predict_image(IMAGE_PATH)
+    IMAGE_PATH = Path(
+        "/Users/gayan/Desktop/SLIIT SE/RESEARCH/"
+        "dataset/plantation_health_dataset/"
+        "Low_helth/"
+        "IMG_20230612_165244_jpg.rf."
+        "2d7a5962ac11643e6b7a587b65e1db3f.jpg"
+    )
+
+    # --------------------------------------------------------
+    # Run prediction
+    # --------------------------------------------------------
+
+    result = predict_image(IMAGE_PATH)
+
+    print()
+    print("Returned result:")
+    print(result)

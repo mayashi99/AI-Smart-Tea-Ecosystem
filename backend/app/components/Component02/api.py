@@ -44,7 +44,7 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = (
     BASE_DIR
     / "runs"
-    / "plantation_health_yolo11n_50epochs"
+    / "plantation_health_yolo11n_clean_50epochs"
     / "weights"
     / "best.pt"
 )
@@ -115,6 +115,58 @@ router = APIRouter(
     prefix="/component02",
     tags=["Component 02 - Plantation Health"]
 )
+
+
+# ============================================================
+# HEALTH CLASSIFICATION RULE
+# ============================================================
+
+def canonical_health_class(class_name):
+    """
+    Keep the public API to two categories.
+
+    The trained healthy class is the only class that can be
+    returned as healthy. Every other class is treated as low
+    health, including unexpected or future model labels.
+    """
+
+    normalized_name = str(class_name).strip().lower()
+    normalized_name = normalized_name.replace("-", "_").replace(" ", "_")
+
+    if normalized_name == "healthy":
+        return "healthy"
+
+    return "low_health"
+
+
+def extract_health_prediction(probabilities):
+    """Convert model output into the API's healthy/low_health categories."""
+
+    predicted_class_id = int(probabilities.top1)
+    raw_predicted_class = model.names[predicted_class_id]
+
+    # Aggregate all model outputs into the two public categories.
+    category_probabilities = {
+        "healthy": 0.0,
+        "low_health": 0.0,
+    }
+
+    for class_id, probability in enumerate(probabilities.data):
+        model_class = model.names[class_id]
+        category = canonical_health_class(model_class)
+        category_probabilities[category] += float(probability)
+
+    predicted_class = canonical_health_class(raw_predicted_class)
+    confidence = category_probabilities[predicted_class]
+
+    return {
+        "prediction": predicted_class,
+        "confidence": confidence,
+        "class_probabilities": {
+            category: round(probability * 100, 2)
+            for category, probability in category_probabilities.items()
+        },
+    }
 
 
 # ============================================================
@@ -693,45 +745,13 @@ async def predict_image(
         # Top prediction
         # ----------------------------------------------------
 
-        predicted_class_id = int(
-            probabilities.top1
+        health_prediction = extract_health_prediction(
+            probabilities
         )
 
-
-        confidence = float(
-            probabilities.top1conf
-        )
-
-
-        predicted_class = model.names[
-            predicted_class_id
-        ]
-
-
-        # ----------------------------------------------------
-        # All class probabilities
-        # ----------------------------------------------------
-
-        class_probabilities = {}
-
-
-        for class_id, probability in enumerate(
-            probabilities.data
-        ):
-
-            class_name = model.names[
-                class_id
-            ]
-
-
-            class_probabilities[
-                class_name
-            ] = round(
-
-                float(probability) * 100,
-
-                2
-            )
+        predicted_class = health_prediction["prediction"]
+        confidence = health_prediction["confidence"]
+        class_probabilities = health_prediction["class_probabilities"]
 
 
         # ----------------------------------------------------
@@ -1019,100 +1039,23 @@ async def assess_plantation(
 
 
         # ====================================================
-        # 4. TOP PREDICTION
+        # 4. NORMALIZED HEALTH PREDICTION
         # ====================================================
 
-        predicted_class_id = int(
-            probabilities.top1
+        health_prediction = extract_health_prediction(
+            probabilities
         )
 
-
-        confidence = float(
-            probabilities.top1conf
-        )
-
-
-        predicted_class = model.names[
-            predicted_class_id
-        ]
-
-
-        # ====================================================
-        # 5. CLASS PROBABILITIES
-        # ====================================================
-
-        class_probabilities = {}
-
-
-        for class_id, probability in enumerate(
-            probabilities.data
-        ):
-
-            class_name = model.names[
-                class_id
-            ]
-
-
-            class_probabilities[
-                class_name
-            ] = round(
-
-                float(probability) * 100,
-
-                2
-            )
+        predicted_class = health_prediction["prediction"]
+        confidence = health_prediction["confidence"]
+        class_probabilities = health_prediction["class_probabilities"]
 
 
         # ====================================================
         # 6. IMAGE HEALTH SCORE
         # ====================================================
 
-        healthy_probability = None
-
-
-        for class_id, probability in enumerate(
-            probabilities.data
-        ):
-
-            class_name = model.names[
-                class_id
-            ].lower()
-
-
-            if class_name in {
-
-                "healthy",
-
-                "high_health",
-
-                "good_health"
-
-            }:
-
-                healthy_probability = float(
-                    probability
-                )
-
-                break
-
-
-        if healthy_probability is not None:
-
-            image_health_score = round(
-
-                healthy_probability * 100,
-
-                2
-            )
-
-        else:
-
-            image_health_score = round(
-
-                confidence * 100,
-
-                2
-            )
+        image_health_score = class_probabilities["healthy"]
 
 
         # ====================================================
@@ -1756,3 +1699,4 @@ async def assess_plantation(
         ):
 
             temp_path.unlink()
+            
