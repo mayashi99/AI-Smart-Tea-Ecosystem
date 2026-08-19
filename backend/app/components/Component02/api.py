@@ -2,6 +2,7 @@ from pathlib import Path
 import tempfile
 import requests
 from datetime import datetime, timedelta
+from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from ultralytics import YOLO
@@ -137,6 +138,26 @@ def canonical_health_class(class_name):
         return "healthy"
 
     return "low_health"
+
+
+def build_health_reason(prediction, low_health_image_count=None, image_count=None):
+    """Explain the result without claiming a specific disease."""
+
+    if prediction == "low_health":
+        count_message = ""
+        if low_health_image_count is not None and image_count is not None:
+            count_message = (
+                f"{low_health_image_count} of {image_count} uploaded image(s) "
+                "were classified as low health. "
+            )
+        return (
+            f"{count_message}The AI model detected visual patterns associated "
+            "with reduced tea plant health. This classification does not "
+            "identify a specific disease or cause, so the affected area should "
+            "be checked in the field."
+        )
+
+    return "The AI model did not detect visual patterns associated with low health."
 
 
 def extract_health_prediction(probabilities):
@@ -927,7 +948,10 @@ def get_climate_data(
 @router.post("/assess")
 async def assess_plantation(
 
-    file: UploadFile = File(...),
+    files: Optional[list[UploadFile]] = File(default=None),
+
+    # Keep the original field for clients that still send one image.
+    file: Optional[UploadFile] = File(default=None),
 
     latitude: float = 6.9497,
 
@@ -938,7 +962,7 @@ async def assess_plantation(
 ):
 
     # ========================================================
-    # 1. VALIDATE IMAGE
+    # 1. VALIDATE IMAGES
     # ========================================================
 
     allowed_extensions = {
@@ -950,62 +974,61 @@ async def assess_plantation(
     }
 
 
-    if not file.filename:
+    uploaded_files = list(files or [])
+    if file is not None:
+        uploaded_files.append(file)
 
+    if not uploaded_files:
         raise HTTPException(
             status_code=400,
-            detail="No file name provided."
+            detail="Please upload at least one plantation image."
         )
 
-
-    file_extension = Path(
-        file.filename
-    ).suffix.lower()
-
-
-    if file_extension not in allowed_extensions:
-
+    if len(uploaded_files) > 5:
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Only JPG, JPEG, PNG and WEBP "
-                "images are allowed."
-            )
+            detail="You can upload a maximum of 5 plantation images."
         )
 
-
-    image_bytes = await file.read()
-
-
-    if not image_bytes:
-
-        raise HTTPException(
-            status_code=400,
-            detail="Uploaded image is empty."
-        )
-
-
-    temp_path = None
+    temp_paths = []
 
 
     try:
 
         # ====================================================
-        # 2. SAVE TEMPORARY IMAGE
+        # 2. SAVE TEMPORARY IMAGES
         # ====================================================
 
-        with tempfile.NamedTemporaryFile(
-            suffix=file_extension,
-            delete=False
-        ) as temp_file:
+        for uploaded_file in uploaded_files:
+            if not uploaded_file.filename:
+                raise HTTPException(
+                    status_code=400,
+                    detail="One of the uploaded files has no file name."
+                )
 
-            temp_file.write(
-                image_bytes
-            )
+            file_extension = Path(uploaded_file.filename).suffix.lower()
+            if file_extension not in allowed_extensions:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Only JPG, JPEG, PNG and WEBP "
+                        "images are allowed."
+                    )
+                )
 
-            temp_path = Path(
-                temp_file.name
-            )
+            image_bytes = await uploaded_file.read()
+            if not image_bytes:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Uploaded image '{uploaded_file.filename}' is empty."
+                )
+
+            with tempfile.NamedTemporaryFile(
+                suffix=file_extension,
+                delete=False
+            ) as temp_file:
+                temp_file.write(image_bytes)
+                temp_paths.append(Path(temp_file.name))
 
 
         # ====================================================
@@ -1013,49 +1036,59 @@ async def assess_plantation(
         # ====================================================
 
         results = model.predict(
-
-            source=str(temp_path),
-
+            source=[str(path) for path in temp_paths],
             imgsz=224,
-
             device="mps",
-
             verbose=False
         )
 
-
-        result = results[0]
-
-
-        if result.probs is None:
-
-            raise RuntimeError(
-                "YOLO model did not return "
-                "classification probabilities."
-            )
-
-
-        probabilities = result.probs
-
-
         # ====================================================
-        # 4. NORMALIZED HEALTH PREDICTION
+        # 4. ANALYZE EACH IMAGE AND AGGREGATE PROBABILITIES
         # ====================================================
 
-        health_prediction = extract_health_prediction(
-            probabilities
+        image_results = []
+        healthy_probability_total = 0.0
+        low_health_probability_total = 0.0
+
+        for uploaded_file, result in zip(uploaded_files, results):
+            if result.probs is None:
+                raise RuntimeError(
+                    "YOLO model did not return classification probabilities."
+                )
+
+            health_prediction = extract_health_prediction(result.probs)
+            per_image_probabilities = health_prediction["class_probabilities"]
+            healthy_probability_total += per_image_probabilities["healthy"]
+            low_health_probability_total += per_image_probabilities["low_health"]
+
+            image_results.append({
+                "file_name": uploaded_file.filename,
+                "prediction": health_prediction["prediction"],
+                "confidence": round(health_prediction["confidence"] * 100, 2),
+                "class_probabilities": per_image_probabilities,
+                "image_health_score": per_image_probabilities["healthy"],
+            })
+
+        image_count = len(image_results)
+        class_probabilities = {
+            "healthy": round(healthy_probability_total / image_count, 2),
+            "low_health": round(low_health_probability_total / image_count, 2),
+        }
+        predicted_class = (
+            "healthy"
+            if class_probabilities["healthy"] >= class_probabilities["low_health"]
+            else "low_health"
         )
-
-        predicted_class = health_prediction["prediction"]
-        confidence = health_prediction["confidence"]
-        class_probabilities = health_prediction["class_probabilities"]
-
-
-        # ====================================================
-        # 6. IMAGE HEALTH SCORE
-        # ====================================================
-
+        confidence = class_probabilities[predicted_class] / 100
         image_health_score = class_probabilities["healthy"]
+        low_health_image_count = sum(
+            image["prediction"] == "low_health" for image in image_results
+        )
+        health_reason = build_health_reason(
+            predicted_class,
+            low_health_image_count,
+            image_count,
+        )
 
 
         # ====================================================
@@ -1517,6 +1550,12 @@ async def assess_plantation(
                 "model":
                     "YOLO11",
 
+                "image_count":
+                    image_count,
+
+                "images":
+                    image_results,
+
                 "prediction":
                     predicted_class,
 
@@ -1530,7 +1569,10 @@ async def assess_plantation(
                     class_probabilities,
 
                 "image_health_score":
-                    image_health_score
+                    image_health_score,
+
+                "health_reason":
+                    health_reason
             },
 
 
@@ -1693,10 +1735,7 @@ async def assess_plantation(
 
     finally:
 
-        if (
-            temp_path is not None
-            and temp_path.exists()
-        ):
-
-            temp_path.unlink()
+        for temp_path in temp_paths:
+            if temp_path.exists():
+                temp_path.unlink()
             

@@ -167,8 +167,8 @@ function MetricCard({ icon, label, value, unit, note }) {
 }
 
 function PlantHealth() {
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [previewUrl, setPreviewUrl] = useState('')
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [previewUrls, setPreviewUrls] = useState([])
   const [latitude, setLatitude] = useState('6.9497')
   const [longitude, setLongitude] = useState('80.7891')
   const [date, setDate] = useState(getLocalDate)
@@ -178,39 +178,44 @@ function PlantHealth() {
   const fileInputRef = useRef(null)
 
   useEffect(() => () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
-  }, [previewUrl])
+    previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
+  }, [previewUrls])
 
   const fieldClass = 'h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-600/10'
 
-  const setImage = (file) => {
-    if (!file) return
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      setError('Please choose a JPG, JPEG, PNG, or WEBP plantation image.')
+  const setImages = (fileList) => {
+    const files = Array.from(fileList || [])
+    if (files.length === 0) return
+    if (files.length > 5) {
+      setError('Please choose a maximum of 5 plantation images.')
       return
     }
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
-    setSelectedFile(file)
-    setPreviewUrl(URL.createObjectURL(file))
+    if (files.some((file) => !ACCEPTED_IMAGE_TYPES.includes(file.type))) {
+      setError('Please choose JPG, JPEG, PNG, or WEBP plantation images only.')
+      return
+    }
+    previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
+    setSelectedFiles(files)
+    setPreviewUrls(files.map((file) => URL.createObjectURL(file)))
     setError('')
     setResult(null)
   }
 
   const removeImage = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
-    setSelectedFile(null)
-    setPreviewUrl('')
+    previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
+    setSelectedFiles([])
+    setPreviewUrls([])
     setResult(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleDrop = (event) => {
     event.preventDefault()
-    setImage(event.dataTransfer.files?.[0])
+    setImages(event.dataTransfer.files)
   }
 
   const validate = () => {
-    if (!selectedFile) return 'Please upload a plantation image before starting the analysis.'
+    if (selectedFiles.length === 0) return 'Please upload at least one plantation image before starting the analysis.'
     if (latitude.trim() === '') return 'Latitude is required.'
     if (longitude.trim() === '') return 'Longitude is required.'
     if (date.trim() === '') return 'Analysis date is required.'
@@ -233,7 +238,7 @@ function PlantHealth() {
     setLoading(true)
     try {
       const formData = new FormData()
-      formData.append('file', selectedFile)
+      selectedFiles.forEach((selectedFile) => formData.append('files', selectedFile))
       const query = new URLSearchParams({ latitude, longitude, date })
       const response = await fetch(`${API_BASE_URL}/component02/assess?${query.toString()}`, {
         method: 'POST',
@@ -271,6 +276,7 @@ function PlantHealth() {
   }
 
   const imageAnalysis = result?.image_analysis
+  const analyzedImages = imageAnalysis?.images || []
   const location = result?.location
   const climate = result?.climate
   const stress = result?.stress_assessment
@@ -314,34 +320,32 @@ function PlantHealth() {
         </div>
 
         <section aria-label="Plantation Analysis" className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-          <SectionTitle eyebrow="Start an assessment" title="Plantation Analysis" description="Upload a field image and provide its observation details." icon="sparkles" />
+          <SectionTitle eyebrow="Start an assessment" title="Plantation Analysis" description="Upload up to 5 field images and provide their observation details." icon="sparkles" />
           <form onSubmit={handleAnalyze}>
             <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
               <div>
                 <label className="mb-2 block text-sm font-bold text-slate-800" htmlFor="plantation-image">Plantation Image</label>
-                {previewUrl ? (
-                  <div className="relative overflow-hidden rounded-2xl border border-emerald-200 bg-slate-900">
-                    <img alt="Selected tea plantation" className="h-64 w-full object-cover sm:h-72" src={previewUrl} />
-                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-slate-950/75 px-4 py-3 text-white backdrop-blur-sm">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold">{selectedFile?.name}</p>
-                        <p className="text-xs text-white/65">{formatNumber((selectedFile?.size || 0) / 1024, 0)} KB</p>
-                      </div>
-                      <div className="flex shrink-0 gap-2">
-                        <button className="rounded-lg bg-white/15 px-3 py-2 text-xs font-bold transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white" onClick={() => fileInputRef.current?.click()} type="button">Change</button>
-                        <button aria-label="Remove selected image" className="rounded-lg bg-red-500/80 px-3 py-2 text-xs font-bold transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-white" onClick={removeImage} type="button">Remove</button>
-                      </div>
+                {previewUrls.length > 0 ? (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {previewUrls.map((previewUrl, index) => (
+                        <div className="overflow-hidden rounded-xl border border-emerald-100 bg-white" key={previewUrl}>
+                          <img alt={`Selected tea plantation ${index + 1}`} className="h-28 w-full object-cover" src={previewUrl} />
+                          <div className="px-2 py-2"><p className="truncate text-xs font-bold text-slate-700">Image {index + 1}</p><p className="truncate text-[10px] text-slate-400">{selectedFiles[index]?.name}</p></div>
+                        </div>
+                      ))}
                     </div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-bold text-emerald-800">{selectedFiles.length} image{selectedFiles.length === 1 ? '' : 's'} selected (maximum 5)</p><div className="flex gap-2"><button className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-100" onClick={() => fileInputRef.current?.click()} type="button">Change Images</button><button aria-label="Remove selected images" className="rounded-lg bg-red-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-red-600" onClick={removeImage} type="button">Remove All</button></div></div>
                   </div>
                 ) : (
                   <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/50 px-5 text-center transition hover:border-emerald-500 hover:bg-emerald-50 focus-within:ring-4 focus-within:ring-emerald-600/10" htmlFor="plantation-image" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
                     <div className="mb-4 rounded-2xl bg-white p-4 text-emerald-700 shadow-sm"><Icon name="upload" size={26} /></div>
-                    <p className="font-bold text-slate-800">Upload Plantation Image</p>
-                    <p className="mt-1 text-sm text-slate-500">Drag &amp; drop your plantation image here or browse</p>
-                    <p className="mt-3 text-xs font-medium text-slate-400">JPG, JPEG, PNG or WEBP</p>
+                    <p className="font-bold text-slate-800">Upload up to 5 Plantation Images</p>
+                    <p className="mt-1 text-sm text-slate-500">Select multiple field images for a more reliable health result</p>
+                    <p className="mt-3 text-xs font-medium text-slate-400">JPG, JPEG, PNG or WEBP · maximum 5 images</p>
                   </label>
                 )}
-                <input ref={fileInputRef} accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" className="sr-only" id="plantation-image" onChange={(event) => setImage(event.target.files?.[0])} type="file" />
+                <input ref={fileInputRef} accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" className="sr-only" id="plantation-image" multiple onChange={(event) => setImages(event.target.files)} type="file" />
               </div>
               <div className="grid content-start gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 <div>
@@ -374,14 +378,14 @@ function PlantHealth() {
           </section>
         )}
 
-        {loading && <div className="mt-7 flex items-center justify-center gap-3 rounded-3xl border border-emerald-100 bg-white px-6 py-10 text-sm font-bold text-emerald-800 shadow-sm" aria-live="polite"><span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-700" />Analyzing image and climate conditions...</div>}
+        {loading && <div className="mt-7 flex items-center justify-center gap-3 rounded-3xl border border-emerald-100 bg-white px-6 py-10 text-sm font-bold text-emerald-800 shadow-sm" aria-live="polite"><span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-700" />Analyzing {selectedFiles.length} images and climate conditions...</div>}
 
         {result && (
           <div className="mt-7 space-y-7" aria-live="polite">
             <section className="grid gap-7 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-sm">
-                <div className="flex items-center justify-between px-5 py-4 text-white"><p className="font-bold">Plantation Image</p><Badge tone="bg-white/10 text-white">Analyzed</Badge></div>
-                <img alt="Analyzed tea plantation" className="h-72 w-full object-cover sm:h-80 lg:h-full lg:min-h-[390px]" src={previewUrl} />
+                <div className="flex items-center justify-between px-5 py-4 text-white"><p className="font-bold">Analyzed Plantation Images</p><Badge tone="bg-white/10 text-white">{imageAnalysis?.image_count || selectedFiles.length} Images</Badge></div>
+                <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">{previewUrls.map((previewUrl, index) => <img alt={`Analyzed tea plantation ${index + 1}`} className="h-32 w-full rounded-xl object-cover sm:h-36" key={previewUrl} src={previewUrl} />)}</div>
               </div>
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
                 <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">AI visual assessment</p><h2 className="text-2xl font-black tracking-tight text-slate-950">Plantation Health</h2></div><Badge tone={healthScoreTone.badge}>{humanize(displayedPrediction)}</Badge></div>
@@ -391,13 +395,14 @@ function PlantHealth() {
                   </div>
                   <div><p className="text-sm font-bold text-slate-500">Health confidence</p><p className="mt-1 text-4xl font-black text-slate-950">{formatNumber(imageAnalysis?.confidence)}<span className="text-xl text-slate-400">%</span></p><p className="mt-2 text-sm leading-6 text-slate-500">The visual model classified this plantation as <span className="font-bold text-slate-700">{humanize(displayedPrediction).toLowerCase()}</span>.</p></div>
                 </div>
-                <div className="mt-8 border-t border-slate-100 pt-5"><p className="text-sm font-bold text-slate-800">AI Classification Confidence</p><ProgressBar label="Healthy" tone={statusTone('healthy')} value={imageAnalysis?.class_probabilities?.healthy} /><ProgressBar label="Low Health" tone={statusTone('low health')} value={imageAnalysis?.class_probabilities?.low_health} /></div>
+                <div className="mt-8 border-t border-slate-100 pt-5"><p className="text-sm font-bold text-slate-800">Combined AI Classification Confidence</p><ProgressBar label="Healthy" tone={statusTone('healthy')} value={imageAnalysis?.class_probabilities?.healthy} /><ProgressBar label="Low Health" tone={statusTone('low health')} value={imageAnalysis?.class_probabilities?.low_health} /></div>
+                {displayedPrediction === 'low_health' && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4"><div className="flex items-start gap-3"><div className="rounded-lg bg-white p-2 text-red-600"><Icon name="alert" size={18} /></div><div><p className="text-xs font-bold uppercase tracking-wide text-red-700">Why low health?</p><p className="mt-2 text-sm leading-6 text-red-900">{imageAnalysis?.health_reason || 'The AI model detected visual patterns associated with reduced tea plant health. Please inspect the affected area in the field.'}</p></div></div></div>}
+                {analyzedImages.length > 0 && <div className="mt-6 border-t border-slate-100 pt-5"><p className="text-sm font-bold text-slate-800">Individual Image Results</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{analyzedImages.map((image, index) => { const tone = healthTone(image.image_health_score); return <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2" key={`${image.file_name}-${index}`}><div className="min-w-0"><p className="truncate text-xs font-bold text-slate-700">Image {index + 1}</p><p className="truncate text-[10px] text-slate-400">{image.file_name}</p></div><Badge tone={tone.badge}>{humanize(image.prediction)}</Badge></div> })}</div></div>}
               </div>
             </section>
 
-            <section className="grid gap-5 lg:grid-cols-[1fr_1.5fr]">
+            <section className="grid gap-5">
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><SectionTitle title="Plantation Location" description="Observation coordinates and date." icon="location" /><div className="grid grid-cols-2 gap-3"><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Latitude</p><p className="mt-2 text-lg font-black text-slate-900">{formatNumber(location?.latitude, 4)}</p></div><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Longitude</p><p className="mt-2 text-lg font-black text-slate-900">{formatNumber(location?.longitude, 4)}</p></div><div className="col-span-2 flex items-center gap-3 rounded-2xl bg-slate-50 p-4"><Icon className="text-emerald-700" name="calendar" size={20} /><div><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Analysis Date</p><p className="mt-1 font-black text-slate-900">{result.date || 'Unavailable'}</p></div></div></div></div>
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><SectionTitle title="AI Model Information" description="The services used for this assessment." icon="activity" /><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-emerald-700">AI Model</p><p className="mt-2 font-black text-slate-900">{imageAnalysis?.model || 'Unavailable'}</p></div><div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Confidence</p><p className="mt-2 font-black text-slate-900">{formatNumber(imageAnalysis?.confidence)}%</p></div><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Component</p><p className="mt-2 font-black text-slate-900">{result.component || 'Component 02'}</p></div><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Data Source</p><p className="mt-2 font-black text-slate-900">{climate?.source || 'Unavailable'}</p></div><div className="rounded-2xl bg-slate-50 p-4 sm:col-span-2"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Service</p><p className="mt-2 font-black text-slate-900">{result.service || 'Unavailable'}</p></div></div></div>
             </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><SectionTitle eyebrow="Environmental conditions" title="Climate Conditions" description="Climate observations returned by the assessment service." icon="cloud" /><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><MetricCard icon="sun" label="Temperature" value={formatNumber(climate?.temperature_c)} unit="°C" /><MetricCard icon="water" label="Rainfall" value={formatNumber(climate?.rainfall_mm)} unit="mm" /><MetricCard icon="cloud" label="Humidity" value={formatNumber(climate?.humidity_percent)} unit="%" /><MetricCard icon="wind" label="Wind Speed" value={formatNumber(climate?.wind_speed_m_s)} unit="m/s" /><MetricCard icon="sun" label="Solar Radiation" value={formatNumber(climate?.solar_radiation_kwh_m2_day)} unit={climate?.solar_radiation_kwh_m2_day === null || climate?.solar_radiation_kwh_m2_day === undefined ? '' : 'kWh/m²/day'} note={climate?.solar_radiation_kwh_m2_day === null || climate?.solar_radiation_kwh_m2_day === undefined ? 'Unavailable for this observation' : ''} /></div><p className="mt-5 flex items-center gap-2 text-xs font-bold text-slate-400"><Icon name="cloud" size={15} /> Source: {climate?.source || 'Unavailable'}</p></section>
