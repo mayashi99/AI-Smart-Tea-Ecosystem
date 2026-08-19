@@ -19,11 +19,12 @@ const ZONE_FACTORS = {
   'Up Country': 0.87,
 }
 
+const ROW_SPACING_METERS = 1.2
+const PLANT_SPACING_METERS = 0.75
+
 function PlantDensity() {
   const [landArea, setLandArea] = useState('')
   const [areaUnit, setAreaUnit] = useState('')
-  const [rowSpacing, setRowSpacing] = useState('')
-  const [plantSpacing, setPlantSpacing] = useState('')
   const [plantationZone, setPlantationZone] = useState('')
   const [terrainType, setTerrainType] = useState('')
   const [error, setError] = useState('')
@@ -41,8 +42,6 @@ function PlantDensity() {
   const validateInputs = () => {
     const numericFields = [
       { label: 'Total Land Area', value: landArea },
-      { label: 'Row Spacing', value: rowSpacing },
-      { label: 'Plant Spacing', value: plantSpacing },
     ]
 
     const emptyNumber = numericFields.find(({ value }) => value === '')
@@ -88,7 +87,7 @@ function PlantDensity() {
 
     window.setTimeout(() => {
       const landAreaSqm = Number(landArea) * AREA_CONVERSIONS[areaUnit]
-      const spacingArea = Number(rowSpacing) * Number(plantSpacing)
+      const spacingArea = ROW_SPACING_METERS * PLANT_SPACING_METERS
       const basePlantCount = landAreaSqm / spacingArea
       const terrainFactor = TERRAIN_FACTORS[terrainType]
       const zoneFactor = ZONE_FACTORS[plantationZone]
@@ -146,14 +145,12 @@ function PlantDensity() {
               Row Spacing
             </label>
             <input
+              aria-readonly="true"
+              className={`${fieldClass} cursor-not-allowed bg-stone-100 font-bold`}
               id="row-spacing"
-              min="0"
-              placeholder="0 m"
-              step="0.01"
-              type="number"
-              value={rowSpacing}
-              onChange={(event) => setRowSpacing(event.target.value)}
-              className={fieldClass}
+              readOnly
+              type="text"
+              value={`${ROW_SPACING_METERS} m`}
             />
           </div>
 
@@ -162,14 +159,12 @@ function PlantDensity() {
               Plant Spacing
             </label>
             <input
+              aria-readonly="true"
+              className={`${fieldClass} cursor-not-allowed bg-stone-100 font-bold`}
               id="plant-spacing"
-              min="0"
-              placeholder="0 m"
-              step="0.01"
-              type="number"
-              value={plantSpacing}
-              onChange={(event) => setPlantSpacing(event.target.value)}
-              className={fieldClass}
+              readOnly
+              type="text"
+              value={`${PLANT_SPACING_METERS} m`}
             />
           </div>
 

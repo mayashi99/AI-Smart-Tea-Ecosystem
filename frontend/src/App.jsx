@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import Home from './Home/Home'
 import PlantDensity from './PlantDensity/PlantDensity'
 import PlantHealth from './PlantHelth/PlantHealth'
+import Navbar from './components/Navbar'
 
 function NormalizePath() {
   const location = useLocation()
@@ -23,6 +24,7 @@ function App() {
   return (
     <BrowserRouter>
       <NormalizePath />
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/plant-density" element={<PlantDensity />} />

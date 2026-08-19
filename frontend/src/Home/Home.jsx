@@ -1,33 +1,4 @@
-import { Link, NavLink } from 'react-router-dom'
-
-function LeafMark({ className = '' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      fill="none"
-      height="24"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M20.8 3.2C12.5 3.4 5.8 6.4 4.2 12.1 3.2 15.7 5.5 19 9 19.4c5.7.7 9-5.6 11.8-16.2Z"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M4.5 19.5C7.5 14.8 11 11.8 17 8"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  )
-}
+import { Link } from 'react-router-dom'
 
 function ArrowIcon() {
   return (
@@ -69,32 +40,9 @@ function HealthIcon() {
   )
 }
 
-const navigationClass = ({ isActive }) =>
-  `rounded-full px-4 py-2 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-emerald-500/20 ${
-    isActive
-      ? 'bg-emerald-700 text-white shadow-md shadow-emerald-900/15'
-      : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-800'
-  }`
-
 function Home() {
   return (
     <main className="min-h-screen bg-[#f4f8f4] text-slate-900">
-      <nav className="border-b border-emerald-950/10 bg-white/95 backdrop-blur" aria-label="Main navigation">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5 px-4 py-4 sm:px-6 lg:px-8">
-          <Link className="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20" to="/">
-            <span className="rounded-xl bg-emerald-700 p-2.5 text-white shadow-md shadow-emerald-900/15"><LeafMark /></span>
-            <span>
-              <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">AI Smart</span>
-              <span className="block text-base font-black tracking-tight text-slate-950">Tea Ecosystem</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1" role="list">
-            <NavLink className={navigationClass} role="listitem" to="/plant-density">Density</NavLink>
-            <NavLink className={navigationClass} role="listitem" to="/plantation-health">Health</NavLink>
-          </div>
-        </div>
-      </nav>
-
       <section className="relative overflow-hidden border-b border-emerald-950/10 bg-emerald-950">
         <div className="absolute -right-24 -top-32 h-96 w-96 rounded-full bg-emerald-700/30 blur-3xl" />
         <div className="absolute -bottom-40 left-1/3 h-80 w-80 rounded-full bg-lime-500/10 blur-3xl" />

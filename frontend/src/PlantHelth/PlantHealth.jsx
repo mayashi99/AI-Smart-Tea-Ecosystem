@@ -295,23 +295,6 @@ function PlantHealth() {
 
   return (
     <main className="min-h-screen bg-[#f4f8f4] text-slate-900">
-      <div className="border-b border-emerald-950/10 bg-emerald-950 text-white">
-        <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5 px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-emerald-500 p-3 text-white shadow-lg shadow-emerald-950/20"><Icon name="leaf" size={25} /></div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300">Component 02</p>
-              <h1 className="text-lg font-black tracking-tight sm:text-xl">Plantation Health Intelligence</h1>
-            </div>
-          </div>
-          <div className="hidden items-center gap-2 sm:flex">
-            <Badge tone="bg-white/10 text-emerald-100">YOLO11</Badge>
-            <Badge tone="bg-white/10 text-emerald-100">NASA POWER</Badge>
-            <Badge tone="bg-white/10 text-emerald-100">AI Climate Analysis</Badge>
-          </div>
-        </header>
-      </div>
-
       <div className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
         <div className="mb-8 max-w-3xl">
           <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Climate intelligence for tea cultivation</p>
