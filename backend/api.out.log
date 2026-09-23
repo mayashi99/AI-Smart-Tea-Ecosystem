@@ -1,0 +1,7 @@
+INFO:     127.0.0.1:40769 - "GET /api/component04/train-output HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19849 - "GET /api/component04/train-output HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19850 - "GET /api/component04/train-output HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1379 - "GET /api/component04/train-output HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1380 - "GET /api/component04/train-output HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4000 - "GET /api/component04/train-output HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3434 - "GET /api/component04/train-output HTTP/1.1" 200 OK

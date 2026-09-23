@@ -1,0 +1,4 @@
+High Growns: keras, gru/24m RMSE=468.29, MAE=416.22, R2=-3.011
+Low Growns: keras, lstm/12m RMSE=2062.84, MAE=1940.62, R2=-7.855
+Medium Growns: keras, gru/24m RMSE=619.52, MAE=502.12, R2=-0.085
+Total: keras, gru/24m RMSE=899.17, MAE=803.47, R2=-5.260
