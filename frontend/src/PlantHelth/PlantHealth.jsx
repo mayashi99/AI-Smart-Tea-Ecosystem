@@ -1,6 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'http://127.0.0.1:8000')
+// Representative town coordinates, not individual plantation GPS positions.
+// Dimbula uses Talawakelle; Uva uses Haputale as its high-grown reference.
+const TEA_ZONES = {
+  high: { label: 'High Grown', locations: [
+    { name: 'Nuwara Eliya', latitude: 6.9708, longitude: 80.7829 },
+    { name: 'Dimbula', latitude: 6.9333, longitude: 80.6500, reference: 'Talawakelle' },
+    { name: 'Uva', latitude: 6.7657, longitude: 80.9510, reference: 'Haputale' },
+  ] },
+  mid: { label: 'Mid Grown', locations: [
+    { name: 'Badulla', latitude: 6.9802, longitude: 81.0577 },
+    { name: 'Kandy', latitude: 7.2966, longitude: 80.6384 },
+    { name: 'Matale', latitude: 7.4676, longitude: 80.6232 },
+    { name: 'Nawalapitiya', latitude: 7.0500, longitude: 80.5333 },
+  ] },
+  low: { label: 'Low Grown', locations: [
+    { name: 'Galle', latitude: 6.0341, longitude: 80.2155 },
+    { name: 'Kalutara', latitude: 6.5831, longitude: 79.9593 },
+    { name: 'Kegalle', latitude: 7.2523, longitude: 80.3436 },
+    { name: 'Matara', latitude: 5.9500, longitude: 80.5500 },
+    { name: 'Ratnapura', latitude: 6.6858, longitude: 80.4036 },
+  ] },
+}
+
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 const getLocalDate = () => {
@@ -169,8 +192,9 @@ function MetricCard({ icon, label, value, unit, note }) {
 function PlantHealth() {
   const [selectedFiles, setSelectedFiles] = useState([])
   const [previewUrls, setPreviewUrls] = useState([])
-  const [latitude, setLatitude] = useState('6.9497')
-  const [longitude, setLongitude] = useState('80.7891')
+  const [zone, setZone] = useState('')
+  const [locationName, setLocationName] = useState('')
+  const selectedLocation = TEA_ZONES[zone]?.locations.find((item) => item.name === locationName)
   const [date, setDate] = useState(getLocalDate)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -216,13 +240,9 @@ function PlantHealth() {
 
   const validate = () => {
     if (selectedFiles.length === 0) return 'Please upload at least one plantation image before starting the analysis.'
-    if (latitude.trim() === '') return 'Latitude is required.'
-    if (longitude.trim() === '') return 'Longitude is required.'
+    if (!zone) return 'Please select a growing zone.'
+    if (!selectedLocation) return 'Please select a location in your growing zone.'
     if (date.trim() === '') return 'Analysis date is required.'
-    const parsedLatitude = Number(latitude)
-    const parsedLongitude = Number(longitude)
-    if (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90) return 'Latitude must be between -90 and 90.'
-    if (!Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180) return 'Longitude must be between -180 and 180.'
     return ''
   }
 
@@ -239,7 +259,7 @@ function PlantHealth() {
     try {
       const formData = new FormData()
       selectedFiles.forEach((selectedFile) => formData.append('files', selectedFile))
-      const query = new URLSearchParams({ latitude, longitude, date })
+      const query = new URLSearchParams({ latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, date })
       const response = await fetch(`${API_BASE_URL}/component02/assess?${query.toString()}`, {
         method: 'POST',
         body: formData,
@@ -257,7 +277,7 @@ function PlantHealth() {
       if (!payload || typeof payload !== 'object' || payload.success === false || !payload.image_analysis || !payload.climate || !payload.stress_assessment) {
         throw new Error('The API returned an incomplete assessment.')
       }
-      setResult(payload)
+      setResult({ ...payload, selectedZone: TEA_ZONES[zone].label, selectedLocationName: locationName })
     } catch {
       setResult(null)
       setError('Unable to connect to the Plantation Health API. Please make sure the FastAPI backend is running on port 8000.')
@@ -270,8 +290,8 @@ function PlantHealth() {
     removeImage()
     setResult(null)
     setError('')
-    setLatitude('6.9497')
-    setLongitude('80.7891')
+    setZone('')
+    setLocationName('')
     setDate(getLocalDate())
   }
 
@@ -332,12 +352,28 @@ function PlantHealth() {
               </div>
               <div className="grid content-start gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-slate-800" htmlFor="latitude">Latitude</label>
-                  <div className="relative"><Icon className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" name="compass" size={18} /><input className={`${fieldClass} pl-11`} id="latitude" inputMode="decimal" onChange={(event) => setLatitude(event.target.value)} value={latitude} /></div>
+                  <label className="mb-2 block text-sm font-bold text-slate-800" htmlFor="growing-zone">Growing Zone</label>
+                  <select className={fieldClass} disabled={loading} id="growing-zone" value={zone} onChange={(event) => {
+                    setZone(event.target.value)
+                    setLocationName('')
+                    setResult(null)
+                    setError('')
+                  }}>
+                    <option value="">Select growing zone</option>
+                    {Object.entries(TEA_ZONES).map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-slate-800" htmlFor="longitude">Longitude</label>
-                  <div className="relative"><Icon className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" name="location" size={18} /><input className={`${fieldClass} pl-11`} id="longitude" inputMode="decimal" onChange={(event) => setLongitude(event.target.value)} value={longitude} /></div>
+                  <label className="mb-2 block text-sm font-bold text-slate-800" htmlFor="plantation-location">Location</label>
+                  <select className={`${fieldClass} disabled:opacity-60`} disabled={!zone || loading} id="plantation-location" value={locationName} onChange={(event) => {
+                    setLocationName(event.target.value)
+                    setResult(null)
+                    setError('')
+                  }}>
+                    <option value="">{zone ? 'Select location' : 'Select a growing zone first'}</option>
+                    {(TEA_ZONES[zone]?.locations || []).map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}
+                  </select>
+                  {selectedLocation && <p aria-live="polite" className="mt-2 text-xs leading-5 text-slate-500">Climate data uses approximate coordinates for {selectedLocation.reference || selectedLocation.name}: {selectedLocation.latitude.toFixed(4)}, {selectedLocation.longitude.toFixed(4)}.</p>}
                 </div>
                 <div className="sm:col-span-2 lg:col-span-1">
                   <label className="mb-2 block text-sm font-bold text-slate-800" htmlFor="analysis-date">Analysis Date</label>
@@ -385,7 +421,7 @@ function PlantHealth() {
             </section>
 
             <section className="grid gap-5">
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><SectionTitle title="Plantation Location" description="Observation coordinates and date." icon="location" /><div className="grid grid-cols-2 gap-3"><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Latitude</p><p className="mt-2 text-lg font-black text-slate-900">{formatNumber(location?.latitude, 4)}</p></div><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Longitude</p><p className="mt-2 text-lg font-black text-slate-900">{formatNumber(location?.longitude, 4)}</p></div><div className="col-span-2 flex items-center gap-3 rounded-2xl bg-slate-50 p-4"><Icon className="text-emerald-700" name="calendar" size={20} /><div><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Analysis Date</p><p className="mt-1 font-black text-slate-900">{result.date || 'Unavailable'}</p></div></div></div></div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><SectionTitle title="Plantation Location" description={`${result.selectedLocationName} · ${result.selectedZone} — representative coordinates and observation date.`} icon="location" /><div className="grid grid-cols-2 gap-3"><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Latitude</p><p className="mt-2 text-lg font-black text-slate-900">{formatNumber(location?.latitude, 4)}</p></div><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Longitude</p><p className="mt-2 text-lg font-black text-slate-900">{formatNumber(location?.longitude, 4)}</p></div><div className="col-span-2 flex items-center gap-3 rounded-2xl bg-slate-50 p-4"><Icon className="text-emerald-700" name="calendar" size={20} /><div><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Analysis Date</p><p className="mt-1 font-black text-slate-900">{result.date || 'Unavailable'}</p></div></div></div></div>
             </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><SectionTitle eyebrow="Environmental conditions" title="Climate Conditions" description="Climate observations returned by the assessment service." icon="cloud" /><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><MetricCard icon="sun" label="Temperature" value={formatNumber(climate?.temperature_c)} unit="°C" /><MetricCard icon="water" label="Rainfall" value={formatNumber(climate?.rainfall_mm)} unit="mm" /><MetricCard icon="cloud" label="Humidity" value={formatNumber(climate?.humidity_percent)} unit="%" /><MetricCard icon="wind" label="Wind Speed" value={formatNumber(climate?.wind_speed_m_s)} unit="m/s" /><MetricCard icon="sun" label="Solar Radiation" value={formatNumber(climate?.solar_radiation_kwh_m2_day)} unit={climate?.solar_radiation_kwh_m2_day === null || climate?.solar_radiation_kwh_m2_day === undefined ? '' : 'kWh/m²/day'} note={climate?.solar_radiation_kwh_m2_day === null || climate?.solar_radiation_kwh_m2_day === undefined ? 'Unavailable for this observation' : ''} /></div><p className="mt-5 flex items-center gap-2 text-xs font-bold text-slate-400"><Icon name="cloud" size={15} /> Source: {climate?.source || 'Unavailable'}</p></section>
