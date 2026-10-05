@@ -37,7 +37,7 @@ const statusTone = (value) => {
       bar: 'bg-emerald-500',
     }
   }
-  if (normalized === 'medium' || normalized === 'monitor conditions') {
+  if (normalized === 'medium' || normalized === 'moderate' || normalized === 'monitor conditions') {
     return {
       badge: 'bg-amber-100 text-amber-800',
       dot: 'bg-amber-500',
@@ -285,12 +285,12 @@ function PlantHealth() {
   const healthScoreTone = healthTone(score)
   const climateRiskTone = riskTone(stress?.overall_climate_risk)
   const stressItems = [
-    ['Heat Stress', stress?.heat_stress, 'sun'],
-    ['Water Stress', stress?.water_stress, 'water'],
-    ['Rainfall Stress', stress?.rainfall_stress, 'cloud'],
-    ['Humidity Stress', stress?.humidity_stress, 'cloud'],
-    ['Wind Condition', stress?.wind_condition, 'wind'],
-    ['Solar Condition', stress?.solar_condition, 'sun'],
+    ['heat_stress', 'Heat Stress', stress?.heat_stress, 'sun'],
+    ['water_stress', 'Water Stress', stress?.water_stress, 'water'],
+    ['rainfall_stress', 'Rainfall Stress', stress?.rainfall_stress, 'cloud'],
+    ['humidity_stress', 'Humidity Stress', stress?.humidity_stress, 'cloud'],
+    ['wind_condition', 'Wind Condition', stress?.wind_condition, 'wind'],
+    ['solar_condition', 'Solar Condition', stress?.solar_condition, 'sun'],
   ]
 
   return (
@@ -390,7 +390,7 @@ function PlantHealth() {
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><SectionTitle eyebrow="Environmental conditions" title="Climate Conditions" description="Climate observations returned by the assessment service." icon="cloud" /><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><MetricCard icon="sun" label="Temperature" value={formatNumber(climate?.temperature_c)} unit="°C" /><MetricCard icon="water" label="Rainfall" value={formatNumber(climate?.rainfall_mm)} unit="mm" /><MetricCard icon="cloud" label="Humidity" value={formatNumber(climate?.humidity_percent)} unit="%" /><MetricCard icon="wind" label="Wind Speed" value={formatNumber(climate?.wind_speed_m_s)} unit="m/s" /><MetricCard icon="sun" label="Solar Radiation" value={formatNumber(climate?.solar_radiation_kwh_m2_day)} unit={climate?.solar_radiation_kwh_m2_day === null || climate?.solar_radiation_kwh_m2_day === undefined ? '' : 'kWh/m²/day'} note={climate?.solar_radiation_kwh_m2_day === null || climate?.solar_radiation_kwh_m2_day === undefined ? 'Unavailable for this observation' : ''} /></div><p className="mt-5 flex items-center gap-2 text-xs font-bold text-slate-400"><Icon name="cloud" size={15} /> Source: {climate?.source || 'Unavailable'}</p></section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><SectionTitle eyebrow="Six indicator review" title="Climate Stress Assessment" description="Status indicators derived from the available climate variables." icon="alert" /><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{stressItems.map(([label, value, icon]) => { const tone = statusTone(value); return <div className={`flex items-center justify-between gap-3 rounded-2xl border p-4 ${tone.panel}`} key={label}><div className="flex items-center gap-3"><div className={`rounded-xl bg-white/80 p-2 ${tone.text}`}><Icon name={icon} size={18} /></div><p className="text-sm font-bold text-slate-800">{label}</p></div><Badge tone={tone.badge}>{humanize(value)}</Badge></div> })}</div></section>
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><SectionTitle eyebrow="Six indicator review" title="Climate Stress Assessment" description="Tea-focused indicators calculated from climate trends, not a single day's value." icon="alert" /><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{stressItems.map(([key, label, value, icon]) => { const tone = statusTone(value); const detail = stress?.details?.[key]; return <div className={`rounded-2xl border p-4 ${tone.panel}`} key={key}><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-3"><div className={`rounded-xl bg-white/80 p-2 ${tone.text}`}><Icon name={icon} size={18} /></div><p className="text-sm font-bold text-slate-800">{label}</p></div><Badge tone={tone.badge}>{humanize(value)}</Badge></div>{detail?.message && <p className="mt-3 text-xs leading-5 text-slate-600">{detail.message}</p>}</div> })}</div><div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs leading-5 text-slate-500"><p><span className="font-bold text-slate-700">Data quality:</span> {stress?.data_quality?.available_days || 0}/{stress?.data_quality?.requested_window_days || 14} days available · {stress?.data_quality?.confidence || 'Unknown'} confidence</p><p className="mt-1">{stress?.data_quality?.limitation || 'Confirm climate signals with field observations.'}</p></div></section>
 
             <section className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><div className="flex flex-wrap items-start justify-between gap-4"><SectionTitle eyebrow="Risk overview" title="Climate Risk Assessment" description="A combined risk score based on the climate stress assessment." icon="alert" /><Badge tone={climateRiskTone.badge}>{humanize(stress?.overall_climate_risk)}</Badge></div><div className="mt-3 flex items-end justify-between gap-4"><div><p className="text-4xl font-black text-slate-950">{formatNumber(stress?.climate_risk_score)}<span className="text-xl text-slate-400"> / 100</span></p><p className="mt-1 text-sm font-bold text-slate-500">Climate risk score</p></div><p className={`text-right text-sm font-black ${climateRiskTone.text}`}>{humanize(stress?.overall_climate_risk)} risk</p></div><div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${climateRiskTone.bar}`} style={{ width: `${Math.max(0, Math.min(100, Number(stress?.climate_risk_score) || 0))}%` }} /></div></div>

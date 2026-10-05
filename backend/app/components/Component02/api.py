@@ -12,12 +12,12 @@ from ultralytics import YOLO
 # COMPONENT 02
 # AI-POWERED PLANTATION HEALTH & CLIMATE STRESS ASSESSMENT
 #
-# YOLO11 + NASA POWER
+# YOLO11 + Open-Meteo
 #
 # Features:
 #   1. YOLO11 Plantation Health Classification
 #   2. Image Health Score
-#   3. NASA POWER Climate Data
+#   3. Open-Meteo current/hourly/daily Climate Data
 #   4. Automatic Previous-Date Fallback
 #   5. Heat Stress
 #   6. Water Stress
@@ -79,11 +79,20 @@ print(f"Classes: {model.names}")
 
 
 # ============================================================
-# NASA POWER
+# OPEN-METEO
 # ============================================================
 
-NASA_POWER_URL = (
-    "https://power.larc.nasa.gov/api/temporal/daily/point"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+CLIMATE_TIMEZONE = "Asia/Colombo"
+OPEN_METEO_HOURLY_PARAMETERS = (
+    "temperature_2m,relative_humidity_2m,wind_speed_10m,"
+    "precipitation,shortwave_radiation"
+)
+OPEN_METEO_DAILY_PARAMETERS = (
+    "temperature_2m_max,temperature_2m_mean,temperature_2m_min,"
+    "precipitation_sum,wind_speed_10m_max,shortwave_radiation_sum,"
+    "et0_fao_evapotranspiration"
 )
 
 
@@ -106,6 +115,7 @@ NASA_POWER_URL = (
 # Maximum 7 days backward.
 
 MAX_CLIMATE_LOOKBACK_DAYS = 7
+CLIMATE_HISTORY_DAYS = 14
 
 
 # ============================================================
@@ -192,17 +202,12 @@ def extract_health_prediction(probabilities):
 
 # ============================================================
 # HELPER
-# CHECK VALID NASA VALUE
+# CHECK VALID CLIMATE VALUE
 # ============================================================
 
-def is_valid_nasa_value(value):
+def is_valid_climate_value(value):
     """
-    NASA POWER may return:
-        None
-        -999
-        -999.0
-
-    These values mean the data is unavailable.
+    Open-Meteo returns null when a value is unavailable.
     """
 
     if value is None:
@@ -224,17 +229,17 @@ def is_valid_nasa_value(value):
 
 # ============================================================
 # HELPER
-# CLEAN NASA VALUE
+# CLEAN CLIMATE VALUE
 # ============================================================
 
-def clean_nasa_value(value):
+def clean_climate_value(value):
     """
-    Convert NASA POWER value into float.
+    Convert a climate API value into a rounded float.
 
     Invalid values become None.
     """
 
-    if not is_valid_nasa_value(value):
+    if not is_valid_climate_value(value):
 
         return None
 
@@ -246,163 +251,208 @@ def clean_nasa_value(value):
 
 # ============================================================
 # HELPER
-# GET ONE DAY FROM NASA POWER
+# OPEN-METEO RESPONSE HELPERS
 # ============================================================
 
-def fetch_nasa_climate_for_date(
+def _open_meteo_url(start_date, end_date):
+    """Choose forecast or archive API for the requested date range."""
+
+    today = datetime.now().date()
+    if (
+        start_date >= today - timedelta(days=92)
+        and end_date <= today + timedelta(days=16)
+    ):
+        return OPEN_METEO_FORECAST_URL
+
+    return OPEN_METEO_ARCHIVE_URL
+
+
+def fetch_open_meteo_payload(
     latitude: float,
     longitude: float,
-    date_obj
+    start_date,
+    end_date,
+    include_current=False,
 ):
-    """
-    Fetch NASA POWER climate data for one date.
-
-    Returns:
-
-    {
-        "temperature_c": ...,
-        "rainfall_mm": ...,
-        "humidity_percent": ...,
-        "wind_speed_m_s": ...,
-        "solar_radiation_kwh_m2_day": ...
-    }
-
-    """
-
-    requested_date = date_obj.strftime(
-        "%Y%m%d"
-    )
-
-
-    # --------------------------------------------------------
-    # NASA POWER parameters
-    # --------------------------------------------------------
+    """Fetch local-time hourly and daily weather from Open-Meteo."""
 
     params = {
-
-        "parameters": (
-            "T2M,"
-            "PRECTOTCORR,"
-            "RH2M,"
-            "WS10M,"
-            "ALLSKY_SFC_SW_DWN"
-        ),
-
-        "community": "AG",
-
-        "longitude": longitude,
-
         "latitude": latitude,
-
-        "start": requested_date,
-
-        "end": requested_date,
-
-        "format": "JSON"
+        "longitude": longitude,
+        "hourly": OPEN_METEO_HOURLY_PARAMETERS,
+        "daily": OPEN_METEO_DAILY_PARAMETERS,
+        "timezone": CLIMATE_TIMEZONE,
+        "wind_speed_unit": "ms",
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
     }
-
-
-    # --------------------------------------------------------
-    # Request NASA POWER
-    # --------------------------------------------------------
+    if include_current:
+        params["current"] = (
+            "temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation"
+        )
 
     response = requests.get(
-        NASA_POWER_URL,
+        _open_meteo_url(start_date, end_date),
         params=params,
-        timeout=30
+        timeout=30,
     )
-
-
     response.raise_for_status()
+    return response.json()
 
 
-    nasa_data = response.json()
+def _average_valid(values):
+    values = [value for value in values if is_valid_climate_value(value)]
+    return sum(values) / len(values) if values else None
 
 
-    # --------------------------------------------------------
-    # Extract parameter data
-    # --------------------------------------------------------
-
-    parameter_data = (
-        nasa_data
-        .get("properties", {})
-        .get("parameter", {})
-    )
+def _sum_valid(values):
+    values = [value for value in values if is_valid_climate_value(value)]
+    return sum(values) if values else None
 
 
-    # --------------------------------------------------------
-    # Extract values
-    # --------------------------------------------------------
+def build_open_meteo_daily_records(payload):
+    """Convert Open-Meteo hourly/daily arrays into API-compatible records."""
 
-    temperature = (
-        parameter_data
-        .get("T2M", {})
-        .get(requested_date)
-    )
+    hourly = payload.get("hourly", {})
+    daily = payload.get("daily", {})
+    hourly_by_date = {}
 
+    for index, timestamp in enumerate(hourly.get("time", [])):
+        date_key = timestamp[:10]
+        hourly_by_date.setdefault(date_key, []).append({
+            "temperature_c": hourly.get("temperature_2m", [])[index],
+            "humidity_percent": hourly.get(
+                "relative_humidity_2m", []
+            )[index],
+            "wind_speed_m_s": hourly.get("wind_speed_10m", [])[index],
+            "rainfall_mm": hourly.get("precipitation", [])[index],
+            "shortwave_radiation_w_m2": hourly.get(
+                "shortwave_radiation", []
+            )[index],
+        })
 
-    rainfall = (
-        parameter_data
-        .get("PRECTOTCORR", {})
-        .get(requested_date)
-    )
+    records = []
+    daily_times = daily.get("time", [])
+    for index, date_key in enumerate(daily_times):
+        hours = hourly_by_date.get(date_key, [])
+        hourly_temperatures = [hour["temperature_c"] for hour in hours]
+        hourly_humidity = [hour["humidity_percent"] for hour in hours]
+        hourly_wind = [hour["wind_speed_m_s"] for hour in hours]
+        hourly_rainfall = [hour["rainfall_mm"] for hour in hours]
+        hourly_radiation = [
+            hour["shortwave_radiation_w_m2"] for hour in hours
+        ]
 
+        daily_mean_temperature = daily.get("temperature_2m_mean", [None])[index]
+        daily_max_temperature = daily.get("temperature_2m_max", [None])[index]
+        daily_min_temperature = daily.get("temperature_2m_min", [None])[index]
+        daily_rainfall = daily.get("precipitation_sum", [None])[index]
+        daily_wind_max = daily.get("wind_speed_10m_max", [None])[index]
+        daily_radiation = daily.get("shortwave_radiation_sum", [None])[index]
+        daily_et0 = daily.get("et0_fao_evapotranspiration", [None])[index]
 
-    humidity = (
-        parameter_data
-        .get("RH2M", {})
-        .get(requested_date)
-    )
-
-
-    wind_speed = (
-        parameter_data
-        .get("WS10M", {})
-        .get(requested_date)
-    )
-
-
-    solar_radiation = (
-        parameter_data
-        .get("ALLSKY_SFC_SW_DWN", {})
-        .get(requested_date)
-    )
-
-
-    # --------------------------------------------------------
-    # Clean values
-    # --------------------------------------------------------
-
-    climate = {
-
-        "temperature_c":
-            clean_nasa_value(
-                temperature
+        records.append({
+            "date": date_key,
+            "temperature_c": clean_climate_value(
+                daily_mean_temperature
+                if is_valid_climate_value(daily_mean_temperature)
+                else _average_valid(hourly_temperatures)
             ),
-
-        "rainfall_mm":
-            clean_nasa_value(
-                rainfall
+            "temperature_max_c": clean_climate_value(
+                daily_max_temperature
+                if is_valid_climate_value(daily_max_temperature)
+                else max(
+                    [value for value in hourly_temperatures
+                     if is_valid_climate_value(value)],
+                    default=None,
+                )
             ),
-
-        "humidity_percent":
-            clean_nasa_value(
-                humidity
+            "temperature_min_c": clean_climate_value(
+                daily_min_temperature
+                if is_valid_climate_value(daily_min_temperature)
+                else min(
+                    [value for value in hourly_temperatures
+                     if is_valid_climate_value(value)],
+                    default=None,
+                )
             ),
-
-        "wind_speed_m_s":
-            clean_nasa_value(
-                wind_speed
+            "rainfall_mm": clean_climate_value(
+                daily_rainfall
+                if is_valid_climate_value(daily_rainfall)
+                else _sum_valid(hourly_rainfall)
             ),
+            "humidity_percent": clean_climate_value(
+                _average_valid(hourly_humidity)
+            ),
+            "wind_speed_m_s": clean_climate_value(
+                _average_valid(hourly_wind)
+            ),
+            "wind_speed_max_m_s": clean_climate_value(daily_wind_max),
+            "solar_radiation_kwh_m2_day": clean_climate_value(
+                daily_radiation / 3.6
+                if is_valid_climate_value(daily_radiation)
+                else (
+                    _sum_valid(hourly_radiation) / 1000
+                    if _sum_valid(hourly_radiation) is not None
+                    else None
+                )
+            ),
+            "et0_mm": clean_climate_value(daily_et0),
+        })
 
-        "solar_radiation_kwh_m2_day":
-            clean_nasa_value(
-                solar_radiation
-            )
-    }
+    return records
 
+
+def fetch_open_meteo_climate_for_date(
+    latitude: float,
+    longitude: float,
+    date_obj,
+):
+    """Fetch the best available current or daily value for one date."""
+
+    payload = fetch_open_meteo_payload(
+        latitude=latitude,
+        longitude=longitude,
+        start_date=date_obj,
+        end_date=date_obj,
+        include_current=date_obj == datetime.now().date(),
+    )
+    records = build_open_meteo_daily_records(payload)
+    if not records:
+        return None
+
+    climate = records[0]
+    current = payload.get("current", {})
+    if current and date_obj == datetime.now().date():
+        climate["temperature_c"] = clean_climate_value(
+            current.get("temperature_2m")
+        )
+        climate["humidity_percent"] = clean_climate_value(
+            current.get("relative_humidity_2m")
+        )
+        climate["wind_speed_m_s"] = clean_climate_value(
+            current.get("wind_speed_10m")
+        )
 
     return climate
+
+
+def fetch_open_meteo_climate_window(
+    latitude: float,
+    longitude: float,
+    end_date,
+    days: int = CLIMATE_HISTORY_DAYS,
+):
+    """Fetch a multi-day Open-Meteo window for trend-based screening."""
+
+    start_date = end_date - timedelta(days=days - 1)
+    payload = fetch_open_meteo_payload(
+        latitude=latitude,
+        longitude=longitude,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    return build_open_meteo_daily_records(payload)
 
 
 # ============================================================
@@ -527,14 +577,14 @@ def get_latest_available_climate(
 
 
         print(
-            f"NASA POWER: checking "
+            f"Open-Meteo: checking "
             f"{candidate_date}"
         )
 
 
         try:
 
-            climate = fetch_nasa_climate_for_date(
+            climate = fetch_open_meteo_climate_for_date(
                 latitude=latitude,
                 longitude=longitude,
                 date_obj=candidate_date
@@ -553,9 +603,7 @@ def get_latest_available_climate(
         # Check whether data exists
         # ----------------------------------------------------
 
-        if has_meteorological_data(
-            climate
-        ):
+        if climate and has_meteorological_data(climate):
 
             data_delay_days = (
                 requested_date_obj
@@ -563,7 +611,9 @@ def get_latest_available_climate(
             ).days
 
 
-            if data_delay_days == 0:
+            if candidate_date > datetime.now().date():
+                data_status = "Forecast"
+            elif data_delay_days == 0:
 
                 data_status = "Current"
 
@@ -575,7 +625,7 @@ def get_latest_available_climate(
 
 
             print(
-                f"NASA POWER: data found for "
+                f"Open-Meteo: data found for "
                 f"{candidate_date}"
             )
 
@@ -602,11 +652,296 @@ def get_latest_available_climate(
     raise HTTPException(
         status_code=404,
         detail=(
-            "NASA POWER climate data is not available "
+            "Open-Meteo climate data is not available "
             f"for {requested_date} or the previous "
             f"{MAX_CLIMATE_LOOKBACK_DAYS} days."
         )
     )
+
+
+def _average(values):
+    values = [value for value in values if value is not None]
+    return round(sum(values) / len(values), 2) if values else None
+
+
+def _total(values):
+    values = [value for value in values if value is not None]
+    return round(sum(values), 2) if values else None
+
+
+def _max_consecutive(values, predicate):
+    longest = current = 0
+    for value in values:
+        if value is not None and predicate(value):
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+    return longest
+
+
+def build_stress_assessment(climate, history):
+    """Build explainable, tea-focused indicators from climate trends.
+
+    A single day's rainfall cannot establish plant water stress. The water
+    indicator therefore uses a 14-day rainfall window and dry-day streak;
+    the other indicators use short rolling windows to reduce noisy results.
+    """
+
+    ordered_history = history or [
+        {
+            "date": None,
+            "temperature_c": climate.get("temperature_c"),
+            "temperature_max_c": climate.get("temperature_max_c"),
+            "temperature_min_c": climate.get("temperature_min_c"),
+            "rainfall_mm": climate.get("rainfall_mm"),
+            "humidity_percent": climate.get("humidity_percent"),
+            "wind_speed_m_s": climate.get("wind_speed_m_s"),
+            "solar_radiation_kwh_m2_day": climate.get(
+                "solar_radiation_kwh_m2_day"
+            ),
+        }
+    ]
+    recent = ordered_history[-7:]
+    rainfall_values = [day.get("rainfall_mm") for day in ordered_history]
+    recent_rainfall = [day.get("rainfall_mm") for day in recent]
+    temperature_values = [day.get("temperature_c") for day in recent]
+    temperature_max_values = [
+        day.get("temperature_max_c") or day.get("temperature_c")
+        for day in recent
+    ]
+    humidity_values = [day.get("humidity_percent") for day in recent]
+    wind_values = [day.get("wind_speed_m_s") for day in recent]
+    solar_values = [
+        day.get("solar_radiation_kwh_m2_day") for day in recent
+    ]
+
+    mean_temperature = _average(temperature_values)
+    max_temperature = max(
+        [value for value in temperature_max_values if value is not None],
+        default=None,
+    )
+    rainfall_7d = _total(recent_rainfall)
+    rainfall_14d = _total(rainfall_values)
+    humidity_7d = _average(humidity_values)
+    wind_7d = _average(wind_values)
+    solar_7d = _average(solar_values)
+    dry_days_14d = sum(
+        value is not None and value < 1 for value in rainfall_values
+    )
+    dry_streak = _max_consecutive(
+        rainfall_values,
+        lambda value: value < 1,
+    )
+    latest_rainfall = climate.get("rainfall_mm")
+
+    # Tea heat screening: mean/max temperature and a 7-day window are used
+    # instead of treating one average temperature as a complete diagnosis.
+    if max_temperature is None and mean_temperature is None:
+        heat_stress = "Unknown"
+    elif (max_temperature is not None and max_temperature >= 35) or (
+        mean_temperature is not None and mean_temperature >= 30
+    ):
+        heat_stress = "High"
+    elif (max_temperature is not None and max_temperature >= 30) or (
+        mean_temperature is not None and mean_temperature >= 27
+    ):
+        heat_stress = "Medium"
+    else:
+        heat_stress = "Low"
+
+    # Water stress needs a persistent dry period. If the API returned fewer
+    # than seven days, avoid claiming High from a single dry day.
+    if rainfall_14d is None:
+        water_stress = "Unknown"
+    elif len(ordered_history) < 7:
+        water_stress = "Medium" if rainfall_14d < 2 else "Low"
+    elif rainfall_14d < 10 and dry_days_14d >= 7 and dry_streak >= 5:
+        water_stress = "High"
+    elif (
+        rainfall_14d < 25
+        or (rainfall_7d is not None and rainfall_7d < 5 and dry_streak >= 4)
+    ):
+        water_stress = "Medium"
+    else:
+        water_stress = "Low"
+
+    # Rainfall stress means excess rainfall/waterlogging risk, not lack of
+    # rainfall. It is intentionally separate from Water Stress.
+    if latest_rainfall is None and rainfall_7d is None:
+        rainfall_stress = "Unknown"
+    elif (
+        (latest_rainfall is not None and latest_rainfall >= 50)
+        or (rainfall_7d is not None and rainfall_7d >= 150)
+    ):
+        rainfall_stress = "High"
+    elif (
+        (latest_rainfall is not None and latest_rainfall >= 25)
+        or (rainfall_7d is not None and rainfall_7d >= 75)
+    ):
+        rainfall_stress = "Medium"
+    else:
+        rainfall_stress = "Low"
+
+    if humidity_7d is None:
+        humidity_stress = "Unknown"
+    elif humidity_7d >= 90 or any(
+        value is not None and value >= 95 for value in humidity_values
+    ):
+        humidity_stress = "High"
+    elif humidity_7d >= 80 or any(
+        value is not None and value >= 90 for value in humidity_values
+    ):
+        humidity_stress = "Medium"
+    else:
+        humidity_stress = "Low"
+
+    max_wind = max([value for value in wind_values if value is not None], default=None)
+    if wind_7d is None and max_wind is None:
+        wind_condition = "Unknown"
+    elif max_wind is not None and max_wind >= 8 or (
+        wind_7d is not None and wind_7d >= 5
+    ):
+        wind_condition = "High"
+    elif max_wind is not None and max_wind >= 5 or (
+        wind_7d is not None and wind_7d >= 3
+    ):
+        wind_condition = "Moderate"
+    else:
+        wind_condition = "Low"
+
+    if solar_7d is None:
+        solar_condition = "Unknown"
+    elif solar_7d < 3:
+        solar_condition = "Low"
+    elif solar_7d < 6:
+        solar_condition = "Moderate"
+    else:
+        solar_condition = "High"
+
+    stress_score_map = {"Low": 0, "Medium": 50, "High": 100, "Unknown": 25}
+    scored_indicators = [
+        heat_stress,
+        water_stress,
+        rainfall_stress,
+        humidity_stress,
+        wind_condition,
+    ]
+    climate_risk_score = round(
+        sum(stress_score_map.get(level, 25) for level in scored_indicators)
+        / len(scored_indicators),
+        2,
+    )
+    overall_climate_risk = (
+        "High" if climate_risk_score >= 70
+        else "Medium" if climate_risk_score >= 40
+        else "Low"
+    )
+
+    stress_levels = [heat_stress, water_stress, rainfall_stress, humidity_stress]
+    if "High" in stress_levels:
+        early_warning = "Immediate Risk"
+    elif "Medium" in stress_levels:
+        early_warning = "Monitor Conditions"
+    else:
+        early_warning = "No Immediate Risk"
+
+    history_days = len(ordered_history)
+    confidence = (
+        "High" if history_days >= 10
+        else "Medium" if history_days >= 7
+        else "Low"
+    )
+
+    details = {
+        "heat_stress": {
+            "status": heat_stress,
+            "value": mean_temperature,
+            "unit": "°C mean (7-day)",
+            "message": (
+                f"7-day mean {mean_temperature}°C; observed maximum "
+                f"{max_temperature}°C. Uses mean and maximum temperature."
+                if mean_temperature is not None and max_temperature is not None
+                else "Temperature data is unavailable."
+            ),
+        },
+        "water_stress": {
+            "status": water_stress,
+            "value": rainfall_14d,
+            "unit": "mm rainfall (14-day)",
+            "message": (
+                f"{rainfall_14d}mm accumulated over {history_days} available "
+                f"day(s), with {dry_streak} consecutive dry day(s)."
+                if rainfall_14d is not None
+                else "Rainfall history is unavailable."
+            ),
+        },
+        "rainfall_stress": {
+            "status": rainfall_stress,
+            "value": latest_rainfall,
+            "unit": "mm today",
+            "message": (
+                f"Today {latest_rainfall}mm; 7-day total {rainfall_7d}mm. "
+                "Measures excess-rain/waterlogging risk."
+                if latest_rainfall is not None and rainfall_7d is not None
+                else "Rainfall data is unavailable."
+            ),
+        },
+        "humidity_stress": {
+            "status": humidity_stress,
+            "value": humidity_7d,
+            "unit": "% mean (7-day)",
+            "message": (
+                f"7-day mean humidity {humidity_7d}%; high humidity can "
+                "increase disease pressure."
+                if humidity_7d is not None
+                else "Humidity data is unavailable."
+            ),
+        },
+        "wind_condition": {
+            "status": wind_condition,
+            "value": wind_7d,
+            "unit": "m/s mean (7-day)",
+            "message": (
+                f"7-day mean {wind_7d}m/s; maximum {max_wind}m/s."
+                if wind_7d is not None and max_wind is not None
+                else "Wind data is unavailable."
+            ),
+        },
+        "solar_condition": {
+            "status": solar_condition,
+            "value": solar_7d,
+            "unit": "kWh/m²/day mean (7-day)",
+            "message": (
+                f"7-day mean solar radiation {solar_7d}."
+                if solar_7d is not None
+                else "Solar radiation data is unavailable for this observation."
+            ),
+        },
+    }
+
+    return {
+        "heat_stress": heat_stress,
+        "water_stress": water_stress,
+        "rainfall_stress": rainfall_stress,
+        "humidity_stress": humidity_stress,
+        "wind_condition": wind_condition,
+        "solar_condition": solar_condition,
+        "climate_risk_score": climate_risk_score,
+        "overall_climate_risk": overall_climate_risk,
+        "early_warning": early_warning,
+        "details": details,
+        "data_quality": {
+            "available_days": history_days,
+            "requested_window_days": CLIMATE_HISTORY_DAYS,
+            "confidence": confidence,
+            "method": "Tea-focused rule-based screening using Open-Meteo trends",
+            "limitation": (
+                "Weather data estimates climate pressure; confirm water stress "
+                "with soil moisture, irrigation history and field observations."
+            ),
+        },
+    }
 
 
 # ============================================================
@@ -880,7 +1215,7 @@ def get_climate_data(
                 True,
 
             "source":
-                "NASA POWER",
+            "Open-Meteo",
 
             "location": {
 
@@ -924,7 +1259,7 @@ def get_climate_data(
         raise HTTPException(
             status_code=502,
             detail=(
-                "NASA POWER API request failed: "
+                "Open-Meteo API request failed: "
                 f"{str(e)}"
             )
         )
@@ -1092,7 +1427,7 @@ async def assess_plantation(
 
 
         # ====================================================
-        # 7. GET NASA POWER CLIMATE DATA
+        # 7. GET OPEN-METEO CLIMATE DATA
         #
         # IMPORTANT:
         # Automatically searches previous dates when the
@@ -1146,231 +1481,33 @@ async def assess_plantation(
 
 
         # ====================================================
-        # 9. HEAT STRESS
+        # 9. TEA-FOCUSED MULTI-DAY STRESS ASSESSMENT
         # ====================================================
 
-        if temperature is None:
-
-            heat_stress = "Unknown"
-
-        elif temperature >= 30:
-
-            heat_stress = "High"
-
-        elif temperature >= 27:
-
-            heat_stress = "Medium"
-
-        else:
-
-            heat_stress = "Low"
-
-
-        # ====================================================
-        # 10. WATER STRESS
-        # ====================================================
-
-        if rainfall is None:
-
-            water_stress = "Unknown"
-
-        elif rainfall < 2:
-
-            water_stress = "High"
-
-        elif rainfall < 10:
-
-            water_stress = "Medium"
-
-        else:
-
-            water_stress = "Low"
-
-
-        # ====================================================
-        # 11. RAINFALL STRESS
-        # ====================================================
-
-        if rainfall is None:
-
-            rainfall_stress = "Unknown"
-
-        elif rainfall > 50:
-
-            rainfall_stress = "High"
-
-        elif rainfall > 25:
-
-            rainfall_stress = "Medium"
-
-        else:
-
-            rainfall_stress = "Low"
-
-
-        # ====================================================
-        # 12. HUMIDITY STRESS
-        # ====================================================
-
-        if humidity is None:
-
-            humidity_stress = "Unknown"
-
-        elif humidity >= 90:
-
-            humidity_stress = "High"
-
-        elif humidity >= 80:
-
-            humidity_stress = "Medium"
-
-        else:
-
-            humidity_stress = "Low"
-
-
-        # ====================================================
-        # 13. WIND CONDITION
-        # ====================================================
-
-        if wind_speed is None:
-
-            wind_condition = "Unknown"
-
-        elif wind_speed >= 5:
-
-            wind_condition = "High"
-
-        elif wind_speed >= 2:
-
-            wind_condition = "Moderate"
-
-        else:
-
-            wind_condition = "Low"
-
-
-        # ====================================================
-        # 14. SOLAR RADIATION CONDITION
-        # ====================================================
-
-        if solar_radiation is None:
-
-            solar_condition = "Unknown"
-
-        elif solar_radiation < 3:
-
-            solar_condition = "Low"
-
-        elif solar_radiation < 6:
-
-            solar_condition = "Moderate"
-
-        else:
-
-            solar_condition = "High"
-
-
-        # ====================================================
-        # 15. CLIMATE RISK SCORE
-        # ====================================================
-
-        stress_score_map = {
-
-            "Low": 0,
-
-            "Medium": 50,
-
-            "High": 100,
-
-            "Unknown": 25
-        }
-
-
-        stress_scores = [
-
-            stress_score_map.get(
-                heat_stress,
-                25
-            ),
-
-            stress_score_map.get(
-                water_stress,
-                25
-            ),
-
-            stress_score_map.get(
-                rainfall_stress,
-                25
-            ),
-
-            stress_score_map.get(
-                humidity_stress,
-                25
+        try:
+            data_date = datetime.strptime(
+                climate_result["data_date"], "%Y-%m-%d"
+            ).date()
+            climate_history = fetch_open_meteo_climate_window(
+                latitude=latitude,
+                longitude=longitude,
+                end_date=data_date,
             )
-        ]
+        except requests.RequestException:
+            # The one-day result remains usable; the response will mark the
+            # assessment as lower confidence through its shorter window.
+            climate_history = []
 
-
-        climate_risk_score = round(
-
-            sum(stress_scores)
-            / len(stress_scores),
-
-            2
-        )
-
-
-        # ====================================================
-        # 16. OVERALL CLIMATE RISK
-        # ====================================================
-
-        if climate_risk_score >= 70:
-
-            overall_climate_risk = "High"
-
-        elif climate_risk_score >= 40:
-
-            overall_climate_risk = "Medium"
-
-        else:
-
-            overall_climate_risk = "Low"
-
-
-        # ====================================================
-        # 17. EARLY WARNING
-        # ====================================================
-
-        stress_levels = [
-
-            heat_stress,
-
-            water_stress,
-
-            rainfall_stress,
-
-            humidity_stress
-        ]
-
-
-        if "High" in stress_levels:
-
-            early_warning = (
-                "Immediate Risk"
-            )
-
-        elif "Medium" in stress_levels:
-
-            early_warning = (
-                "Monitor Conditions"
-            )
-
-        else:
-
-            early_warning = (
-                "No Immediate Risk"
-            )
-
+        stress_assessment = build_stress_assessment(climate, climate_history)
+        heat_stress = stress_assessment["heat_stress"]
+        water_stress = stress_assessment["water_stress"]
+        rainfall_stress = stress_assessment["rainfall_stress"]
+        humidity_stress = stress_assessment["humidity_stress"]
+        wind_condition = stress_assessment["wind_condition"]
+        solar_condition = stress_assessment["solar_condition"]
+        climate_risk_score = stress_assessment["climate_risk_score"]
+        overall_climate_risk = stress_assessment["overall_climate_risk"]
+        early_warning = stress_assessment["early_warning"]
 
         # ====================================================
         # 18. RECOMMENDATIONS
@@ -1605,7 +1742,7 @@ async def assess_plantation(
             "climate": {
 
                 "source":
-                    "NASA POWER",
+                    "Open-Meteo",
 
                 "requested_date":
                     date,
@@ -1628,6 +1765,12 @@ async def assess_plantation(
                 "temperature_c":
                     temperature,
 
+                "temperature_max_c":
+                    climate.get("temperature_max_c"),
+
+                "temperature_min_c":
+                    climate.get("temperature_min_c"),
+
                 "rainfall_mm":
                     rainfall,
 
@@ -1638,7 +1781,16 @@ async def assess_plantation(
                     wind_speed,
 
                 "solar_radiation_kwh_m2_day":
-                    solar_radiation
+                    solar_radiation,
+
+                "et0_mm":
+                    climate.get("et0_mm"),
+
+                "history_days_available":
+                    stress_assessment["data_quality"]["available_days"],
+
+                "history_window_days":
+                    CLIMATE_HISTORY_DAYS
             },
 
 
@@ -1673,7 +1825,13 @@ async def assess_plantation(
                     overall_climate_risk,
 
                 "early_warning":
-                    early_warning
+                    early_warning,
+
+                "details":
+                    stress_assessment["details"],
+
+                "data_quality":
+                    stress_assessment["data_quality"]
             },
 
 
@@ -1696,7 +1854,7 @@ async def assess_plantation(
 
 
     # ========================================================
-    # NASA POWER REQUEST ERROR
+    # OPEN-METEO REQUEST ERROR
     # ========================================================
 
     except requests.RequestException as e:
@@ -1706,7 +1864,7 @@ async def assess_plantation(
             status_code=502,
 
             detail=(
-                "NASA POWER API request failed: "
+                "Open-Meteo API request failed: "
                 f"{str(e)}"
             )
         )
