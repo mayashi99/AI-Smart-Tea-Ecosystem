@@ -141,34 +141,6 @@ function PlantDensity() {
           </div>
 
           <div className="grid gap-2">
-            <label className="text-sm font-bold text-lime-950" htmlFor="row-spacing">
-              Row Spacing
-            </label>
-            <input
-              aria-readonly="true"
-              className={`${fieldClass} cursor-not-allowed bg-stone-100 font-bold`}
-              id="row-spacing"
-              readOnly
-              type="text"
-              value={`${ROW_SPACING_METERS} m`}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label className="text-sm font-bold text-lime-950" htmlFor="plant-spacing">
-              Plant Spacing
-            </label>
-            <input
-              aria-readonly="true"
-              className={`${fieldClass} cursor-not-allowed bg-stone-100 font-bold`}
-              id="plant-spacing"
-              readOnly
-              type="text"
-              value={`${PLANT_SPACING_METERS} m`}
-            />
-          </div>
-
-          <div className="grid gap-2">
             <label className="text-sm font-bold text-lime-950" htmlFor="plantation-zone">
               Plantation Zone
             </label>
