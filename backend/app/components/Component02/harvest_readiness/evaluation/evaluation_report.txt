@@ -1,0 +1,33 @@
+HARVEST READINESS - MODEL EVALUATION REPORT
+================================================
+
+Model: /Users/gayan/Desktop/SLIIT SE/RESEARCH/Project/AI-Smart-Tea-Ecosystem/backend/app/components/Component02/harvest_readiness/runs/harvest_readiness_yolo11n_50epochs/weights/best.pt
+Test images: 254
+Correct predictions: 250
+Incorrect predictions: 4
+Accuracy: 0.9843 (98.43%)
+Macro Precision: 0.9847
+Macro Recall: 0.9838
+Macro F1-score: 0.9842
+
+PER-CLASS METRICS
+------------------------------------------------
+
+Harvest_Not_Ready
+  Precision: 0.9916
+  Recall:    0.9752
+  F1-score:  0.9833
+  Support:   121.0
+
+Harvest_Ready
+  Precision: 0.9778
+  Recall:    0.9925
+  F1-score:  0.9851
+  Support:   133.0
+
+CONFUSION MATRIX
+Class order: ['Harvest_Not_Ready', 'Harvest_Ready']
+Rows = actual class; columns = predicted class
+[[118, 3], [1, 132]]
+
+Note: Results are based on the saved test-set evaluation.

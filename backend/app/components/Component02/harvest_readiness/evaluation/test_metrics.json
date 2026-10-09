@@ -1,0 +1,54 @@
+{
+    "model_path": "/Users/gayan/Desktop/SLIIT SE/RESEARCH/Project/AI-Smart-Tea-Ecosystem/backend/app/components/Component02/harvest_readiness/runs/harvest_readiness_yolo11n_50epochs/weights/best.pt",
+    "test_directory": "/Users/gayan/Desktop/SLIIT SE/RESEARCH/Project/AI-Smart-Tea-Ecosystem/backend/app/components/Component02/harvest_readiness/data/test",
+    "test_image_count": 254,
+    "class_names": [
+        "Harvest_Not_Ready",
+        "Harvest_Ready"
+    ],
+    "image_size": 224,
+    "batch_size": 8,
+    "device_used": "mps",
+    "accuracy": 0.984251968503937,
+    "accuracy_percent": 98.4251968503937,
+    "macro_precision": 0.98468720821662,
+    "macro_recall": 0.9838439072888834,
+    "macro_f1": 0.9842039800995024,
+    "per_class": {
+        "Harvest_Not_Ready": {
+            "precision": 0.9915966386554622,
+            "recall": 0.9752066115702479,
+            "f1-score": 0.9833333333333333,
+            "support": 121.0
+        },
+        "Harvest_Ready": {
+            "precision": 0.9777777777777777,
+            "recall": 0.9924812030075187,
+            "f1-score": 0.9850746268656716,
+            "support": 133.0
+        },
+        "accuracy": 0.984251968503937,
+        "macro avg": {
+            "precision": 0.98468720821662,
+            "recall": 0.9838439072888834,
+            "f1-score": 0.9842039800995024,
+            "support": 254.0
+        },
+        "weighted avg": {
+            "precision": 0.9843607784321078,
+            "recall": 0.984251968503937,
+            "f1-score": 0.9842451130175892,
+            "support": 254.0
+        }
+    },
+    "confusion_matrix": [
+        [
+            118,
+            3
+        ],
+        [
+            1,
+            132
+        ]
+    ]
+}
