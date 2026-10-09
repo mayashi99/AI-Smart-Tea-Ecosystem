@@ -51,9 +51,10 @@ function Home() {
             <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">Intelligent tools for better cultivation</p>
             <h1 className="text-4xl font-black leading-tight tracking-tight sm:text-6xl">Smarter decisions for every tea plantation.</h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-emerald-100/75 sm:text-lg">Plan plantation density and assess crop health with practical AI-powered tools designed for Sri Lankan tea cultivation.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 text-sm font-black text-emerald-950 transition hover:bg-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-300/30" to="/plantation-health">Explore plantation health <ArrowIcon /></Link>
               <Link className="inline-flex h-12 items-center justify-center rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/plant-density">Plan plant density</Link>
+              <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/harvest-readiness">Check harvest readiness <ArrowIcon /></Link>
             </div>
           </div>
           <div className="relative hidden min-h-72 lg:block">

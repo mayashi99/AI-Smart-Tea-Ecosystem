@@ -1,11 +1,13 @@
 
+from functools import lru_cache
 from pathlib import Path
 
 import torch
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
 from ultralytics import YOLO
 
 app = FastAPI(title="Tea Harvest Readiness API")
+router = APIRouter(tags=["Harvest Readiness"])
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -17,11 +19,15 @@ MODEL_PATH = (
     / "best.pt"
 )
 
-if not MODEL_PATH.is_file():
-    raise FileNotFoundError(f"Model not found: {MODEL_PATH}")
-
 device = "mps" if torch.backends.mps.is_available() else "cpu"
-model = YOLO(str(MODEL_PATH))
+
+
+@lru_cache(maxsize=1)
+def get_model():
+    # A missing harvest model must not prevent the health API from starting.
+    if not MODEL_PATH.is_file():
+        raise HTTPException(status_code=503, detail="Harvest readiness model is unavailable.")
+    return YOLO(str(MODEL_PATH))
 
 
 @app.get("/")
@@ -29,7 +35,7 @@ def home():
     return {"message": "Tea Harvest Readiness API is running"}
 
 
-@app.post("/predict")
+@router.post("/predict")
 async def predict(file: UploadFile = File(...)):
     allowed_types = {"image/jpeg", "image/png", "image/webp"}
 
@@ -52,10 +58,11 @@ async def predict(file: UploadFile = File(...)):
 
     try:
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    except (UnidentifiedImageError, OSError):
+    except (UnidentifiedImageError, OSError, ImportError):
         raise HTTPException(status_code=400, detail="Invalid image file.")
 
     try:
+        model = get_model()
         results = model.predict(
             source=image,
             imgsz=224,
@@ -89,3 +96,7 @@ async def predict(file: UploadFile = File(...)):
             status_code=500,
             detail=f"Prediction failed: {str(exc)}"
         ) from exc
+
+
+# Retain the standalone API for command-line clients; the frontend uses app.main.
+app.include_router(router)

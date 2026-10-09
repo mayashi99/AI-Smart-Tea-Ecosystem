@@ -30,7 +30,7 @@ function LeafMark({ className = '' }) {
 }
 
 const navigationClass = ({ isActive }) =>
-  `rounded-full px-5 py-2.5 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-emerald-500/20 ${
+  `whitespace-nowrap rounded-full px-3 py-2.5 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-emerald-500/20 sm:px-5 ${
     isActive
       ? 'bg-emerald-700 text-white shadow-md shadow-emerald-900/15'
       : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-800'
@@ -39,7 +39,7 @@ const navigationClass = ({ isActive }) =>
 function Navbar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-emerald-950/10 bg-white/95 backdrop-blur" aria-label="Main navigation">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5 px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-5 px-4 py-4 sm:px-6 lg:px-8">
         <Link className="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20" to="/">
           <span className="rounded-2xl bg-emerald-700 p-3 text-white shadow-md shadow-emerald-900/15"><LeafMark /></span>
           <span>
@@ -47,9 +47,10 @@ function Navbar() {
             <span className="block text-xl font-black tracking-tight text-slate-950">Tea Ecosystem</span>
           </span>
         </Link>
-        <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1" role="list">
+        <div className="flex flex-wrap items-center gap-1 rounded-3xl border border-slate-200 bg-slate-50 p-1 sm:rounded-full" role="list">
           <NavLink className={navigationClass} role="listitem" to="/plant-density">Density</NavLink>
           <NavLink className={navigationClass} role="listitem" to="/plantation-health">Health</NavLink>
+          <NavLink className={navigationClass} role="listitem" to="/harvest-readiness">Harvest Readiness</NavLink>
         </div>
       </div>
     </nav>

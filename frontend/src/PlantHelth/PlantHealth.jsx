@@ -272,15 +272,19 @@ function PlantHealth() {
       }
       if (!response.ok) {
         const detail = typeof payload?.detail === 'string' ? payload.detail : ''
-        throw new Error(detail)
+        throw new Error(response.status === 404
+          ? 'Plantation Health endpoint not found. Start the combined backend with: python -m uvicorn app.main:app --reload --port 8000'
+          : detail || `Plantation assessment failed (HTTP ${response.status}). Please try again.`)
       }
       if (!payload || typeof payload !== 'object' || payload.success === false || !payload.image_analysis || !payload.climate || !payload.stress_assessment) {
         throw new Error('The API returned an incomplete assessment.')
       }
       setResult({ ...payload, selectedZone: TEA_ZONES[zone].label, selectedLocationName: locationName })
-    } catch {
+    } catch (err) {
       setResult(null)
-      setError('Unable to connect to the Plantation Health API. Please make sure the FastAPI backend is running on port 8000.')
+      setError(err instanceof TypeError
+        ? 'Unable to connect to the Plantation Health API. Please make sure the combined backend is running on port 8000.'
+        : err.message || 'Plantation assessment failed. Please try again.')
     } finally {
       setLoading(false)
     }
