@@ -31,6 +31,32 @@ select {
   padding: 32px;
 }
 
+.page-nav {
+  display: flex;
+  gap: 8px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 18px 32px 0;
+}
+
+.page-nav a {
+  padding: 10px 15px;
+  border: 1px solid #cfd9d0;
+  border-radius: 8px;
+  background: #fff;
+  color: #435148;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.page-nav a.active,
+.page-nav a:hover {
+  border-color: #176f4d;
+  background: #176f4d;
+  color: #fff;
+}
+
 .screen {
   display: grid;
   place-items: center;
@@ -254,6 +280,10 @@ td {
   .dashboard,
   .screen {
     padding: 18px;
+  }
+
+  .page-nav {
+    padding: 14px 18px 0;
   }
 
   .dashboard-header,
