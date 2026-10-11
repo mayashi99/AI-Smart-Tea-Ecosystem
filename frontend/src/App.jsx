@@ -10,8 +10,11 @@ import {
   YAxis,
 } from 'recharts'
 import './styles.css'
+import ExportDemandPage from './ExportDemandPage'
+import CombinedAuctionPriceForecast from './CombinedAuctionPriceForecast'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/component04/train-output'
+const isExportDemandPage = window.location.pathname.replace(/\/$/, '') === '/export-demand'
 
 const formatNumber = (value) =>
   new Intl.NumberFormat('en-US', {
@@ -31,6 +34,7 @@ function App() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (isExportDemandPage) return
     fetch(API_URL)
       .then((response) => {
         if (!response.ok) {
@@ -93,6 +97,18 @@ function App() {
       .reverse()
   }, [dashboard, selectedZone])
 
+  if (isExportDemandPage) {
+    return (
+      <>
+        <nav className="page-nav" aria-label="Forecast pages">
+          <a href="/">Auction Price</a>
+          <a className="active" href="/export-demand">Export Demand</a>
+        </nav>
+        <ExportDemandPage />
+      </>
+    )
+  }
+
   if (status === 'loading') {
     return <main className="screen">Loading train output...</main>
   }
@@ -109,7 +125,12 @@ function App() {
   }
 
   return (
-    <main className="dashboard">
+    <>
+      <nav className="page-nav" aria-label="Forecast pages">
+        <a className="active" href="/">Auction Price</a>
+        <a href="/export-demand">Export Demand</a>
+      </nav>
+      <main className="dashboard">
       <header className="dashboard-header">
         <div>
           <p className="eyebrow">Component 04</p>
@@ -267,7 +288,11 @@ function App() {
           </table>
         </div>
       </section>
-    </main>
+
+      <CombinedAuctionPriceForecast />
+
+      </main>
+    </>
   )
 }
 

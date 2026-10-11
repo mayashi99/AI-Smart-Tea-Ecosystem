@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -17,6 +18,14 @@ TEST_COMPARISON_FILE = DATA_DIR / "auction_price_lstm_test_comparison.csv"
 
 TRAIN_FILE = DATA_DIR / "auction_price_lstm_train.csv"
 TEST_FILE = DATA_DIR / "auction_price_lstm_test.csv"
+EXPORT_METRICS_FILE = DATA_DIR / "export_demand_metrics.json"
+EXPORT_FORECAST_FILE = DATA_DIR / "export_demand_forecast.csv"
+EXPORT_TEST_FILE = DATA_DIR / "export_demand_test_predictions.csv"
+EXPORT_COMPARISON_FILE = DATA_DIR / "export_demand_model_comparison.csv"
+COMBINED_PRICE_METRICS_FILE = DATA_DIR / "combined_auction_price_metrics.json"
+COMBINED_PRICE_FORECAST_FILE = DATA_DIR / "combined_auction_price_forecast.csv"
+COMBINED_PRICE_TEST_FILE = DATA_DIR / "combined_auction_price_test_predictions.csv"
+COMBINED_PRICE_COMPARISON_FILE = DATA_DIR / "combined_auction_price_model_comparison.csv"
 
 def read_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
@@ -120,3 +129,43 @@ def get_train_output():
         "test_comparison": test_comparison_df.round(2).to_dict(orient="records"),
         "future_forecast": forecast_df.round(2).to_dict(orient="records"),
     }
+
+
+@router.get("/export-demand")
+def get_export_demand():
+    """Return monthly export volume history, holdout predictions, and forecast."""
+    if not EXPORT_METRICS_FILE.exists():
+        raise HTTPException(status_code=404, detail="Export demand model is not trained yet")
+    try:
+        metrics = json.loads(EXPORT_METRICS_FILE.read_text(encoding="utf-8"))
+        forecast = read_csv(EXPORT_FORECAST_FILE)
+        test_predictions = read_csv(EXPORT_TEST_FILE)
+        model_comparison = read_csv(EXPORT_COMPARISON_FILE)
+        monthly = read_csv(DATA_DIR / "export_demand_monthly.csv")
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not read export demand outputs: {exc}") from exc
+    return {
+        "metrics": metrics,
+        "history": monthly.to_dict(orient="records"),
+        "test_predictions": test_predictions.to_dict(orient="records"),
+        "model_comparison": model_comparison.to_dict(orient="records"),
+        "forecast": forecast.to_dict(orient="records"),
+    }
+
+
+@router.get("/combined-auction-price")
+def get_combined_auction_price():
+    """Return best-model monthly price forecast from the combined workbook."""
+    if not COMBINED_PRICE_METRICS_FILE.exists():
+        raise HTTPException(status_code=404, detail="Combined auction price model is not trained yet")
+    try:
+        metrics = json.loads(COMBINED_PRICE_METRICS_FILE.read_text(encoding="utf-8"))
+        return {
+            "metrics": metrics,
+            "history": read_csv(DATA_DIR / "combined_auction_price_monthly.csv").to_dict(orient="records"),
+            "test_predictions": read_csv(COMBINED_PRICE_TEST_FILE).to_dict(orient="records"),
+            "model_comparison": read_csv(COMBINED_PRICE_COMPARISON_FILE).to_dict(orient="records"),
+            "forecast": read_csv(COMBINED_PRICE_FORECAST_FILE).to_dict(orient="records"),
+        }
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not read combined auction price outputs: {exc}") from exc
