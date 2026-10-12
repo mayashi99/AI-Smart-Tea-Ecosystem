@@ -253,6 +253,163 @@ h2 {
   overflow-x: auto;
 }
 
+.advisor-form-panel {
+  padding: 22px;
+}
+
+.advisor-form {
+  display: grid;
+  gap: 18px;
+}
+
+.advisor-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.advisor-form label span {
+  color: #435148;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.advisor-form textarea,
+.advisor-form input {
+  width: 100%;
+  border: 1px solid #cfd9d0;
+  border-radius: 8px;
+  background: #fff;
+  color: #17211b;
+  padding: 12px;
+}
+
+.advisor-form textarea {
+  resize: vertical;
+}
+
+.advisor-input-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.advisor-submit {
+  justify-self: start;
+  border: 0;
+  border-radius: 8px;
+  background: #176f4d;
+  color: #fff;
+  padding: 12px 18px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.advisor-submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.advisor-note,
+.advisor-reason,
+.evidence-item small {
+  color: #64736a;
+}
+
+.advisor-note {
+  margin: 14px 0 0;
+  font-size: 0.88rem;
+}
+
+.advisor-error {
+  padding: 18px;
+  color: #9d2e34;
+}
+
+.advisor-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px;
+}
+
+.advisor-summary p:last-child {
+  margin-bottom: 0;
+}
+
+.advisor-recommendations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.advisor-card {
+  padding: 20px;
+}
+
+.advisor-card p:last-child {
+  margin-bottom: 0;
+}
+
+.advisor-action {
+  color: #233027;
+  line-height: 1.55;
+}
+
+.advisor-reason {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.citation-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.citation-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #e8f2eb;
+  color: #176f4d;
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.evidence-list {
+  display: grid;
+  gap: 0;
+}
+
+.evidence-item {
+  padding: 18px 20px;
+  border-top: 1px solid #edf1ed;
+}
+
+.evidence-item > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.evidence-item h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.evidence-item p {
+  margin: 10px 0 6px;
+  color: #435148;
+  line-height: 1.55;
+}
+
+.evidence-item small {
+  overflow-wrap: anywhere;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -313,6 +470,16 @@ td {
 
   .model-grid {
     grid-template-columns: 1fr;
+  }
+
+  .advisor-recommendations,
+  .advisor-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .advisor-summary {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .chart-wrap {

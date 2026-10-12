@@ -3,9 +3,18 @@ from pathlib import Path
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+
+from app.services.component04.export_advisor import make_recommendations
 
 
 router = APIRouter(prefix="/api/component04", tags=["component04"])
+
+
+class ExportAdvisorRequest(BaseModel):
+    question: str = Field(min_length=5, max_length=1200)
+    destination_country: str | None = Field(default=None, max_length=100)
+    business_goal: str | None = Field(default=None, max_length=300)
 
 ML_DIR = Path(__file__).resolve().parents[2] / "ml"
 DATA_DIR = ML_DIR / "datasets" / "processed" / "component04"
@@ -169,3 +178,17 @@ def get_combined_auction_price():
         }
     except (ValueError, OSError) as exc:
         raise HTTPException(status_code=500, detail=f"Could not read combined auction price outputs: {exc}") from exc
+
+
+@router.post("/export-advisor")
+def post_export_advisor(request: ExportAdvisorRequest):
+    """Generate export planning recommendations grounded in local data and RAG documents."""
+    try:
+        return make_recommendations(
+            request.question,
+            {"destination_country": request.destination_country, "business_goal": request.business_goal},
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=f"Could not prepare grounded advice: {exc}") from exc

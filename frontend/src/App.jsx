@@ -10,11 +10,13 @@ import {
   YAxis,
 } from 'recharts'
 import './styles.css'
-import ExportDemandPage from './ExportDemandPage'
-import CombinedAuctionPriceForecast from './CombinedAuctionPriceForecast'
+import ExportDemandPage from './pages/component04/ExportDemandPage'
+import CombinedAuctionPriceForecast from './pages/component04/CombinedAuctionPriceForecast'
+import ExportAdvisorPage from './pages/component04/ExportAdvisorPage'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/component04/train-output'
 const isExportDemandPage = window.location.pathname.replace(/\/$/, '') === '/export-demand'
+const isExportAdvisorPage = window.location.pathname.replace(/\/$/, '') === '/export-advisor'
 
 const formatNumber = (value) =>
   new Intl.NumberFormat('en-US', {
@@ -34,7 +36,7 @@ function App() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (isExportDemandPage) return
+    if (isExportDemandPage || isExportAdvisorPage) return
     fetch(API_URL)
       .then((response) => {
         if (!response.ok) {
@@ -103,8 +105,22 @@ function App() {
         <nav className="page-nav" aria-label="Forecast pages">
           <a href="/">Auction Price</a>
           <a className="active" href="/export-demand">Export Demand</a>
+          <a href="/export-advisor">Export Advisor</a>
         </nav>
         <ExportDemandPage />
+      </>
+    )
+  }
+
+  if (isExportAdvisorPage) {
+    return (
+      <>
+        <nav className="page-nav" aria-label="Component 04 pages">
+          <a href="/">Auction Price</a>
+          <a href="/export-demand">Export Demand</a>
+          <a className="active" href="/export-advisor">Export Advisor</a>
+        </nav>
+        <ExportAdvisorPage />
       </>
     )
   }
@@ -129,6 +145,7 @@ function App() {
       <nav className="page-nav" aria-label="Forecast pages">
         <a className="active" href="/">Auction Price</a>
         <a href="/export-demand">Export Demand</a>
+        <a href="/export-advisor">Export Advisor</a>
       </nav>
       <main className="dashboard">
       <header className="dashboard-header">
