@@ -156,10 +156,13 @@ def _fit_for_validation(values: np.ndarray, dates: pd.Series, config: ModelConfi
     all_scaled = scaler.transform(values.reshape(-1, 1)).ravel()
     X_all, y_all = make_supervised(all_scaled, dates, config.lookback)
     val_start = cut - config.lookback
-    model, _ = build_regressor(config, MODEL_DIR / f"{name}_validation.keras")
+    checkpoint = MODEL_DIR / f"{name}_validation.keras"
+    model, _ = build_regressor(config, checkpoint)
     if tf is not None: model.fit(X_fit, y_fit, X_all[val_start:], y_all[val_start:])
     else: model.fit(X_fit, y_fit)
     pred = scaler.inverse_transform(model.predict(X_all[val_start:])).ravel()
+    # Validation checkpoints are temporary; only final per-zone models are artifacts.
+    checkpoint.unlink(missing_ok=True)
     return model, scaler, val_values, pred
 
 
