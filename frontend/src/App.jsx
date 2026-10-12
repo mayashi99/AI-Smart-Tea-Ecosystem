@@ -8,9 +8,9 @@ import {
 } from 'react-router-dom'
 
 import Home from './Home/Home'
-import PlantDensity from './PlantDensity/PlantDensity'
-import PlantHealth from './PlantHelth/PlantHealth'
-import HarvestReadiness from './HarvestReadiness/HarvestReadiness'
+import PlantDensity from './components/component2/PlantDensity/PlantDensity'
+import PlantHealth from './components/component2/PlantHelth/PlantHealth'
+import HarvestReadiness from './components/component2/HarvestReadiness/HarvestReadiness'
 import Navbar from './components/Navbar'
 
 function NormalizePath() {
