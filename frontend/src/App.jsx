@@ -11,6 +11,7 @@ import Home from './Home/Home'
 import PlantDensity from './components/component2/PlantDensity/PlantDensity'
 import PlantHealth from './components/component2/PlantHelth/PlantHealth'
 import HarvestReadiness from './components/component2/HarvestReadiness/HarvestReadiness'
+import YieldPrediction from './components/component2/yield prediction/YieldPrediction'
 import Navbar from './components/Navbar'
 
 function NormalizePath() {
@@ -53,6 +54,10 @@ function App() {
         <Route
           path="/harvest-readiness"
           element={<HarvestReadiness />}
+        />
+        <Route
+          path="/yield-prediction"
+          element={<YieldPrediction />}
         />
       </Routes>
     </BrowserRouter>

@@ -1,8 +1,14 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.components.Component02.api import router as component02_router
-from app.components.Component02.harvest_readiness.api import router as harvest_router
+from app.components.Component02.harvest_readiness.api import (
+    router as harvest_router,
+)
+from app.components.Component02.expected_yield_prediction.api import (
+    router as expected_yield_router,
+)
 
 
 # ============================================================
@@ -11,8 +17,13 @@ from app.components.Component02.harvest_readiness.api import router as harvest_r
 
 app = FastAPI(
     title="AI Smart Tea Ecosystem API",
-    version="1.0.0"
+    version="1.0.0",
 )
+
+
+# ============================================================
+# CORS CONFIGURATION
+# ============================================================
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,11 +39,27 @@ app.add_middleware(
 
 
 # ============================================================
-# COMPONENT 02 - PLANTATION HEALTH
+# COMPONENT 02 - EXISTING PLANTATION HEALTH API
 # ============================================================
 
 app.include_router(component02_router)
-app.include_router(harvest_router, prefix="/component02/harvest-readiness")
+
+
+# ============================================================
+# COMPONENT 02 - EXISTING HARVEST READINESS API
+# ============================================================
+
+app.include_router(
+    harvest_router,
+    prefix="/component02/harvest-readiness",
+)
+
+
+# ============================================================
+# COMPONENT 02 - EXPECTED YIELD PREDICTION API
+# ============================================================
+
+app.include_router(expected_yield_router)
 
 
 # ============================================================
@@ -43,5 +70,5 @@ app.include_router(harvest_router, prefix="/component02/harvest-readiness")
 def root():
     return {
         "message": "AI Smart Tea Ecosystem API",
-        "status": "running"
+        "status": "running",
     }

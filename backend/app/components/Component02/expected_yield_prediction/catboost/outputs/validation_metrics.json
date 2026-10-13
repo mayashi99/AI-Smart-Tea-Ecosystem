@@ -1,0 +1,13 @@
+{
+    "model": "CatBoost",
+    "target": "kg_per_Acre",
+    "train_years": "2016-2023",
+    "validation_year": 2024,
+    "train_rows": 4608,
+    "validation_rows": 576,
+    "best_iteration": 45,
+    "MAE": 9.019650061300442,
+    "RMSE": 10.97907340825776,
+    "R2": 0.7710892177744665,
+    "MAPE_percent": 8.341001330252421
+}

@@ -51,6 +51,7 @@ function Navbar() {
           <NavLink className={navigationClass} role="listitem" to="/plant-density">Density</NavLink>
           <NavLink className={navigationClass} role="listitem" to="/plantation-health">Health</NavLink>
           <NavLink className={navigationClass} role="listitem" to="/harvest-readiness">Harvest Readiness</NavLink>
+          <NavLink className={navigationClass} role="listitem" to="/yield-prediction">Yield Prediction</NavLink>
         </div>
       </div>
     </nav>

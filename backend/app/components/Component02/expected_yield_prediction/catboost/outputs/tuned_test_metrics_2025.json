@@ -1,0 +1,23 @@
+{
+    "model": "Tuned CatBoost",
+    "test_year": 2025,
+    "test_rows": 576,
+    "MAE": 8.032529027913663,
+    "RMSE": 10.64783319856613,
+    "R2": 0.8199457525844447,
+    "MAPE_percent": 7.812576856102781,
+    "parameters": {
+        "allow_writing_files": false,
+        "eval_metric": "MAE",
+        "od_wait": 50,
+        "od_type": "Iter",
+        "verbose": 0,
+        "iterations": 500,
+        "thread_count": 2,
+        "loss_function": "RMSE",
+        "l2_leaf_reg": 5,
+        "depth": 4,
+        "random_seed": 42,
+        "learning_rate": 0.03
+    }
+}

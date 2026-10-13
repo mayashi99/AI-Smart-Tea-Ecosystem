@@ -1,0 +1,12 @@
+{
+    "model": "Extra Trees",
+    "target": "kg_per_Acre",
+    "train_years": "2016-2023",
+    "validation_year": 2024,
+    "train_rows": 4608,
+    "validation_rows": 576,
+    "MAE": 10.703146103395076,
+    "RMSE": 13.162389014300953,
+    "R2": 0.670993622738005,
+    "MAPE_percent": 9.620984937986936
+}
