@@ -279,7 +279,7 @@ function PlantHealth() {
       if (!payload || typeof payload !== 'object' || payload.success === false || !payload.image_analysis || !payload.climate || !payload.stress_assessment) {
         throw new Error('The API returned an incomplete assessment.')
       }
-      setResult({ ...payload, selectedZone: TEA_ZONES[zone].label, selectedLocationName: locationName })
+      setResult(payload)
     } catch (err) {
       setResult(null)
       setError(err instanceof TypeError
@@ -300,8 +300,6 @@ function PlantHealth() {
   }
 
   const imageAnalysis = result?.image_analysis
-  const analyzedImages = imageAnalysis?.images || []
-  const location = result?.location
   const climate = result?.climate
   const stress = result?.stress_assessment
   const displayedPrediction = normalizeHealthPrediction(imageAnalysis?.prediction)
@@ -405,11 +403,7 @@ function PlantHealth() {
 
         {result && (
           <div className="mt-7 space-y-7" aria-live="polite">
-            <section className="grid gap-7 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-sm">
-                <div className="flex items-center justify-between px-5 py-4 text-white"><p className="font-bold">Analyzed Plantation Images</p><Badge tone="bg-white/10 text-white">{imageAnalysis?.image_count || selectedFiles.length} Images</Badge></div>
-                <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">{previewUrls.map((previewUrl, index) => <img alt={`Analyzed tea plantation ${index + 1}`} className="h-32 w-full rounded-xl object-cover sm:h-36" key={previewUrl} src={previewUrl} />)}</div>
-              </div>
+            <section>
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
                 <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">AI visual assessment</p><h2 className="text-2xl font-black tracking-tight text-slate-950">Plantation Health</h2></div><Badge tone={healthScoreTone.badge}>{humanize(displayedPrediction)}</Badge></div>
                 <div className="mt-8 grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -420,12 +414,7 @@ function PlantHealth() {
                 </div>
                 <div className="mt-8 border-t border-slate-100 pt-5"><p className="text-sm font-bold text-slate-800">Combined AI Classification Confidence</p><ProgressBar label="Healthy" tone={statusTone('healthy')} value={imageAnalysis?.class_probabilities?.healthy} /><ProgressBar label="Low Health" tone={statusTone('low health')} value={imageAnalysis?.class_probabilities?.low_health} /></div>
                 {displayedPrediction === 'low_health' && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4"><div className="flex items-start gap-3"><div className="rounded-lg bg-white p-2 text-red-600"><Icon name="alert" size={18} /></div><div><p className="text-xs font-bold uppercase tracking-wide text-red-700">Why low health?</p><p className="mt-2 text-sm leading-6 text-red-900">{imageAnalysis?.health_reason || 'The AI model detected visual patterns associated with reduced tea plant health. Please inspect the affected area in the field.'}</p></div></div></div>}
-                {analyzedImages.length > 0 && <div className="mt-6 border-t border-slate-100 pt-5"><p className="text-sm font-bold text-slate-800">Individual Image Results</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{analyzedImages.map((image, index) => { const tone = healthTone(image.image_health_score); return <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2" key={`${image.file_name}-${index}`}><div className="min-w-0"><p className="truncate text-xs font-bold text-slate-700">Image {index + 1}</p><p className="truncate text-[10px] text-slate-400">{image.file_name}</p></div><Badge tone={tone.badge}>{humanize(image.prediction)}</Badge></div> })}</div></div>}
               </div>
-            </section>
-
-            <section className="grid gap-5">
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><SectionTitle title="Plantation Location" description={`${result.selectedLocationName} · ${result.selectedZone} — representative coordinates and observation date.`} icon="location" /><div className="grid grid-cols-2 gap-3"><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Latitude</p><p className="mt-2 text-lg font-black text-slate-900">{formatNumber(location?.latitude, 4)}</p></div><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Longitude</p><p className="mt-2 text-lg font-black text-slate-900">{formatNumber(location?.longitude, 4)}</p></div><div className="col-span-2 flex items-center gap-3 rounded-2xl bg-slate-50 p-4"><Icon className="text-emerald-700" name="calendar" size={20} /><div><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Analysis Date</p><p className="mt-1 font-black text-slate-900">{result.date || 'Unavailable'}</p></div></div></div></div>
             </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><SectionTitle eyebrow="Environmental conditions" title="Climate Conditions" description="Climate observations returned by the assessment service." icon="cloud" /><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><MetricCard icon="sun" label="Temperature" value={formatNumber(climate?.temperature_c)} unit="°C" /><MetricCard icon="water" label="Rainfall" value={formatNumber(climate?.rainfall_mm)} unit="mm" /><MetricCard icon="cloud" label="Humidity" value={formatNumber(climate?.humidity_percent)} unit="%" /><MetricCard icon="wind" label="Wind Speed" value={formatNumber(climate?.wind_speed_m_s)} unit="m/s" /><MetricCard icon="sun" label="Solar Radiation" value={formatNumber(climate?.solar_radiation_kwh_m2_day)} unit={climate?.solar_radiation_kwh_m2_day === null || climate?.solar_radiation_kwh_m2_day === undefined ? '' : 'kWh/m²/day'} note={climate?.solar_radiation_kwh_m2_day === null || climate?.solar_radiation_kwh_m2_day === undefined ? 'Unavailable for this observation' : ''} /></div><p className="mt-5 flex items-center gap-2 text-xs font-bold text-slate-400"><Icon name="cloud" size={15} /> Source: {climate?.source || 'Unavailable'}</p></section>
@@ -439,7 +428,6 @@ function PlantHealth() {
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><SectionTitle eyebrow="Next best actions" title="AI Recommendations" description="Recommendations generated from this assessment." icon="sparkles" /><div className="grid gap-3 md:grid-cols-2">{Array.isArray(result.recommendations) && result.recommendations.length > 0 ? result.recommendations.map((recommendation, index) => <article className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4" key={`${recommendation}-${index}`}><div className="flex items-start gap-3"><div className="mt-0.5 rounded-lg bg-white p-2 text-emerald-700"><Icon name="check" size={17} /></div><div><p className="text-xs font-bold uppercase tracking-wide text-emerald-700">AI Recommendation</p><p className="mt-2 text-sm leading-6 text-slate-700">{recommendation}</p></div></div></article>) : <p className="text-sm text-slate-500">No recommendations were returned for this assessment.</p>}</div></section>
 
-            <section className="rounded-3xl bg-emerald-950 p-5 text-white shadow-sm sm:p-7"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">Assessment complete</p><h2 className="text-2xl font-black tracking-tight">Analysis Summary</h2></div><Icon className="text-emerald-300" name="leaf" size={27} /></div><div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[['Plantation Health', humanize(displayedPrediction)], ['Climate Risk', humanize(stress?.overall_climate_risk)], ['Early Warning', stress?.early_warning || 'Unavailable'], ['Data Source', climate?.source || 'Unavailable'], ['AI Model', imageAnalysis?.model || 'Unavailable']].map(([label, value]) => <div className="rounded-2xl bg-white/10 p-4" key={label}><p className="text-xs font-bold uppercase tracking-wide text-emerald-300">{label}</p><p className="mt-2 text-sm font-bold text-white">{value}</p></div>)}</div></section>
           </div>
         )}
       </div>

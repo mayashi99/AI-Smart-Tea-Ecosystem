@@ -9,6 +9,7 @@ from app.components.Component02.harvest_readiness.api import (
 from app.components.Component02.expected_yield_prediction.api import (
     router as expected_yield_router,
 )
+from app.components.Component02.harvest_forecast import router as harvest_forecast_router
 
 
 # ============================================================
@@ -60,6 +61,7 @@ app.include_router(
 # ============================================================
 
 app.include_router(expected_yield_router)
+app.include_router(harvest_forecast_router)
 
 
 # ============================================================

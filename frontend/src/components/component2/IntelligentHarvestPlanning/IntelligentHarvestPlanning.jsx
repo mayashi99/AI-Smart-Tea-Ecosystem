@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./IntelligentHarvestPlanning.css";
 import { analyseHarvestPhotos, MAX_PHOTOS, summarizeHarvestReadiness, validatePhotoSelection } from "./harvestPhotos";
 import { emptyClimate, fetchPlanningClimate, getSriLankaDate, harvestPeriod } from "./planningClimate";
+import HarvestForecast from "./HarvestForecast";
 
 function PlanningIcon({ type = "leaf" }) {
   const paths = {
@@ -334,6 +335,7 @@ export default function IntelligentHarvestPlanning() {
             </div>}
           </div>
         </section>
+        {canPredictYield && !photosStillProcessing && <HarvestForecast key={`${location}:${today}`} api={API} location={location} today={today} />}
         <footer className="hp-footer"><PlanningIcon /><span>AI Smart Tea Ecosystem</span><span>Intelligent harvest planning</span></footer>
       </div>
     </main>
