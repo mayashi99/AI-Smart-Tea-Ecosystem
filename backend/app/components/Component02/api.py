@@ -2,6 +2,7 @@ from pathlib import Path
 import tempfile
 import requests
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
@@ -257,7 +258,7 @@ def clean_climate_value(value):
 def _open_meteo_url(start_date, end_date):
     """Choose forecast or archive API for the requested date range."""
 
-    today = datetime.now().date()
+    today = datetime.now(ZoneInfo(CLIMATE_TIMEZONE)).date()
     if (
         start_date >= today - timedelta(days=92)
         and end_date <= today + timedelta(days=16)
@@ -415,7 +416,7 @@ def fetch_open_meteo_climate_for_date(
         longitude=longitude,
         start_date=date_obj,
         end_date=date_obj,
-        include_current=date_obj == datetime.now().date(),
+        include_current=date_obj == datetime.now(ZoneInfo(CLIMATE_TIMEZONE)).date(),
     )
     records = build_open_meteo_daily_records(payload)
     if not records:
@@ -423,7 +424,7 @@ def fetch_open_meteo_climate_for_date(
 
     climate = records[0]
     current = payload.get("current", {})
-    if current and date_obj == datetime.now().date():
+    if current and date_obj == datetime.now(ZoneInfo(CLIMATE_TIMEZONE)).date():
         climate["temperature_c"] = clean_climate_value(
             current.get("temperature_2m")
         )
@@ -509,7 +510,8 @@ def has_meteorological_data(climate):
 def get_latest_available_climate(
     latitude: float,
     longitude: float,
-    requested_date: str
+    requested_date: str,
+    allow_fallback: bool = True,
 ):
     """
     Try requested date first.
@@ -567,7 +569,7 @@ def get_latest_available_climate(
 
     for days_back in range(
         0,
-        MAX_CLIMATE_LOOKBACK_DAYS + 1
+        (MAX_CLIMATE_LOOKBACK_DAYS if allow_fallback else 0) + 1
     ):
 
         candidate_date = (
@@ -593,6 +595,9 @@ def get_latest_available_climate(
 
         except requests.RequestException:
 
+            if not allow_fallback:
+                raise
+
             # If one date fails, continue checking
             # previous dates.
 
@@ -611,7 +616,7 @@ def get_latest_available_climate(
             ).days
 
 
-            if candidate_date > datetime.now().date():
+            if candidate_date > datetime.now(ZoneInfo(CLIMATE_TIMEZONE)).date():
                 data_status = "Forecast"
             elif data_delay_days == 0:
 
@@ -653,8 +658,8 @@ def get_latest_available_climate(
         status_code=404,
         detail=(
             "Open-Meteo climate data is not available "
-            f"for {requested_date} or the previous "
-            f"{MAX_CLIMATE_LOOKBACK_DAYS} days."
+            f"for {requested_date}"
+            + (f" or the previous {MAX_CLIMATE_LOOKBACK_DAYS} days." if allow_fallback else ".")
         )
     )
 
@@ -1182,7 +1187,8 @@ async def predict_image(
 def get_climate_data(
     latitude: float,
     longitude: float,
-    date: str
+    date: str,
+    allow_fallback: bool = True,
 ):
 
     try:
@@ -1195,7 +1201,8 @@ def get_climate_data(
             get_latest_available_climate(
                 latitude=latitude,
                 longitude=longitude,
-                requested_date=date
+                requested_date=date,
+                allow_fallback=allow_fallback,
             )
         )
 

@@ -56,6 +56,7 @@ function Home() {
               <Link className="inline-flex h-12 items-center justify-center rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/plant-density">Plan plant density</Link>
               <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/harvest-readiness">Check harvest readiness <ArrowIcon /></Link>
               <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/yield-prediction">Yield Prediction <ArrowIcon /></Link>
+              <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/intelligent-harvest-planning">Intelligent Harvest Planning <ArrowIcon /></Link>
             </div>
           </div>
           <div className="relative hidden min-h-72 lg:block">
