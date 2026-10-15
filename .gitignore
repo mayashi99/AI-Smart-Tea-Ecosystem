@@ -1,0 +1,44 @@
+# ========================================
+# COMPONENT01 - LARGE RESEARCH DATA
+# ========================================
+
+/backend/app/components/[Cc]omponent01/data/
+/backend/app/components/[Cc]omponent01/models/
+/backend/app/components/[Cc]omponent01/outputs/
+
+# ========================================
+# PYTHON ENVIRONMENTS AND CACHES
+# ========================================
+
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
+# ========================================
+# GENERATED ML ARTIFACTS
+# ========================================
+
+**/*.pt
+**/*.pth
+**/*.pkl
+**/*.joblib
+**/*.onnx
+
+# ========================================
+# FRONTEND GENERATED FILES
+# ========================================
+
+**/node_modules/
+**/dist/
+
+# ========================================
+# SECRETS AND TEMPORARY FILES
+# ========================================
+
+**/.env
+**/.env.local
+**/*.log

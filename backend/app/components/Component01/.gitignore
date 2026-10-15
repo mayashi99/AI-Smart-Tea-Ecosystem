@@ -1,0 +1,64 @@
+# J26-IT-415 / Component01
+# Scope: backend/app/components/Component01/.gitignore
+# Git tracks source code, API, requirements, and documentation.
+# Datasets/models/exports travel separately in the private project handover.
+
+# Research data: tea leaf images, manifests, climate tables, external sources,
+# processed/synthetic datasets and officer runtime observations
+/data/
+/external/
+/dataset/
+/datasets/
+
+# ML artifacts, trained checkpoints, generated dashboard/research reports
+/models/
+/outputs/
+/checkpoints/
+/runs/
+
+# Local Python environments and Python caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+build/
+dist/
+
+# Private environment config and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Generated logs, temp files, OS/editor metadata
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.vscode/*.log
+
+# Local archives and heavy ML binaries outside expected folders
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.joblib
+*.pkl
+*.pickle
+
+# Deliberately keep src/, api/, docs/, requirements*.txt, and .gitignore tracked.
