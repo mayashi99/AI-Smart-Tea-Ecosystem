@@ -102,6 +102,9 @@ export, and receipt) in `backend/data/component04/passport_ledger.jsonl`. Every 
 previous record hash and its own SHA-256 hash; `GET /api/component04/digital-passports/verify`
 checks the chain. This local prototype is tamper-evident but is not connected to a distributed
 blockchain network. The ledger is gitignored because it can contain operational traceability data.
+After saving a batch event, its passport page displays a QR code and provides a PNG download.
+The QR opens that batch passport on the same frontend site; sellers should use the deployed,
+phone-accessible site URL when generating codes for customers.
 
 ### Combined Workbook Auction Price Forecast
 

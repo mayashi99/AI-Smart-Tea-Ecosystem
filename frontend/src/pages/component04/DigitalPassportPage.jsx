@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 
 const emptyForm = { batch_id: '', event_type: 'Batch created', location: '', tea_grade: '', quantity_kg: '', note: '' }
+const scannedBatchId = new URLSearchParams(window.location.search).get('batch')
+const qrUrl = (batchId, download = false) => `/api/component04/digital-passports/qr?batch_id=${encodeURIComponent(batchId)}&base_url=${encodeURIComponent(window.location.origin)}&download=${download}`
 
 export default function DigitalPassportPage() {
   const [ledger, setLedger] = useState({ passports: [], ledger_valid: true, ledger_records: 0 })
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [qrBatchId, setQrBatchId] = useState('')
   const refresh = useCallback(async () => {
     const response = await fetch('/api/component04/digital-passports')
     const payload = await response.json()
@@ -23,6 +26,7 @@ export default function DigitalPassportPage() {
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.detail || 'Could not add traceability event')
       setForm({ ...emptyForm, batch_id: form.batch_id })
+      setQrBatchId(form.batch_id)
       await refresh()
     } catch (err) { setError(err.message) } finally { setBusy(false) }
   }
@@ -38,7 +42,7 @@ export default function DigitalPassportPage() {
         <button className="advisor-submit" disabled={busy || !ledger.ledger_valid}>{busy ? 'Adding record…' : 'Add signed-hash event to ledger'}</button>
       </form><p className="advisor-note">This local prototype uses a SHA-256 hash-linked append-only ledger, not a public or distributed blockchain network. Production traceability needs access controls and a shared ledger deployment.</p></section>
       {error && <section className="empty-state advisor-error" role="alert">{error}</section>}
-      <section className="passport-list"><h2>Batch passports</h2>{ledger.passports.length === 0 ? <article className="panel"><p>No batches recorded yet. Add the first event to create a passport.</p></article> : ledger.passports.map((passport) => <article className="panel passport-card" key={passport.batch_id}><div className="passport-title"><div><p className="eyebrow">Batch passport</p><h3>{passport.batch_id}</h3></div><span className="citation-chip">{passport.events.length} events · {passport.latest_event}</span></div><div className="passport-events">{passport.events.map((item) => <div className="passport-event" key={item.record_hash}><strong>{item.event_type}</strong><span>{item.location} · {item.tea_grade} · {Number(item.quantity_kg).toLocaleString()} kg</span><small>{new Date(item.timestamp).toLocaleString()} · hash {item.record_hash.slice(0, 16)}…</small></div>)}</div></article>)}</section>
+      <section className="passport-list"><h2>{scannedBatchId ? `Batch passport: ${scannedBatchId}` : 'Batch passports'}</h2>{ledger.passports.length === 0 ? <article className="panel"><p>No batches recorded yet. Add the first event to create a passport.</p></article> : (scannedBatchId ? ledger.passports.filter((item) => item.batch_id === scannedBatchId) : ledger.passports).map((passport) => <article className="panel passport-card" key={passport.batch_id}><div className="passport-title"><div><p className="eyebrow">Batch passport</p><h3>{passport.batch_id}</h3></div><span className="citation-chip">{passport.events.length} events · {passport.latest_event}</span></div><div className="passport-events">{passport.events.map((item) => <div className="passport-event" key={item.record_hash}><strong>{item.event_type}</strong><span>{item.location} · {item.tea_grade} · {Number(item.quantity_kg).toLocaleString()} kg</span><small>{new Date(item.timestamp).toLocaleString()} · hash {item.record_hash.slice(0, 16)}…</small></div>)}</div><a className="passport-qr-download" href={qrUrl(passport.batch_id, true)} download={`tea-passport-${passport.batch_id}.png`}>Download passport QR</a>{qrBatchId === passport.batch_id && <div className="passport-qr-preview"><img src={qrUrl(passport.batch_id)} alt={`QR code linking to batch passport ${passport.batch_id}`} /><p>Scan to open this batch passport.</p></div>}</article>)}{scannedBatchId && !ledger.passports.some((item) => item.batch_id === scannedBatchId) && <article className="panel"><p>Passport for batch {scannedBatchId} was not found in this ledger.</p></article>}</section>
     </main>
   )
 }

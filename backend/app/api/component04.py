@@ -2,9 +2,11 @@ import json
 from pathlib import Path
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from typing import Literal
+from urllib.parse import quote, urlsplit
+from io import BytesIO
 
 from app.services.component04.digital_passport import add_passport_event, list_passports, verify_ledger
 from app.services.component04.export_advisor import make_recommendations
@@ -239,3 +241,32 @@ def post_digital_passport_event(request: PassportEventRequest):
 @router.get("/digital-passports/verify")
 def get_digital_passport_verification():
     return verify_ledger()
+
+
+@router.get("/digital-passports/qr")
+def get_digital_passport_qr(
+    batch_id: str = Query(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$"),
+    base_url: str = Query(min_length=8, max_length=300),
+    download: bool = False,
+):
+    """Generate a downloadable PNG QR code that opens the selected batch passport."""
+    parsed_url = urlsplit(base_url)
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc or parsed_url.username or parsed_url.password:
+        raise HTTPException(status_code=422, detail="base_url must be a valid HTTP or HTTPS site URL")
+    passport = next((item for item in list_passports()["passports"] if item["batch_id"] == batch_id), None)
+    if passport is None:
+        raise HTTPException(status_code=404, detail="Batch passport not found")
+    try:
+        import qrcode
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail="Install backend QR dependency with pip install -r requirements.txt") from exc
+    passport_url = f"{base_url.rstrip('/')}/digital-passport?batch={quote(batch_id)}"
+    image = qrcode.make(passport_url)
+    output = BytesIO()
+    image.save(output, format="PNG")
+    filename_id = batch_id.replace(".", "-")
+    return Response(
+        content=output.getvalue(),
+        media_type="image/png",
+        headers={"Content-Disposition": f'{"attachment" if download else "inline"}; filename="tea-passport-{filename_id}.png"'},
+    )
