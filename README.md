@@ -11,6 +11,8 @@ The Component 04 dashboard has three pages:
 - `/export-advisor` — RAG-grounded, explainable export planning recommendations
 - `/export-readiness` — evidence-based Export Readiness Index (ERI)
 - `/digital-passport` — tea batch traceability passport and ledger verification
+- `/zone-intelligence` — weighted, explainable growing-zone quality scores
+- `/export-optimizer` — batch-specific multi-country market comparison
 
 The Export Advisor retrieves evidence from the forecast metrics, monthly history, and local planning
 guides. It shows the sources and evidence IDs behind every recommendation. Without an LLM endpoint it
@@ -96,6 +98,20 @@ The ERI page combines export-demand forecast metrics with user-declared monthly 
 document checks, and quality-control readiness. Its weighted criteria and recommendations are
 shown with the evidence used for each score. It is a planning aid, not an official certification
 or destination-specific compliance assessment. API: `POST /api/component04/export-readiness`.
+
+The conversational AI Export Advisor is at `/export-advisor`. Its optional zone context can be
+passed from the Zone Intelligence page and is added to the retrieved evidence before recommendations
+are generated.
+
+The Multi-Country Export Optimizer at `/export-optimizer` combines the trained Sri Lankan export-demand and auction-price forecasts with source-labelled, country-specific market inputs. It displays forecast horizon, export-demand accuracy and growth outlook, projected auction average and price stability, then ranks markets using demand (35%), import history (25%), national export-demand outlook (20%), and auction-price stability (20%). Country-level demand and import-history inputs must be provided because the supplied workbook only has aggregate exports. The current ranker is forecast-driven and explainable; it does not claim XGBoost predictions or SHAP values without destination-level training data. API routes: `GET /api/component04/export-market-optimizer/context` and `POST /api/component04/export-market-optimizer`.
+The Zone Intelligence Engine scores High, Medium, and Low Growns using the supplied weights:
+auction price (35%), export success rate (25%), buyer preference (20%), historical demand (10%),
+and climate suitability (10%). Auction price and quantity-based demand signals come from the
+zone auction dataset; quantity share is explicitly a buyer-preference proxy. The supplied data
+does not contain zone-level export success or climate observations, so those two scores are
+entered with optional evidence notes instead of being fabricated. Use “Use this score in Export
+Advisor” to pass the selected score into its grounded export recommendation. API routes:
+`GET /api/component04/zone-intelligence` and `POST /api/component04/zone-intelligence/score`.
 
 The Digital Passport page records batch events (collection, processing, quality checks, packing,
 export, and receipt) in `backend/data/component04/passport_ledger.jsonl`. Every event includes the

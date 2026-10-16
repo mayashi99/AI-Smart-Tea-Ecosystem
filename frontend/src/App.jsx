@@ -15,12 +15,16 @@ import CombinedAuctionPriceForecast from './pages/component04/CombinedAuctionPri
 import ExportAdvisorPage from './pages/component04/ExportAdvisorPage'
 import ExportReadinessPage from './pages/component04/ExportReadinessPage'
 import DigitalPassportPage from './pages/component04/DigitalPassportPage'
+import ZoneIntelligencePage from './pages/component04/ZoneIntelligencePage'
+import ExportMarketOptimizerPage from './pages/component04/ExportMarketOptimizerPage'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/component04/train-output'
 const isExportDemandPage = window.location.pathname.replace(/\/$/, '') === '/export-demand'
 const isExportAdvisorPage = window.location.pathname.replace(/\/$/, '') === '/export-advisor'
 const isExportReadinessPage = window.location.pathname.replace(/\/$/, '') === '/export-readiness'
 const isDigitalPassportPage = window.location.pathname.replace(/\/$/, '') === '/digital-passport'
+const isZoneIntelligencePage = window.location.pathname.replace(/\/$/, '') === '/zone-intelligence'
+const isExportOptimizerPage = window.location.pathname.replace(/\/$/, '') === '/export-optimizer'
 
 const formatNumber = (value) =>
   new Intl.NumberFormat('en-US', {
@@ -40,7 +44,7 @@ function App() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (isExportDemandPage || isExportAdvisorPage || isExportReadinessPage || isDigitalPassportPage) return
+    if (isExportDemandPage || isExportAdvisorPage || isExportReadinessPage || isDigitalPassportPage || isZoneIntelligencePage || isExportOptimizerPage) return
     fetch(API_URL)
       .then((response) => {
         if (!response.ok) {
@@ -113,6 +117,8 @@ function App() {
           <a href="/export-advisor">Export Advisor</a>
           <a href="/export-readiness">ERI</a>
           <a href="/digital-passport">Digital Passport</a>
+          <a href="/zone-intelligence">Zone Intelligence</a>
+          <a href="/export-optimizer">Market Optimizer</a>
         </nav>
         <ExportDemandPage />
       </>
@@ -128,6 +134,8 @@ function App() {
           <a className="active" href="/export-advisor">Export Advisor</a>
           <a href="/export-readiness">ERI</a>
           <a href="/digital-passport">Digital Passport</a>
+          <a href="/zone-intelligence">Zone Intelligence</a>
+          <a href="/export-optimizer">Market Optimizer</a>
         </nav>
         <ExportAdvisorPage />
       </>
@@ -135,11 +143,19 @@ function App() {
   }
 
   if (isExportReadinessPage) {
-    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a className="active" href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a></nav><ExportReadinessPage /></>
+    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a className="active" href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a><a href="/export-optimizer">Market Optimizer</a></nav><ExportReadinessPage /></>
   }
 
   if (isDigitalPassportPage) {
-    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a className="active" href="/digital-passport">Digital Passport</a></nav><DigitalPassportPage /></>
+    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a className="active" href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a><a href="/export-optimizer">Market Optimizer</a></nav><DigitalPassportPage /></>
+  }
+
+  if (isZoneIntelligencePage) {
+    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a className="active" href="/zone-intelligence">Zone Intelligence</a><a href="/export-optimizer">Market Optimizer</a></nav><ZoneIntelligencePage /></>
+  }
+
+  if (isExportOptimizerPage) {
+    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a><a className="active" href="/export-optimizer">Market Optimizer</a></nav><ExportMarketOptimizerPage /></>
   }
 
   if (status === 'loading') {
@@ -165,6 +181,8 @@ function App() {
         <a href="/export-advisor">Export Advisor</a>
         <a href="/export-readiness">ERI</a>
         <a href="/digital-passport">Digital Passport</a>
+        <a href="/zone-intelligence">Zone Intelligence</a>
+        <a href="/export-optimizer">Market Optimizer</a>
       </nav>
       <main className="dashboard">
       <header className="dashboard-header">

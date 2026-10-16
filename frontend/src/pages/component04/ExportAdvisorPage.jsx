@@ -1,5 +1,12 @@
 import { useMemo, useState } from 'react'
 
+const zoneParams = new URLSearchParams(window.location.search)
+const zoneContext = zoneParams.has('zone') ? {
+  zone: zoneParams.get('zone'),
+  climate_suitability: Number(zoneParams.get('climate_suitability')),
+  export_success_rate: Number(zoneParams.get('export_success_rate')),
+} : {}
+
 export default function ExportAdvisorPage() {
   const [question, setQuestion] = useState('How should we plan export volumes for the next 12 months?')
   const [country, setCountry] = useState('')
@@ -27,6 +34,7 @@ export default function ExportAdvisorPage() {
           question,
           destination_country: country || null,
           business_goal: goal || null,
+          ...zoneContext,
         }),
       })
       const payload = await response.json()
@@ -43,9 +51,10 @@ export default function ExportAdvisorPage() {
     <main className="dashboard">
       <header className="dashboard-header">
         <div>
-          <p className="eyebrow">Component 04</p>
+          <p className="eyebrow">Module 07 · Component 04</p>
           <h1>AI Export Advisor</h1>
           <p className="subtle">Ask about aggregate demand planning. Recommendations cite retrieved data and planning guidance.</p>
+          {zoneContext.zone && <p className="citation-chip">Zone score attached: {zoneContext.zone} · climate {zoneContext.climate_suitability}/100 · export success {zoneContext.export_success_rate}%</p>}
         </div>
       </header>
 
