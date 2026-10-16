@@ -13,10 +13,14 @@ import './styles.css'
 import ExportDemandPage from './pages/component04/ExportDemandPage'
 import CombinedAuctionPriceForecast from './pages/component04/CombinedAuctionPriceForecast'
 import ExportAdvisorPage from './pages/component04/ExportAdvisorPage'
+import ExportReadinessPage from './pages/component04/ExportReadinessPage'
+import DigitalPassportPage from './pages/component04/DigitalPassportPage'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/component04/train-output'
 const isExportDemandPage = window.location.pathname.replace(/\/$/, '') === '/export-demand'
 const isExportAdvisorPage = window.location.pathname.replace(/\/$/, '') === '/export-advisor'
+const isExportReadinessPage = window.location.pathname.replace(/\/$/, '') === '/export-readiness'
+const isDigitalPassportPage = window.location.pathname.replace(/\/$/, '') === '/digital-passport'
 
 const formatNumber = (value) =>
   new Intl.NumberFormat('en-US', {
@@ -36,7 +40,7 @@ function App() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (isExportDemandPage || isExportAdvisorPage) return
+    if (isExportDemandPage || isExportAdvisorPage || isExportReadinessPage || isDigitalPassportPage) return
     fetch(API_URL)
       .then((response) => {
         if (!response.ok) {
@@ -64,6 +68,7 @@ function App() {
     if (!selectedMetrics.length) return null
     return selectedMetrics.find((metric) => metric.model === 'LSTM') ?? selectedMetrics[0]
   }, [selectedMetrics])
+  const auctionTestAccuracy = 100 - Number(lstmMetric?.mape ?? 100)
 
   const zonePeriods = useMemo(() => {
     if (!dashboard || !selectedZone) return dashboard?.periods
@@ -106,6 +111,8 @@ function App() {
           <a href="/">Auction Price</a>
           <a className="active" href="/export-demand">Export Demand</a>
           <a href="/export-advisor">Export Advisor</a>
+          <a href="/export-readiness">ERI</a>
+          <a href="/digital-passport">Digital Passport</a>
         </nav>
         <ExportDemandPage />
       </>
@@ -119,10 +126,20 @@ function App() {
           <a href="/">Auction Price</a>
           <a href="/export-demand">Export Demand</a>
           <a className="active" href="/export-advisor">Export Advisor</a>
+          <a href="/export-readiness">ERI</a>
+          <a href="/digital-passport">Digital Passport</a>
         </nav>
         <ExportAdvisorPage />
       </>
     )
+  }
+
+  if (isExportReadinessPage) {
+    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a className="active" href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a></nav><ExportReadinessPage /></>
+  }
+
+  if (isDigitalPassportPage) {
+    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a className="active" href="/digital-passport">Digital Passport</a></nav><DigitalPassportPage /></>
   }
 
   if (status === 'loading') {
@@ -146,6 +163,8 @@ function App() {
         <a className="active" href="/">Auction Price</a>
         <a href="/export-demand">Export Demand</a>
         <a href="/export-advisor">Export Advisor</a>
+        <a href="/export-readiness">ERI</a>
+        <a href="/digital-passport">Digital Passport</a>
       </nav>
       <main className="dashboard">
       <header className="dashboard-header">
@@ -195,6 +214,10 @@ function App() {
         <article className="metric-card">
           <span>LSTM MAPE</span>
           <strong>{formatNumber(lstmMetric?.mape)}%</strong>
+        </article>
+        <article className="metric-card accuracy-card" title="Calculated as 100% minus the selected growing zone's holdout MAPE; this is a retrospective error metric, not a probability or confidence score.">
+          <span>Test accuracy (100% − MAPE)</span>
+          <strong>{formatNumber(auctionTestAccuracy)}%</strong>
         </article>
         <article className="metric-card">
           <span>R² Score</span>

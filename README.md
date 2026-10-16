@@ -9,6 +9,8 @@ The Component 04 dashboard has three pages:
 - `/` — auction price forecasts, including the combined sales-and-price workbook
 - `/export-demand` — LSTM monthly tea export-volume forecast
 - `/export-advisor` — RAG-grounded, explainable export planning recommendations
+- `/export-readiness` — evidence-based Export Readiness Index (ERI)
+- `/digital-passport` — tea batch traceability passport and ledger verification
 
 The Export Advisor retrieves evidence from the forecast metrics, monthly history, and local planning
 guides. It shows the sources and evidence IDs behind every recommendation. Without an LLM endpoint it
@@ -87,6 +89,19 @@ Advisor API: `POST /api/component04/export-advisor` with JSON such as:
   "business_goal": "plan seasonal inventory"
 }
 ```
+
+### Export Readiness Index and Digital Passport
+
+The ERI page combines export-demand forecast metrics with user-declared monthly capacity,
+document checks, and quality-control readiness. Its weighted criteria and recommendations are
+shown with the evidence used for each score. It is a planning aid, not an official certification
+or destination-specific compliance assessment. API: `POST /api/component04/export-readiness`.
+
+The Digital Passport page records batch events (collection, processing, quality checks, packing,
+export, and receipt) in `backend/data/component04/passport_ledger.jsonl`. Every event includes the
+previous record hash and its own SHA-256 hash; `GET /api/component04/digital-passports/verify`
+checks the chain. This local prototype is tamper-evident but is not connected to a distributed
+blockchain network. The ledger is gitignored because it can contain operational traceability data.
 
 ### Combined Workbook Auction Price Forecast
 

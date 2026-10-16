@@ -43,6 +43,8 @@ export default function CombinedAuctionPriceForecast() {
     return [...points.values()]
   }, [data])
 
+  const testAccuracy = 100 - Number(data?.metrics?.mape ?? 100)
+
   if (!data) return <section className="panel"><div className="panel-heading"><h2>Combined Auction Price Forecast</h2><p>{error || 'Loading model forecast...'}</p></div></section>
 
   return (
@@ -59,6 +61,7 @@ export default function CombinedAuctionPriceForecast() {
           <article className="metric-card"><span>2025 Test MAE (LKR/kg)</span><strong>{number(data.metrics.mae_lkr)}</strong></article>
           <article className="metric-card"><span>2025 Test RMSE (LKR/kg)</span><strong>{number(data.metrics.rmse_lkr)}</strong></article>
           <article className="metric-card"><span>2025 Test MAPE</span><strong>{number(data.metrics.mape)}%</strong></article>
+          <article className="metric-card accuracy-card" title="Calculated as 100% minus the 2025 holdout MAPE; this is a retrospective error metric, not a probability or confidence score."><span>Test accuracy (100% − MAPE)</span><strong>{number(testAccuracy)}%</strong></article>
           <article className="metric-card"><span>Forecast horizon</span><strong>{data.forecast.length} months</strong></article>
         </div>
         <div className="chart-wrap">

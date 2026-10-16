@@ -48,6 +48,8 @@ export default function ExportDemandPage() {
     return [...points.values()]
   }, [data])
 
+  const testAccuracy = 100 - Number(data?.metrics?.mape ?? 100)
+
   if (!data) return <main className="screen">{error || 'Loading export demand forecast...'}</main>
 
   return (
@@ -70,13 +72,14 @@ export default function ExportDemandPage() {
         <article className="metric-card"><span>Test MAE (kg)</span><strong>{formatNumber(data.metrics.mae_kg)}</strong></article>
         <article className="metric-card"><span>Test RMSE (kg)</span><strong>{formatNumber(data.metrics.rmse_kg)}</strong></article>
         <article className="metric-card"><span>Test MAPE</span><strong>{formatNumber(data.metrics.mape)}%</strong></article>
+        <article className="metric-card accuracy-card" title="Calculated as 100% minus the 2025 holdout MAPE; this is a retrospective error metric, not a probability or confidence score."><span>Test accuracy (100% − MAPE)</span><strong>{formatNumber(testAccuracy)}%</strong></article>
         <article className="metric-card"><span>Forecast months</span><strong>{(data.forecast || []).length}</strong></article>
       </section>
 
       <section className="panel chart-panel">
         <div className="panel-heading">
           <h2>Monthly export volume and forecast</h2>
-          <p>Last 12 months are held out for model evaluation; forecast continues beyond the observed data.</p>
+          <p>Last 12 months are held out for model evaluation. Accuracy is calculated from that test-period MAPE and is not a forecast confidence probability.</p>
         </div>
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height="100%">
