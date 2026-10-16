@@ -226,3 +226,92 @@ def latest_forecast(block_id:Optional[str]=None,disease:Optional[str]=None):
     if disease is not None and record.get('disease_name')!=disease:
         raise HTTPException(404,'Latest saved forecast is for another disease; POST recalculate for this disease.')
     return record
+
+
+# Step51: additive current-date forecast API. Historical endpoints remain unchanged.
+from step51_current_spread_service import (
+    current_readiness, current_dynamic_predict, current_observations, current_latest,
+    CurrentDataUnavailable,
+)
+
+@app.get('/api/forecast/current/status', tags=['Current-date forecasts'])
+def current_forecast_status():
+    return current_readiness(ROOT)
+
+@app.post('/api/forecast/current/preview', tags=['Current-date forecasts'])
+def current_forecast_preview(payload: OfficerObservation):
+    try:
+        return current_dynamic_predict(ROOT, payload.block_id, payload.disease,
+                                       payload.inspected_bushes, payload.symptomatic_bushes, save=False)
+    except ValueError as e:
+        _handle_value_error(e)
+    except (CurrentDataUnavailable, FileNotFoundError, KeyError, OSError, ImportError) as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+@app.post('/api/forecast/current/recalculate', tags=['Current-date forecasts'])
+def current_forecast_recalculate(payload: OfficerObservation):
+    try:
+        return current_dynamic_predict(ROOT, payload.block_id, payload.disease,
+                                       payload.inspected_bushes, payload.symptomatic_bushes, save=True)
+    except ValueError as e:
+        _handle_value_error(e)
+    except (CurrentDataUnavailable, FileNotFoundError, KeyError, OSError, ImportError) as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+@app.get('/api/forecast/current/latest', tags=['Current-date forecasts'])
+def current_forecast_latest():
+    try:
+        return current_latest(ROOT)
+    except CurrentDataUnavailable as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+@app.get('/api/forecast/current/observations', tags=['Current-date forecasts'])
+def current_forecast_observations(limit: int=Query(30, ge=1, le=500)):
+    try:
+        return current_observations(ROOT, limit=limit)
+    except CurrentDataUnavailable as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+# Step52: today's inspection with historical same-season context; no new data-file requirement.
+from step52_seasonal_context_service import (
+    seasonal_status, seasonal_predict, seasonal_latest, seasonal_observations,
+    SeasonalContextUnavailable,
+)
+
+@app.get('/api/forecast/assisted/status', tags=['Seven-day seasonal-context forecast'])
+def assisted_forecast_status():
+    return seasonal_status(ROOT)
+
+@app.post('/api/forecast/assisted/preview', tags=['Seven-day seasonal-context forecast'])
+def assisted_forecast_preview(payload: OfficerObservation):
+    try:
+        return seasonal_predict(ROOT, payload.block_id, payload.disease,
+                                payload.inspected_bushes, payload.symptomatic_bushes, save=False)
+    except ValueError as exc:
+        _handle_value_error(exc)
+    except SeasonalContextUnavailable as exc:
+        raise HTTPException(503, detail=str(exc)) from exc
+
+@app.post('/api/forecast/assisted/recalculate', tags=['Seven-day seasonal-context forecast'])
+def assisted_forecast_recalculate(payload: OfficerObservation):
+    try:
+        return seasonal_predict(ROOT, payload.block_id, payload.disease,
+                                payload.inspected_bushes, payload.symptomatic_bushes, save=True)
+    except ValueError as exc:
+        _handle_value_error(exc)
+    except SeasonalContextUnavailable as exc:
+        raise HTTPException(503, detail=str(exc)) from exc
+
+@app.get('/api/forecast/assisted/latest', tags=['Seven-day seasonal-context forecast'])
+def assisted_forecast_latest():
+    try:
+        return seasonal_latest(ROOT)
+    except SeasonalContextUnavailable as exc:
+        raise HTTPException(404, detail=str(exc)) from exc
+
+@app.get('/api/forecast/assisted/observations', tags=['Seven-day seasonal-context forecast'])
+def assisted_forecast_observations(limit:int=Query(30,ge=1,le=500)):
+    try:
+        return seasonal_observations(ROOT,limit=limit)
+    except SeasonalContextUnavailable as exc:
+        raise HTTPException(503, detail=str(exc)) from exc

@@ -100,7 +100,7 @@ def previous_updates(root, origin):
     return found
 
 
-def prepare_24h_inputs(root, origin, updates, baseline_check=False):
+def prepare_24h_inputs(root, origin, updates, baseline_check=False, *, source_csv=None, adjacency_csv=None, blocks_csv=None):
     """Build all four diseases' origin-observable 48-column data for 14 days.
 
     The 21-day source is exactly 14 model-history days plus 7 preceding lag days.
@@ -108,7 +108,7 @@ def prepare_24h_inputs(root, origin, updates, baseline_check=False):
     """
     root=Path(root).resolve()
     earliest=origin-timedelta(days=20)
-    source=root/'data/synthetic/synthetic_block_records_multidisease.csv'
+    source=Path(source_csv) if source_csv is not None else root/'data/synthetic/synthetic_block_records_multidisease.csv'
     demand(source.is_file(), f'Missing Step23 source: {source}')
     raw=pd.read_csv(source,usecols=SOURCE_COLS,low_memory=False,encoding='utf-8-sig')
     raw['Date']=pd.to_datetime(raw.Date, errors='raise')
@@ -141,7 +141,7 @@ def prepare_24h_inputs(root, origin, updates, baseline_check=False):
         raw.loc[ix,'Days_Since_Last_Inspection']=0
 
     # Neighbor values on origin day react to EVERY submitted block observation.
-    edges=pd.read_csv(root/'data/synthetic/block_adjacency.csv',encoding='utf-8-sig')
+    edges=pd.read_csv(adjacency_csv if adjacency_csv is not None else root/'data/synthetic/block_adjacency.csv',encoding='utf-8-sig')
     demand({'Source_Block','Target_Block'}.issubset(edges.columns), 'Bad adjacency graph')
     graph={b:[] for b in BLOCKS}
     for row in edges.itertuples(index=False):
@@ -160,7 +160,7 @@ def prepare_24h_inputs(root, origin, updates, baseline_check=False):
     # On the same origin day Neighbor_Recent_Positive_Count uses PREVIOUS 7 days;
     # hence it is unchanged when updating observations on the current day.
 
-    blocks=pd.read_csv(root/'data/synthetic/estate_blocks.csv',encoding='utf-8-sig')
+    blocks=pd.read_csv(blocks_csv if blocks_csv is not None else root/'data/synthetic/estate_blocks.csv',encoding='utf-8-sig')
     demand(not blocks.Block_ID.duplicated().any(), 'Block metadata duplicated')
     estate=str(raw.Estate_ID.iloc[0]); demand((blocks.Estate_ID.astype(str)==estate).all(),'Estate mismatch')
     raw=raw.merge(blocks[['Block_ID']+STATS],on='Block_ID',how='left',validate='many_to_one')

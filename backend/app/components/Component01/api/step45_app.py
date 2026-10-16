@@ -16,6 +16,7 @@ from fastapi import File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from PIL import Image, UnidentifiedImageError
+from pydantic import ValidationError
 
 # Import normally so Pydantic v2 can resolve Step43's request types.
 from step43_app import app
@@ -25,6 +26,10 @@ XAI_DIR = ROOT / 'src' / 'm05_explainability_alerts'
 if str(XAI_DIR) not in sys.path:
     sys.path.insert(0, str(XAI_DIR))
 from gradcam_plus_plus import explain_leaf_image  # noqa: E402
+from disease_advisory import build_disease_advisory, available_advisory_classes  # noqa: E402
+from advanced_disease_advisory import (  # noqa: E402
+    AdvancedAdvisoryRequest, build_advanced_disease_advisory,
+)
 
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 MAX_PIXELS = 16_000_000
@@ -169,6 +174,8 @@ async def image_analyze(
         'full_cnn_training_completed': False,  # No independent field validation.
         'development_cnn_training_completed': dev_trained,
         'simulation_only': True,
+        'advisory': build_disease_advisory(result['predicted_class']),
+        'advanced_advisory': build_advanced_disease_advisory(result['predicted_class']),
         'warning': ('Development-trained CNN; Grad-CAM++ is attribution, not validated diagnosis or lesion severity.'
                     if dev_trained else 'Random/smoke CNN; not validated diagnosis or lesion severity.'),
     }
@@ -182,3 +189,33 @@ def image_artifact(filename: str):
     if not image_path.is_file():
         raise HTTPException(404, 'Image output not found')
     return FileResponse(image_path, media_type='image/png', headers={'Cache-Control': 'no-store'})
+
+
+@app.get('/api/advisory/classes', tags=['Tea management advisory (expert review required)'])
+def advisory_classes():
+    """Five labels supported by the rules-based informational advisory."""
+    labels = available_advisory_classes()
+    return {'classes': labels, 'count': len(labels),
+            'chemical_prescriptions_automated': False,
+            'note': 'General scouting/IPM information; not a confirmed diagnosis or spray prescription.'}
+
+
+@app.get('/api/advisory/{disease_name}', tags=['Tea management advisory (expert review required)'])
+def disease_advisory(disease_name: str):
+    """Optional standalone endpoint for React page; use URL encoding for spaces."""
+    try:
+        return build_disease_advisory(disease_name)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.post('/api/advisory/advanced', tags=['Tea management advisory (expert review required)'])
+def advanced_disease_advisory(request: AdvancedAdvisoryRequest):
+    """Officer-reported observations refine *scouting* advice, not chemical prescriptions.
+
+    This does NOT write to the Step43 observation CSV or rerun a forecast model.
+    """
+    try:
+        return build_advanced_disease_advisory(**request.model_dump())
+    except (ValueError, ValidationError) as exc:
+        raise HTTPException(422, str(exc)) from exc
