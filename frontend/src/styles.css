@@ -128,6 +128,50 @@ select {
   overflow-wrap: anywhere;
 }
 
+.passport-qr-download {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #176f4d;
+  color: #fff;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.passport-qr-download:hover {
+  background: #10583c;
+}
+
+.passport-qr-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #d7e0d8;
+  border-radius: 10px;
+  background: #f8fbf8;
+}
+
+.passport-qr-preview img {
+  width: 168px;
+  height: 168px;
+  image-rendering: pixelated;
+}
+
+.passport-qr-preview p {
+  color: #435148;
+}
+
+@media (max-width: 600px) {
+  .passport-qr-preview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .page-nav a {
   padding: 10px 15px;
   border: 1px solid #cfd9d0;
