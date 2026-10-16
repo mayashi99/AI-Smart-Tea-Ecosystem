@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+from app.services.component04.zone_intelligence import calculate_zone_quality
 
 
 BACKEND_DIR = Path(__file__).resolve().parents[3]
@@ -96,6 +97,21 @@ def _load_context(question: str, preferences: dict) -> tuple[list[dict], dict]:
                      "Forecasts are planning estimates, not shipment commitments."),
         },
     ]
+    zone_quality = None
+    if preferences.get("zone"):
+        zone_quality = calculate_zone_quality(
+            preferences["zone"],
+            float(preferences["climate_suitability"]),
+            float(preferences["export_success_rate"]),
+        )
+        evidence.append({
+            "id": "E5", "title": "Zone Quality Score",
+            "source": "Component 04 Zone Intelligence Engine / weighted score",
+            "text": (f"{zone_quality['zone']} has a score of {zone_quality['quality_score']}/100 "
+                     f"({zone_quality['band']}). The weighted factor scores are "
+                     + ", ".join(f"{item['label']} {item['score']:.1f}/100 ({item['weight']}% weight)" for item in zone_quality["factors"])
+                     + ". Climate suitability and export success rate were user-declared; auction quantity share is a buyer-preference proxy."),
+        })
     fact_text = "\n".join(item["text"] for item in evidence)
     knowledge = retrieve_knowledge(question, fact_text)
     all_evidence = evidence + [
@@ -107,6 +123,7 @@ def _load_context(question: str, preferences: dict) -> tuple[list[dict], dict]:
         "preferences": preferences,
         "evidence": all_evidence,
         "model": metrics,
+        "zone_quality": zone_quality,
         "outlook": {"percent_change": percent_change, "forecast_total_kg": forecast_total,
                     "actual_total_kg": actual_total, "peak_month": peak.date.strftime("%Y-%m"),
                     "trough_month": trough.date.strftime("%Y-%m")},
@@ -144,6 +161,14 @@ def _fallback_recommendations(context: dict) -> dict:
          "reason": "The current workbook is aggregate and does not include the row-level destination/product quantities needed for that decision.",
          "evidence_ids": ["E4"]},
     ]
+    if context.get("zone_quality"):
+        zone_result = context["zone_quality"]
+        recommendations.insert(0, {
+            "title": f"Include {zone_result['zone']} in the export plan",
+            "action": zone_result["recommendation"],
+            "reason": "The Zone Quality Score combines auction price, export success rate, buyer preference proxy, historical auction demand, and climate suitability using the stated weights.",
+            "evidence_ids": ["E5"],
+        })
     # A requested destination can be acknowledged, while making the evidence gap explicit.
     country = context["preferences"].get("destination_country")
     if country:

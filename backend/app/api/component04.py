@@ -11,6 +11,8 @@ from io import BytesIO
 from app.services.component04.digital_passport import add_passport_event, list_passports, verify_ledger
 from app.services.component04.export_advisor import make_recommendations
 from app.services.component04.export_readiness import calculate_export_readiness
+from app.services.component04.export_market_optimizer import get_forecast_context, rank_export_markets
+from app.services.component04.zone_intelligence import calculate_zone_quality, get_zone_intelligence_data
 
 
 router = APIRouter(prefix="/api/component04", tags=["component04"])
@@ -20,6 +22,11 @@ class ExportAdvisorRequest(BaseModel):
     question: str = Field(min_length=5, max_length=1200)
     destination_country: str | None = Field(default=None, max_length=100)
     business_goal: str | None = Field(default=None, max_length=300)
+    zone: Literal["High Growns", "Medium Growns", "Low Growns"] | None = None
+    climate_suitability: float | None = Field(default=None, ge=0, le=100)
+    export_success_rate: float | None = Field(default=None, ge=0, le=100)
+    climate_evidence: str | None = Field(default=None, max_length=300)
+    export_success_evidence: str | None = Field(default=None, max_length=300)
 
 
 class ExportReadinessRequest(BaseModel):
@@ -36,6 +43,27 @@ class PassportEventRequest(BaseModel):
     tea_grade: str = Field(min_length=1, max_length=80)
     quantity_kg: float = Field(gt=0, le=100_000_000)
     note: str | None = Field(default=None, max_length=500)
+
+
+class ZoneQualityRequest(BaseModel):
+    zone: Literal["High Growns", "Medium Growns", "Low Growns"]
+    climate_suitability: float = Field(ge=0, le=100)
+    export_success_rate: float = Field(ge=0, le=100)
+    climate_evidence: str | None = Field(default=None, max_length=300)
+    export_success_evidence: str | None = Field(default=None, max_length=300)
+
+
+class ExportMarketInput(BaseModel):
+    country: str = Field(min_length=2, max_length=100)
+    annual_demand_tonnes: float = Field(gt=0, le=1_000_000_000)
+    consistent_import_years_last_5: int = Field(ge=0, le=5)
+    evidence_source: str = Field(min_length=3, max_length=300)
+
+
+class ExportMarketOptimizerRequest(BaseModel):
+    tea_grade: str = Field(min_length=1, max_length=80)
+    batch_quantity_tonnes: float = Field(gt=0, le=1_000_000)
+    markets: list[ExportMarketInput] = Field(min_length=2, max_length=10)
 
 ML_DIR = Path(__file__).resolve().parents[2] / "ml"
 DATA_DIR = ML_DIR / "datasets" / "processed" / "component04"
@@ -205,10 +233,10 @@ def get_combined_auction_price():
 def post_export_advisor(request: ExportAdvisorRequest):
     """Generate export planning recommendations grounded in local data and RAG documents."""
     try:
-        return make_recommendations(
-            request.question,
-            {"destination_country": request.destination_country, "business_goal": request.business_goal},
-        )
+        preferences = request.model_dump(exclude={"question"})
+        if request.zone and (request.climate_suitability is None or request.export_success_rate is None):
+            raise HTTPException(status_code=422, detail="Zone recommendations require climate suitability and export success scores.")
+        return make_recommendations(request.question, preferences)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except (ValueError, KeyError) as exc:
@@ -270,3 +298,50 @@ def get_digital_passport_qr(
         media_type="image/png",
         headers={"Content-Disposition": f'{"attachment" if download else "inline"}; filename="tea-passport-{filename_id}.png"'},
     )
+
+
+@router.get("/zone-intelligence")
+def get_zone_intelligence():
+    try:
+        return get_zone_intelligence_data()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (ValueError, KeyError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not prepare zone intelligence data: {exc}") from exc
+
+
+@router.post("/zone-intelligence/score")
+def post_zone_intelligence_score(request: ZoneQualityRequest):
+    try:
+        return calculate_zone_quality(**request.model_dump())
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (ValueError, KeyError, OSError) as exc:
+        raise HTTPException(status_code=422, detail=f"Could not calculate zone quality score: {exc}") from exc
+
+
+@router.post("/export-market-optimizer")
+def post_export_market_optimizer(request: ExportMarketOptimizerRequest):
+    countries = [market.country.strip().casefold() for market in request.markets]
+    if len(set(countries)) != len(countries):
+        raise HTTPException(status_code=422, detail="Each destination country must be unique.")
+    try:
+        return rank_export_markets(
+            request.tea_grade,
+            request.batch_quantity_tonnes,
+            [market.model_dump() for market in request.markets],
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (ValueError, KeyError, OSError) as exc:
+        raise HTTPException(status_code=422, detail=f"Could not use forecast data to rank markets: {exc}") from exc
+
+
+@router.get("/export-market-optimizer/context")
+def get_export_market_optimizer_context():
+    try:
+        return get_forecast_context()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (ValueError, KeyError, OSError) as exc:
+        raise HTTPException(status_code=422, detail=f"Could not load forecast context: {exc}") from exc
