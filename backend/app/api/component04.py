@@ -4,8 +4,11 @@ from pathlib import Path
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from typing import Literal
 
+from app.services.component04.digital_passport import add_passport_event, list_passports, verify_ledger
 from app.services.component04.export_advisor import make_recommendations
+from app.services.component04.export_readiness import calculate_export_readiness
 
 
 router = APIRouter(prefix="/api/component04", tags=["component04"])
@@ -15,6 +18,22 @@ class ExportAdvisorRequest(BaseModel):
     question: str = Field(min_length=5, max_length=1200)
     destination_country: str | None = Field(default=None, max_length=100)
     business_goal: str | None = Field(default=None, max_length=300)
+
+
+class ExportReadinessRequest(BaseModel):
+    destination_country: str | None = Field(default=None, max_length=100)
+    monthly_capacity_tonnes: float = Field(gt=0, le=1_000_000)
+    documents: dict[str, bool]
+    quality_controls_ready: bool
+
+
+class PassportEventRequest(BaseModel):
+    batch_id: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+    event_type: Literal["Batch created", "Collected", "Processed", "Quality checked", "Packed", "Exported", "Received"]
+    location: str = Field(min_length=2, max_length=120)
+    tea_grade: str = Field(min_length=1, max_length=80)
+    quantity_kg: float = Field(gt=0, le=100_000_000)
+    note: str | None = Field(default=None, max_length=500)
 
 ML_DIR = Path(__file__).resolve().parents[2] / "ml"
 DATA_DIR = ML_DIR / "datasets" / "processed" / "component04"
@@ -192,3 +211,31 @@ def post_export_advisor(request: ExportAdvisorRequest):
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except (ValueError, KeyError) as exc:
         raise HTTPException(status_code=422, detail=f"Could not prepare grounded advice: {exc}") from exc
+
+
+@router.post("/export-readiness")
+def post_export_readiness(request: ExportReadinessRequest):
+    expected_documents = {"business_registration", "tea_board_registration", "quality_certificate", "origin_certificate", "shipment_plan"}
+    if set(request.documents) != expected_documents:
+        raise HTTPException(status_code=422, detail=f"documents must contain exactly: {', '.join(sorted(expected_documents))}")
+    try:
+        return calculate_export_readiness(request.model_dump())
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (ValueError, KeyError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not calculate export readiness: {exc}") from exc
+
+
+@router.get("/digital-passports")
+def get_digital_passports():
+    return list_passports()
+
+
+@router.post("/digital-passports/events")
+def post_digital_passport_event(request: PassportEventRequest):
+    return add_passport_event(**request.model_dump())
+
+
+@router.get("/digital-passports/verify")
+def get_digital_passport_verification():
+    return verify_ledger()

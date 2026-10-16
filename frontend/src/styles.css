@@ -33,10 +33,99 @@ select {
 
 .page-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   max-width: 1280px;
   margin: 0 auto;
   padding: 18px 32px 0;
+}
+
+.eri-checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #d7e0d8;
+  border-radius: 10px;
+}
+
+.eri-checklist legend {
+  padding: 0 6px;
+  color: #435148;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.eri-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #435148;
+}
+
+.eri-check input {
+  accent-color: #176f4d;
+}
+
+.eri-result,
+.passport-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.eri-score {
+  color: #176f4d;
+  font-size: 3.5rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.eri-score small {
+  color: #738078;
+  font-size: 1rem;
+}
+
+.eri-criteria .metric-card p {
+  margin-bottom: 0;
+  color: #65736b;
+  font-size: 0.86rem;
+}
+
+.passport-list {
+  display: grid;
+  gap: 14px;
+}
+
+.passport-list > h2 {
+  margin: 0;
+}
+
+.passport-title h3 {
+  margin: 0;
+}
+
+.passport-events {
+  display: grid;
+  margin-top: 12px;
+}
+
+.passport-event {
+  display: grid;
+  gap: 4px;
+  padding: 13px 0;
+  border-top: 1px solid #e5ebe5;
+}
+
+.passport-event span,
+.passport-event small {
+  color: #65736b;
+}
+
+.passport-event small {
+  overflow-wrap: anywhere;
 }
 
 .page-nav a {
@@ -197,6 +286,11 @@ h2 {
   gap: 8px;
   min-height: 104px;
   padding: 18px;
+}
+
+.accuracy-card {
+  border-color: #a8cdb5;
+  background: #f0f8f2;
 }
 
 .metric-card span {
