@@ -1,0 +1,10 @@
+{
+    "model": "LightGBM",
+    "target": "kg_per_Acre",
+    "test_year": 2025,
+    "test_rows": 576,
+    "MAE": 8.85716308805252,
+    "RMSE": 10.377078369727904,
+    "R2": 0.8289862282399658,
+    "MAPE_percent": 8.286254751204869
+}
