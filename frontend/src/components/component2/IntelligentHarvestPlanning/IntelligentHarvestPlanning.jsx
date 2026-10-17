@@ -177,7 +177,8 @@ export default function IntelligentHarvestPlanning() {
         setCompletedPhotos(completed);
       });
 
-      if (summarizeHarvestReadiness(photoResults).label !== "Harvest Ready") return;
+      const summary = summarizeHarvestReadiness(photoResults);
+      if (summary.label !== "Harvest Ready") return;
 
       // Step 2: Call the existing CatBoost Expected Yield API.
       const yieldResponse = await fetch(

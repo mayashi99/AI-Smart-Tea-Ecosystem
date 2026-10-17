@@ -50,8 +50,8 @@ function Navbar() {
         <div className="flex flex-wrap items-center gap-1 rounded-3xl border border-slate-200 bg-slate-50 p-1 sm:rounded-full" role="list">
           <NavLink className={navigationClass} role="listitem" to="/plant-density">Density</NavLink>
           <NavLink className={navigationClass} role="listitem" to="/plantation-health">Health</NavLink>
-          <NavLink className={navigationClass} role="listitem" to="/harvest-readiness">Harvest Readiness</NavLink>
-          <NavLink className={navigationClass} role="listitem" to="/yield-prediction">Yield Prediction</NavLink>
+          <NavLink className={navigationClass} role="listitem" to="/intelligent-harvest-planning">Intelligent Harvest Planning</NavLink>
+          <NavLink className={navigationClass} role="listitem" to="/harvest-quality">Harvest Quality</NavLink>
         </div>
       </div>
     </nav>

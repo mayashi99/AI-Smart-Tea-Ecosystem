@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom'
 
 import Home from './Home/Home'
+import HarvestQuality from './components/component2/HarvestQuality/HarvestQuality'
 import PlantDensity from './components/component2/PlantDensity/PlantDensity'
 import PlantHealth from './components/component2/PlantHelth/PlantHealth'
 import HarvestReadiness from './components/component2/HarvestReadiness/HarvestReadiness'
@@ -41,6 +42,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/harvest-quality" element={<HarvestQuality />} />
 
         <Route
           path="/plant-density"
