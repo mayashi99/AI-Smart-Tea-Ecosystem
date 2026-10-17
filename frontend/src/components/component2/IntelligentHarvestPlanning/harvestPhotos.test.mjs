@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyseHarvestPhotos, summarizeHarvestReadiness, validatePhotoSelection } from './harvestPhotos.js';
+import { analyseHarvestPhotos, summarizeHarvestReadiness, validatePhotoSelection, validateTeaPhotos } from './harvestPhotos.js';
 
 const file = (name = 'tea.jpg', options = {}) => ({ name, size: 1024, type: 'image/jpeg', ...options });
 
@@ -121,4 +121,36 @@ test('invalid successful API responses become photo errors and processing contin
   assert.match(results[0].error, /invalid readiness result/);
   assert.equal(summarizeHarvestReadiness(results).readyPercent, 90);
   assert.equal(summarizeHarvestReadiness(results).failedCount, 1);
+});
+
+
+test('validates all ten photos in batches supported by the shared API', async () => {
+  const files = Array.from({ length: 10 }, (_, i) => new File(['image'], `tea-${i}.jpg`, { type: 'image/jpeg' }));
+  const seen = [];
+  await validateTeaPhotos(files, '', undefined, async (url, options) => {
+    assert.equal(url, '/component02/validate-images');
+    const batch = options.body.getAll('files');
+    assert.equal(batch.length, 5);
+    seen.push(...batch.map(file => file.name));
+    return { ok: true, json: async () => ({ success: true }) };
+  });
+  assert.deepEqual(seen, files.map(file => file.name));
+});
+
+test('rejects a selection when the second batch contains a non-tea image', async () => {
+  let calls = 0;
+  const files = Array.from({ length: 6 }, () => new File(['image'], 'photo.jpg'));
+  await assert.rejects(validateTeaPhotos(files, '', undefined, async () => {
+    calls++;
+    return calls === 1
+      ? { ok: true, json: async () => ({ success: true }) }
+      : { ok: false, json: async () => ({ detail: 'Could not identify tea leaves in car.jpg' }) };
+  }), /car.jpg/);
+  assert.equal(calls, 2);
+});
+
+test('fails closed when the image validation server returns invalid JSON', async () => {
+  await assert.rejects(validateTeaPhotos([new File(['image'], 'tea.jpg')], '', undefined, async () => ({
+    ok: true, json: async () => { throw new Error('invalid JSON'); },
+  })), /Could not validate/);
 });

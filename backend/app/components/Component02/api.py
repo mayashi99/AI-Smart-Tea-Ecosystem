@@ -6,7 +6,9 @@ from zoneinfo import ZoneInfo
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from starlette.concurrency import run_in_threadpool
 from ultralytics import YOLO
+from .image_validation import validate_tea_image, MAX_IMAGE_BYTES
 
 
 # ============================================================
@@ -980,6 +982,15 @@ def health_check():
 # IMAGE PREDICTION
 # ============================================================
 
+@router.post("/validate-images")
+async def validate_images(files: list[UploadFile] = File(...)):
+    if not 1 <= len(files) <= 5:
+        raise HTTPException(400, "Please upload between 1 and 5 tea plantation images.")
+    for file in files:
+        await run_in_threadpool(validate_tea_image, await file.read(MAX_IMAGE_BYTES + 1), file.filename or "image")
+    return {"success": True}
+
+
 @router.post("/predict")
 async def predict_image(
     file: UploadFile = File(...)
@@ -1034,7 +1045,7 @@ async def predict_image(
     # Read image
     # --------------------------------------------------------
 
-    image_bytes = await file.read()
+    image_bytes = await file.read(MAX_IMAGE_BYTES + 1)
 
 
     if not image_bytes:
@@ -1045,6 +1056,7 @@ async def predict_image(
         )
 
 
+    await run_in_threadpool(validate_tea_image, image_bytes, file.filename)
     temp_path = None
 
 
@@ -1358,13 +1370,14 @@ async def assess_plantation(
                     )
                 )
 
-            image_bytes = await uploaded_file.read()
+            image_bytes = await uploaded_file.read(MAX_IMAGE_BYTES + 1)
             if not image_bytes:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Uploaded image '{uploaded_file.filename}' is empty."
                 )
 
+            await run_in_threadpool(validate_tea_image, image_bytes, uploaded_file.filename)
             with tempfile.NamedTemporaryFile(
                 suffix=file_extension,
                 delete=False

@@ -5,6 +5,8 @@ from pathlib import Path
 import torch
 from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
 from ultralytics import YOLO
+from starlette.concurrency import run_in_threadpool
+from ..image_validation import validate_tea_image, MAX_IMAGE_BYTES
 
 app = FastAPI(title="Tea Harvest Readiness API")
 router = APIRouter(tags=["Harvest Readiness"])
@@ -45,13 +47,15 @@ async def predict(file: UploadFile = File(...)):
             detail="Upload a JPG, PNG, or WEBP image."
         )
 
-    image_bytes = await file.read()
+    image_bytes = await file.read(MAX_IMAGE_BYTES + 1)
 
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Uploaded image is empty.")
 
     if len(image_bytes) > 10 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Maximum image size is 10 MB.")
+
+    await run_in_threadpool(validate_tea_image, image_bytes, file.filename or "image")
 
     import io
     from PIL import Image, UnidentifiedImageError

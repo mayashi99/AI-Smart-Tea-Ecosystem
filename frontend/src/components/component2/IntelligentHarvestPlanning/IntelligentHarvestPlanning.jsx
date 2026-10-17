@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./IntelligentHarvestPlanning.css";
-import { analyseHarvestPhotos, MAX_PHOTOS, summarizeHarvestReadiness, validatePhotoSelection } from "./harvestPhotos";
+import { analyseHarvestPhotos, MAX_PHOTOS, summarizeHarvestReadiness, validatePhotoSelection, validateTeaPhotos } from "./harvestPhotos";
 import { emptyClimate, fetchPlanningClimate, getSriLankaDate, harvestPeriod } from "./planningClimate";
 import HarvestForecast from "./HarvestForecast";
 
@@ -36,10 +36,16 @@ const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "" : "http://
 export default function IntelligentHarvestPlanning() {
   const [photos, setPhotos] = useState([]);
   const previewUrls = useRef(new Set());
+  const validationController = useRef(null);
+  const [validatingPhotos, setValidatingPhotos] = useState(false);
+  const [photoError, setPhotoError] = useState("");
 
   useEffect(() => {
     const urls = previewUrls.current;
-    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+    return () => {
+      validationController.current?.abort();
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
   }, []);
 
   function clearResults() {
@@ -49,25 +55,44 @@ export default function IntelligentHarvestPlanning() {
     setCompletedPhotos(0);
   }
 
-  function handleImageChange(event) {
+  async function handleImageChange(event) {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
-    if (!files.length) return;
+    if (!files.length || loading || validationController.current) return;
+    clearResults();
+    setPhotoError("");
     const validationError = validatePhotoSelection(photos.length, files);
     if (validationError) {
-      setError(validationError);
+      setPhotoError(validationError);
       return;
     }
-    const added = files.map((file) => {
-      const preview = URL.createObjectURL(file);
-      previewUrls.current.add(preview);
-      return { id: crypto.randomUUID(), file, preview };
-    });
-    setPhotos((previous) => [...previous, ...added]);
-    clearResults();
+    const controller = new AbortController();
+    validationController.current = controller;
+    setValidatingPhotos(true);
+    try {
+      await validateTeaPhotos(files, API, controller.signal);
+      if (controller.signal.aborted) return;
+      const added = files.map((file) => {
+        const preview = URL.createObjectURL(file);
+        previewUrls.current.add(preview);
+        return { id: crypto.randomUUID(), file, preview };
+      });
+      setPhotos((previous) => [...previous, ...added]);
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        setPhotoError(err instanceof TypeError
+          ? "Unable to check photos. Please make sure the backend is running and try again."
+          : err.message);
+      }
+    } finally {
+      if (!controller.signal.aborted) setValidatingPhotos(false);
+      validationController.current = null;
+    }
   }
 
   function removePhoto(id) {
+    if (loading || validatingPhotos) return;
+    setPhotoError("");
     const photo = photos.find((item) => item.id === id);
     if (!photo) return;
     URL.revokeObjectURL(photo.preview);
@@ -77,7 +102,8 @@ export default function IntelligentHarvestPlanning() {
   }
 
   function clearAllPhotos() {
-    if (loading) return;
+    if (loading || validatingPhotos) return;
+    setPhotoError("");
     previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
     previewUrls.current.clear();
     setPhotos([]);
@@ -158,7 +184,7 @@ export default function IntelligentHarvestPlanning() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (weatherStatus === "loading") return;
+    if (weatherStatus === "loading" || loading || validationController.current || photoError) return;
 
     if (!photos.length) {
       setError("Please add at least one tea bush photo.");
@@ -234,7 +260,7 @@ export default function IntelligentHarvestPlanning() {
         </header>
 
         <form onSubmit={handleSubmit}>
-          <fieldset className="hp-form-fields" disabled={loading}>
+          <fieldset className="hp-form-fields" disabled={loading || validatingPhotos}>
             <legend className="hp-sr-only">Harvest planning inputs</legend>
             <div className="hp-workspace">
               <section className="hp-card hp-photo-card" aria-labelledby="hp-photo-title">
@@ -265,6 +291,8 @@ export default function IntelligentHarvestPlanning() {
                     </label> : <p className="hp-photo-limit">All 10 photo slots filled. Remove a photo to add another.</p>}
                   </div>}
                 </div>
+                {validatingPhotos && <p role="status">Checking photos for tea leaves…</p>}
+                {photoError && <div className="hp-error" role="alert"><strong>Please check your photos.</strong><p>{photoError}</p></div>}
                 <div className="hp-photo-tip"><PlanningIcon /><div><strong>For a more useful assessment</strong><ul><li>Keep tea leaves clear and in focus.</li><li>Use natural light and avoid deep shadows.</li><li>Include different areas of the same field.</li></ul></div></div>
                 <div className="hp-photo-summary"><PlanningIcon type="chart" /><p>All photos contribute to <strong>one overall readiness score.</strong></p></div>
               </section>
@@ -308,7 +336,7 @@ export default function IntelligentHarvestPlanning() {
             <div className="hp-action-context"><span className="hp-action-icon"><PlanningIcon type={photos.length ? "check" : "upload"} /></span><div><strong>{photos.length ? `${photos.length} ${photos.length === 1 ? "photo" : "photos"} selected for analysis` : "Start with your crop photos"}</strong><p>{photos.length ? `${location} · ${MONTHS[Number(month) - 1]} ${year} · Week ${week}` : "Add at least one photo, then review your field details."}</p></div></div>
             <div className="hp-action-buttons">
               {photos.length > 0 && <button type="button" className="hp-clear-photos" onClick={clearAllPhotos} disabled={loading}><PlanningIcon type="close" /> Clear all photos</button>}
-              <button className="hp-submit" type="submit" disabled={loading || weatherStatus === "loading"}>{loading ? <><span className="hp-spinner" /> {progressLabel}</> : <>Analyse & Predict <PlanningIcon type="arrow" /></>}</button>
+              <button className="hp-submit" type="submit" disabled={loading || validatingPhotos || !!photoError || !photos.length || weatherStatus === "loading"}>{validatingPhotos ? <><span className="hp-spinner" /> Checking tea photos…</> : loading ? <><span className="hp-spinner" /> {progressLabel}</> : <>Analyse & Predict <PlanningIcon type="arrow" /></>}</button>
             </div>
           </div>
         </form>

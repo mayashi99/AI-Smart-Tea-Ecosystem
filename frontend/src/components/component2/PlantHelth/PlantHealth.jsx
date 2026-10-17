@@ -197,6 +197,8 @@ function PlantHealth() {
   const selectedLocation = TEA_ZONES[zone]?.locations.find((item) => item.name === locationName)
   const [date, setDate] = useState(getLocalDate)
   const [loading, setLoading] = useState(false)
+  const [validatingImages, setValidatingImages] = useState(false)
+  const imageValidationRequest = useRef(0)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
   const fileInputRef = useRef(null)
@@ -207,9 +209,15 @@ function PlantHealth() {
 
   const fieldClass = 'h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-600/10'
 
-  const setImages = (fileList) => {
+  const setImages = async (fileList) => {
+    if (loading) return
     const files = Array.from(fileList || [])
     if (files.length === 0) return
+    const requestId = ++imageValidationRequest.current
+    setValidatingImages(false)
+    setSelectedFiles([])
+    setPreviewUrls([])
+    setResult(null)
     if (files.length > 5) {
       setError('Please choose a maximum of 5 plantation images.')
       return
@@ -218,14 +226,37 @@ function PlantHealth() {
       setError('Please choose JPG, JPEG, PNG, or WEBP plantation images only.')
       return
     }
+    if (files.some((file) => file.size > 10 * 1024 * 1024)) {
+      setError('Each image must be smaller than 10 MB.')
+      return
+    }
     previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
-    setSelectedFiles(files)
     setPreviewUrls(files.map((file) => URL.createObjectURL(file)))
     setError('')
-    setResult(null)
+    setValidatingImages(true)
+    try {
+      const formData = new FormData()
+      files.forEach((file) => formData.append('files', file))
+      const response = await fetch(`${API_BASE_URL}/component02/validate-images`, { method: 'POST', body: formData })
+      const payload = await response.json()
+      if (!response.ok || payload.success !== true) {
+        throw new Error(typeof payload.detail === 'string' ? payload.detail : 'Could not validate these images. Please try again.')
+      }
+      if (requestId === imageValidationRequest.current) setSelectedFiles(files)
+    } catch (err) {
+      if (requestId === imageValidationRequest.current) {
+        setError(err instanceof TypeError ? 'Unable to validate images. Please check that the backend is running.' : err.message)
+      }
+    } finally {
+      if (requestId === imageValidationRequest.current) setValidatingImages(false)
+    }
   }
 
   const removeImage = () => {
+    if (loading) return
+    ++imageValidationRequest.current
+    setValidatingImages(false)
+    setError('')
     previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
     setSelectedFiles([])
     setPreviewUrls([])
@@ -248,6 +279,7 @@ function PlantHealth() {
 
   const handleAnalyze = async (event) => {
     event.preventDefault()
+    if (validatingImages || loading) return
     const validationError = validate()
     if (validationError) {
       setError(validationError)
@@ -335,22 +367,22 @@ function PlantHealth() {
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                       {previewUrls.map((previewUrl, index) => (
                         <div className="overflow-hidden rounded-xl border border-emerald-100 bg-white" key={previewUrl}>
-                          <img alt={`Selected tea plantation ${index + 1}`} className="h-28 w-full object-cover" src={previewUrl} />
+                          <img alt={`Uploaded image ${index + 1}`} className="h-28 w-full object-cover" src={previewUrl} />
                           <div className="px-2 py-2"><p className="truncate text-xs font-bold text-slate-700">Image {index + 1}</p><p className="truncate text-[10px] text-slate-400">{selectedFiles[index]?.name}</p></div>
                         </div>
                       ))}
                     </div>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-bold text-emerald-800">{selectedFiles.length} image{selectedFiles.length === 1 ? '' : 's'} selected (maximum 5)</p><div className="flex gap-2"><button className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-100" onClick={() => fileInputRef.current?.click()} type="button">Change Images</button><button aria-label="Remove selected images" className="rounded-lg bg-red-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-red-600" onClick={removeImage} type="button">Remove All</button></div></div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-bold text-emerald-800">{previewUrls.length} image{previewUrls.length === 1 ? '' : 's'} selected (maximum 5)</p><div className="flex gap-2"><button className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-100" onClick={() => fileInputRef.current?.click()} type="button">Change Images</button><button aria-label="Remove selected images" className="rounded-lg bg-red-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-red-600" onClick={removeImage} type="button">Remove All</button></div></div>
                   </div>
                 ) : (
                   <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/50 px-5 text-center transition hover:border-emerald-500 hover:bg-emerald-50 focus-within:ring-4 focus-within:ring-emerald-600/10" htmlFor="plantation-image" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
                     <div className="mb-4 rounded-2xl bg-white p-4 text-emerald-700 shadow-sm"><Icon name="upload" size={26} /></div>
                     <p className="font-bold text-slate-800">Upload up to 5 Plantation Images</p>
                     <p className="mt-1 text-sm text-slate-500">Select multiple field images for a more reliable health result</p>
-                    <p className="mt-3 text-xs font-medium text-slate-400">JPG, JPEG, PNG or WEBP · maximum 5 images</p>
+                    <p className="mt-3 text-xs font-medium text-slate-400">Clear tea leaf or tea plantation photos · JPG, PNG or WEBP · up to 5 images, 10 MB each</p>
                   </label>
                 )}
-                <input ref={fileInputRef} accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" className="sr-only" id="plantation-image" multiple onChange={(event) => setImages(event.target.files)} type="file" />
+                <input ref={fileInputRef} accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" className="sr-only" id="plantation-image" multiple disabled={loading} onChange={(event) => { setImages(event.target.files); event.target.value = '' }} type="file" />
               </div>
               <div className="grid content-start gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 <div>
@@ -359,7 +391,7 @@ function PlantHealth() {
                     setZone(event.target.value)
                     setLocationName('')
                     setResult(null)
-                    setError('')
+                    if (selectedFiles.length > 0) setError('')
                   }}>
                     <option value="">Select growing zone</option>
                     {Object.entries(TEA_ZONES).map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}
@@ -370,7 +402,7 @@ function PlantHealth() {
                   <select className={`${fieldClass} disabled:opacity-60`} disabled={!zone || loading} id="plantation-location" value={locationName} onChange={(event) => {
                     setLocationName(event.target.value)
                     setResult(null)
-                    setError('')
+                    if (selectedFiles.length > 0) setError('')
                   }}>
                     <option value="">{zone ? 'Select location' : 'Select a growing zone first'}</option>
                     {(TEA_ZONES[zone]?.locations || []).map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}
@@ -383,10 +415,10 @@ function PlantHealth() {
                 </div>
               </div>
             </div>
-            {error && <div aria-live="assertive" className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800"><Icon className="mt-0.5 shrink-0" name="alert" size={18} /><p>{error}</p></div>}
+            {error && <div role="alert" aria-live="assertive" className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800"><Icon className="mt-0.5 shrink-0" name="alert" size={18} /><p>{error}</p></div>}
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               {result && <button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 focus:outline-none focus:ring-4 focus:ring-emerald-600/10" onClick={handleNewAnalysis} type="button"><Icon name="refresh" size={17} /> New Analysis</button>}
-              <button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-600/20 disabled:cursor-wait disabled:opacity-70" disabled={loading} type="submit"><Icon name={loading ? 'activity' : 'sparkles'} size={18} />{loading ? 'Analyzing Plantation...' : 'Analyze Plantation'}</button>
+              <button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-600/20 disabled:cursor-wait disabled:opacity-70" disabled={loading || validatingImages || selectedFiles.length === 0} type="submit"><Icon name={loading ? 'activity' : 'sparkles'} size={18} />{validatingImages ? 'Checking tea images...' : loading ? 'Analyzing Plantation...' : 'Analyze Plantation'}</button>
             </div>
           </form>
         </section>

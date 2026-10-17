@@ -1,5 +1,21 @@
 export const MAX_PHOTOS = 10;
 
+export async function validateTeaPhotos(files, api, signal, request = fetch) {
+  // The shared validation API accepts five images per request.
+  for (let offset = 0; offset < files.length; offset += 5) {
+    const body = new FormData();
+    files.slice(offset, offset + 5).forEach((file) => body.append("files", file));
+    const response = await request(`${api}/component02/validate-images`, {
+      method: "POST", body, signal,
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data?.success !== true) {
+      throw new Error(typeof data?.detail === "string" ? data.detail
+        : "Could not validate these photos. Please try again.");
+    }
+  }
+}
+
 export function validatePhotoSelection(existingCount, files) {
   if (existingCount + files.length > MAX_PHOTOS) {
     return `You can add up to ${MAX_PHOTOS} photos. You have ${MAX_PHOTOS - existingCount} slots left.`;
