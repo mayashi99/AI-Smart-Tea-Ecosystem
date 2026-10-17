@@ -4,9 +4,9 @@ import requests
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Optional
+from functools import lru_cache
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from ultralytics import YOLO
 
 
 # ============================================================
@@ -52,31 +52,21 @@ MODEL_PATH = (
 )
 
 
-# ============================================================
-# CHECK MODEL
-# ============================================================
-
-if not MODEL_PATH.exists():
-
-    raise FileNotFoundError(
-        f"Trained model not found:\n{MODEL_PATH}"
-    )
-
-
-# ============================================================
-# LOAD YOLO11 MODEL
-# ============================================================
-
-model = YOLO(str(MODEL_PATH))
-
-
-print("=" * 70)
-print("COMPONENT 02 - PLANTATION HEALTH API")
-print("=" * 70)
-
-print("YOLO11 model loaded successfully")
-print(f"Model  : {MODEL_PATH}")
-print(f"Classes: {model.names}")
+@lru_cache(maxsize=1)
+def get_model():
+    if not MODEL_PATH.is_file():
+        raise HTTPException(
+            status_code=503,
+            detail="Plantation health model is unavailable.",
+        )
+    try:
+        from ultralytics import YOLO
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Plantation health prediction dependencies are not installed.",
+        ) from exc
+    return YOLO(str(MODEL_PATH))
 
 
 # ============================================================
@@ -171,7 +161,7 @@ def build_health_reason(prediction, low_health_image_count=None, image_count=Non
     return "The AI model did not detect visual patterns associated with low health."
 
 
-def extract_health_prediction(probabilities):
+def extract_health_prediction(probabilities, model):
     """Convert model output into the API's healthy/low_health categories."""
 
     predicted_class_id = int(probabilities.top1)
@@ -955,6 +945,7 @@ def build_stress_assessment(climate, history):
 
 @router.get("/health")
 def health_check():
+    model = get_model()
 
     return {
 
@@ -1072,6 +1063,7 @@ async def predict_image(
         # YOLO11 prediction
         # ----------------------------------------------------
 
+        model = get_model()
         results = model.predict(
 
             source=str(temp_path),
@@ -1106,9 +1098,7 @@ async def predict_image(
         # Top prediction
         # ----------------------------------------------------
 
-        health_prediction = extract_health_prediction(
-            probabilities
-        )
+        health_prediction = extract_health_prediction(probabilities, model)
 
         predicted_class = health_prediction["prediction"]
         confidence = health_prediction["confidence"]
@@ -1377,6 +1367,7 @@ async def assess_plantation(
         # 3. YOLO11 IMAGE ANALYSIS
         # ====================================================
 
+        model = get_model()
         results = model.predict(
             source=[str(path) for path in temp_paths],
             imgsz=224,
@@ -1398,7 +1389,7 @@ async def assess_plantation(
                     "YOLO model did not return classification probabilities."
                 )
 
-            health_prediction = extract_health_prediction(result.probs)
+            health_prediction = extract_health_prediction(result.probs, model)
             per_image_probabilities = health_prediction["class_probabilities"]
             healthy_probability_total += per_image_probabilities["healthy"]
             low_health_probability_total += per_image_probabilities["low_health"]

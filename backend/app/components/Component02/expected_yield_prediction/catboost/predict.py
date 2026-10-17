@@ -2,7 +2,6 @@
 from pathlib import Path
 
 import pandas as pd
-from catboost import CatBoostRegressor
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "models" / "catboost_yield.cbm"
@@ -28,6 +27,8 @@ def load_model():
         raise FileNotFoundError(
             f"Model file not found: {MODEL_PATH}"
         )
+
+    from catboost import CatBoostRegressor
 
     model = CatBoostRegressor()
     model.load_model(str(MODEL_PATH))
@@ -74,4 +75,3 @@ if __name__ == "__main__":
     print("Expected Yield Prediction")
     print(f"Location: {sample_input['Location']}")
     print(f"Predicted yield: {result} kg/acre")
-

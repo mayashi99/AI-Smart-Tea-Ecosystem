@@ -54,8 +54,14 @@ def predict_expected_yield(request: YieldPredictionRequest):
 
     except FileNotFoundError as exc:
         raise HTTPException(
-            status_code=500,
-            detail="Expected yield model file was not found.",
+            status_code=503,
+            detail="Expected yield model is unavailable.",
+        ) from exc
+
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Expected yield prediction dependencies are not installed.",
         ) from exc
 
     except ValueError as exc:

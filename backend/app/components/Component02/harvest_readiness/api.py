@@ -2,9 +2,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-import torch
 from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
-from ultralytics import YOLO
 
 app = FastAPI(title="Tea Harvest Readiness API")
 router = APIRouter(tags=["Harvest Readiness"])
@@ -19,14 +17,18 @@ MODEL_PATH = (
     / "best.pt"
 )
 
-device = "mps" if torch.backends.mps.is_available() else "cpu"
-
-
 @lru_cache(maxsize=1)
 def get_model():
     # A missing harvest model must not prevent the health API from starting.
     if not MODEL_PATH.is_file():
         raise HTTPException(status_code=503, detail="Harvest readiness model is unavailable.")
+    try:
+        from ultralytics import YOLO
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Harvest readiness prediction dependencies are not installed.",
+        ) from exc
     return YOLO(str(MODEL_PATH))
 
 
@@ -63,6 +65,9 @@ async def predict(file: UploadFile = File(...)):
 
     try:
         model = get_model()
+        import torch
+
+        device = "mps" if torch.backends.mps.is_available() else "cpu"
         results = model.predict(
             source=image,
             imgsz=224,
