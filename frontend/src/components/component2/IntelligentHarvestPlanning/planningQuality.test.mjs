@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { assessPlanningQuality } from './planningQuality.js';
+const today = '2026-10-15';
+const assessment = { success: true, image_analysis: { image_health_score: 91 }, climate: { data_date: today }, stress_assessment: { overall_climate_risk: 'Low' } };
+const day = { date: '2026-10-16', complete: true, rainfall_mm: 0, rain_probability_percent: 10, wind_max_m_s: 2, temperature_max_c: 25, thunderstorm: false };
+const forecast = { success: true, forecast_date: today, best_date: day.date, days: [day, { ...day, date: '2026-10-17' }, { ...day, date: '2026-10-18' }] };
+test('all four favourable signals produce Premium', () => assert.equal(assessPlanningQuality(assessment, 96, forecast, today).potential, 'Premium'));
+test('not ready produces Low despite high health', () => assert.equal(assessPlanningQuality(assessment, 3.3, forecast, today).potential, 'Low'));
+test('rain on the best day limits Premium to Medium', () => assert.equal(assessPlanningQuality(assessment, 96, { ...forecast, days: [{ ...day, rainfall_mm: 10 }, ...forecast.days.slice(1)] }, today).potential, 'Medium'));
+test('high climate risk produces Low', () => assert.equal(assessPlanningQuality({ ...assessment, stress_assessment: { overall_climate_risk: 'High' } }, 96, forecast, today).potential, 'Low'));
+test('no recommended weather day produces Low', () => assert.equal(assessPlanningQuality(assessment, 96, { ...forecast, best_date: null }, today).potential, 'Low'));
+test('incomplete forecast cannot claim quality', () => assert.throws(() => assessPlanningQuality(assessment, 96, { ...forecast, days: [{ ...day, complete: false }, ...forecast.days.slice(1)] }, today)));
+test('stale forecast is rejected', () => assert.throws(() => assessPlanningQuality(assessment, 96, { ...forecast, forecast_date: '2026-10-14' }, today)));

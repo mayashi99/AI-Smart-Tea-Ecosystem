@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 __pycache__/
 *.py[cod]
 *$py.class
@@ -8,10 +9,28 @@ env/
 .venv312/
 .venv*/
 
+=======
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variables
+>>>>>>> feature/yield-intelligence
 .env
 .env.*
 !.env.example
 
+<<<<<<< HEAD
 node_modules/
 dist/
 build/
@@ -31,3 +50,76 @@ backend/ml/**/*.joblib
 backend/ml/**/*.keras
 *.joblib
 *.keras
+=======
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Frontend builds
+frontend/dist/
+frontend/dist-ssr/
+
+# Logs
+logs/
+*.log
+
+# Data and model artifacts
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+models/
+checkpoints/
+artifacts/
+backend/plantation_health_dataset/
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.svg
+
+
+backend/app/components/Component02/dataset/
+backend/app/components/Component02/models/
+backend/app/components/Component02/runs/
+backend/app/components/Component02/uploads/
+backend/app/components/Component02/venv/
+>>>>>>> feature/yield-intelligence
