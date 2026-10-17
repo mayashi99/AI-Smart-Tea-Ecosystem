@@ -118,7 +118,6 @@ export default function HarvestQuality() {
   }
 
   const assessment = result?.assessment;
-  const isHarvestReady = result?.readiness.label === 'Harvest Ready';
   return (
     <main className="hq-page">
       <div className="hq-container">
@@ -168,10 +167,6 @@ export default function HarvestQuality() {
               <p className="mt-2 text-sm">{result.location} · Climate data date: {assessment.climate?.data_date}</p>
               <ul className="mt-4 list-disc space-y-2 pl-5">{result.quality.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>
             </section>
-            {isHarvestReady && <section className={`${panel} hq-yield-result`}><span className="hq-step-icon"><QualityIcon name="chart" /></span><h2 className="text-xl font-bold">Expected Tea Yield</h2>
-              {result.yieldData ? <><p className="mt-3 text-3xl font-bold text-emerald-800">{(result.yieldData.predicted_kg_per_Acre * result.acres).toLocaleString(undefined, { maximumFractionDigits: 2 })} kg total</p><p className="mt-2">{result.yieldData.predicted_kg_per_Acre} kg/acre × {result.acres} acres</p></> : <p className="mt-3 text-amber-800">Yield unavailable: {result.yieldError}</p>}
-              <p className="mt-3 text-sm text-slate-500">CatBoost estimate · {result.period.year}, month {result.period.month}, week bucket {result.period.week}. Uses today's climate as model inputs; this is not a measured harvest quantity or a weekly weather forecast. Total assumes similar conditions across the entered area.</p>
-            </section>}
             </div>
           </> : <>
           <span className="hq-overline">02 / THE BIGGER PICTURE</span><h2>One assessment.<br />Four useful insights.</h2><p className="hq-subtitle">From the condition of your leaves to the potential of your next harvest.</p>
