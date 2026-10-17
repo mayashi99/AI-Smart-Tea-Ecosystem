@@ -35,6 +35,11 @@ const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "" : "http://
 
 export default function IntelligentHarvestPlanning() {
   const [photos, setPhotos] = useState([]);
+  const [readiness, setReadiness] = useState([]);
+  const [completedPhotos, setCompletedPhotos] = useState(0);
+  const [yieldResult, setYieldResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const previewUrls = useRef(new Set());
 
   useEffect(() => {
@@ -110,11 +115,6 @@ export default function IntelligentHarvestPlanning() {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-    setClimate(emptyClimate());
-    setWeatherStatus("loading");
-    setWeatherError("");
-    setWeatherEdited(false);
-    setYieldResult(null);
     const timeout = window.setTimeout(() => {
       controller.abort();
       if (active) {
@@ -122,8 +122,18 @@ export default function IntelligentHarvestPlanning() {
         setWeatherError("Weather is taking too long to load. Retry or enter your field conditions manually.");
       }
     }, 35000);
-    fetchPlanningClimate(API, location, today, controller.signal)
+    Promise.resolve()
+      .then(() => {
+        if (!active || controller.signal.aborted) return null;
+        setClimate(emptyClimate());
+        setWeatherStatus("loading");
+        setWeatherError("");
+        setWeatherEdited(false);
+        setYieldResult(null);
+        return fetchPlanningClimate(API, location, today, controller.signal);
+      })
       .then((values) => {
+        if (!values) return;
         if (!active || controller.signal.aborted) return;
         setClimate(values);
         setWeatherStatus(Object.values(values).some((value) => value === "") ? "partial" : "ready");
@@ -140,12 +150,6 @@ export default function IntelligentHarvestPlanning() {
       window.clearTimeout(timeout);
     };
   }, [location, today, weatherRefresh]);
-
-  const [readiness, setReadiness] = useState([]);
-  const [completedPhotos, setCompletedPhotos] = useState(0);
-  const [yieldResult, setYieldResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   function handleGrownTypeChange(event) {
     const nextGrownType = event.target.value;

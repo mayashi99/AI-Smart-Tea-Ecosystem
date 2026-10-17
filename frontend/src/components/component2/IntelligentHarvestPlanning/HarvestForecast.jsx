@@ -15,9 +15,6 @@ export default function HarvestForecast({ api, location, today }) {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-    setLoading(true);
-    setForecast(null);
-    setError("");
     const timeout = window.setTimeout(() => {
       controller.abort();
       if (active) {
@@ -27,8 +24,16 @@ export default function HarvestForecast({ api, location, today }) {
     }, 25000);
     const [latitude, longitude] = CLIMATE_LOCATIONS[location];
     const params = new URLSearchParams({ latitude, longitude });
-    fetch(`${api}/component02/harvest-forecast?${params}`, { signal: controller.signal })
+    Promise.resolve()
+      .then(() => {
+        if (!active || controller.signal.aborted) return null;
+        setLoading(true);
+        setForecast(null);
+        setError("");
+        return fetch(`${api}/component02/harvest-forecast?${params}`, { signal: controller.signal });
+      })
       .then(async (response) => {
+        if (!response) return;
         if (!response.ok) throw new Error("The three-day forecast is unavailable. Please try again.");
         const data = await response.json();
         if (!data.success || data.forecast_date !== today || data.days?.length !== 3) {

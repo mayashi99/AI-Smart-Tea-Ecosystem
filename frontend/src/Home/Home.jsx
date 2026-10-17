@@ -58,6 +58,7 @@ function Home() {
               <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/harvest-quality">Harvest Quality <ArrowIcon /></Link>
               <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/yield-prediction">Yield Prediction <ArrowIcon /></Link>
               <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-5 text-sm font-bold text-white transition hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/30" to="/intelligent-harvest-planning">Intelligent Harvest Planning <ArrowIcon /></Link>
+              <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-emerald-300/40 px-5 text-sm font-bold text-emerald-200 transition hover:bg-emerald-300/10 focus:outline-none focus:ring-4 focus:ring-emerald-300/30" to="/export-demand">Explore tea exports <ArrowIcon /></Link>
             </div>
           </div>
           <div className="relative hidden min-h-72 lg:block">

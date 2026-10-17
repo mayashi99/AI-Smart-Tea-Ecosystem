@@ -16,7 +16,15 @@ export default function DigitalPassportPage() {
     if (!response.ok) throw new Error(payload.detail || 'Could not load passports')
     setLedger(payload)
   }, [])
-  useEffect(() => { refresh().catch((err) => setError(err.message)) }, [refresh])
+  useEffect(() => {
+    let active = true
+    Promise.resolve()
+      .then(refresh)
+      .catch((err) => {
+        if (active) setError(err.message)
+      })
+    return () => { active = false }
+  }, [refresh])
 
   async function addEvent(event) {
     event.preventDefault()
