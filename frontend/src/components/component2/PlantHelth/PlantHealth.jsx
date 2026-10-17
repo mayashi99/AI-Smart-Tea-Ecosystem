@@ -351,9 +351,7 @@ function PlantHealth() {
     <main className="min-h-screen bg-[#f4f8f4] text-slate-900">
       <div className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
         <div className="mb-8 max-w-3xl">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Climate intelligence for tea cultivation</p>
-          <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">AI-Powered Plantation Health &amp; Climate Stress Assessment</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">Combine visual crop assessment with live climate indicators to understand plantation health and act early on emerging stress.</p>
+          <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">AI-Powered Plantation Health Check</h2>
         </div>
 
         <section aria-label="Plantation Analysis" className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
