@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CLIMATE_LOCATIONS, getSriLankaDate, harvestPeriod, mapClimateResponse } from '../IntelligentHarvestPlanning/planningClimate';
-import { summarizeHarvestReadiness } from '../IntelligentHarvestPlanning/harvestPhotos';
+import { summarizeHarvestReadiness, validateTeaPhotos } from '../IntelligentHarvestPlanning/harvestPhotos';
 import { assessQuality } from './qualityAssessment';
 import './HarvestQuality.css';
 
@@ -44,21 +44,42 @@ export default function HarvestQuality() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [imageError, setImageError] = useState('');
+  const [validatingImages, setValidatingImages] = useState(false);
+  const imageValidation = useRef(null);
   const request = useRef(null);
   const fileInput = useRef(null);
   const [dragging, setDragging] = useState(false);
-  function selectImages(selected) {
-    if (loading) return;
+  async function selectImages(selected) {
+    if (loading || imageValidation.current || !selected.length) return;
+    setFiles([]); setResult(null); setError(''); setImageError('');
     if (selected.length > 5 || selected.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || !file.size || file.size > 10 * 1024 * 1024)) {
-      setError('Choose up to 5 JPG, PNG or WEBP images, no larger than 10 MB each.');
+      setImageError('Choose up to 5 JPG, PNG or WEBP images, no larger than 10 MB each.');
       return;
     }
-    setFiles(selected); setResult(null); setError('');
+    const controller = new AbortController();
+    imageValidation.current = controller;
+    setValidatingImages(true);
+    try {
+      await validateTeaPhotos(selected, API, controller.signal);
+      if (!controller.signal.aborted) setFiles(selected);
+    } catch (err) {
+      if (!controller.signal.aborted) setImageError(err instanceof TypeError
+        ? 'Unable to check images. Please make sure the backend is running and try again.'
+        : err.message);
+    } finally {
+      if (!controller.signal.aborted) setValidatingImages(false);
+      imageValidation.current = null;
+    }
   }
-  useEffect(() => () => request.current?.abort(), []);
+  useEffect(() => () => {
+    request.current?.abort();
+    imageValidation.current?.abort();
+  }, []);
 
   async function analyze(event) {
     event.preventDefault();
+    if (loading || imageValidation.current || imageError) return;
     setResult(null);
     setError('');
     if (!files.length || files.length > 5 || files.some(file => !/\.(jpg|jpeg|png|webp)$/i.test(file.name) || file.size === 0 || file.size > 10 * 1024 * 1024)) {
@@ -126,7 +147,7 @@ export default function HarvestQuality() {
         <form className="hq-card hq-form" onSubmit={analyze}>
           <div className="hq-section-heading"><div><span className="hq-overline">01 / YOUR PLANTATION</span><h2>Set up your assessment</h2></div><span className="hq-step-icon"><QualityIcon /></span></div>
           <p className="hq-subtitle">A few field details. A clearer picture of your harvest.</p>
-          <fieldset disabled={loading}>
+          <fieldset disabled={loading || validatingImages}>
             <legend className="sr-only">Assessment details</legend>
             <div className="hq-fields">
               <div><label htmlFor="quality-location">Plantation location</label>
@@ -138,7 +159,7 @@ export default function HarvestQuality() {
             </div>
             <p className="hq-field-note">Today’s assessment · Sri Lanka time · Weather uses town coordinates.</p>
             <div className="hq-upload-heading"><label htmlFor="quality-images">Plantation images</label><span>{files.length} / 5 images</span></div>
-            <div className={`hq-dropzone ${dragging ? 'hq-dragging' : ''}`} onDragOver={event => { event.preventDefault(); if (!loading) setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); selectImages(Array.from(event.dataTransfer.files)); }}>
+            <div className={`hq-dropzone ${dragging ? 'hq-dragging' : ''}`} aria-busy={validatingImages} onDragOver={event => { event.preventDefault(); if (!loading && !validatingImages) setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); selectImages(Array.from(event.dataTransfer.files)); }}>
               <input ref={fileInput} id="quality-images" type="file" accept=".jpg,.jpeg,.png,.webp" multiple className="sr-only" onChange={event => { selectImages(Array.from(event.target.files || [])); event.target.value = ''; }} />
               <span className="hq-upload-icon"><QualityIcon name="upload" size={25} /></span>
               <strong>Give your harvest a closer look</strong><p>Drag and drop your plantation photos here</p>
@@ -146,7 +167,9 @@ export default function HarvestQuality() {
               <small>JPG, PNG or WEBP · Up to 10 MB per image</small>
             </div>
             {files.length > 0 && <div className="hq-previews">{files.map((file, index) => <div key={`${file.name}-${index}`}><ImagePreview file={file} /><button type="button" aria-label={`Remove ${file.name}`} onClick={() => { setFiles(files.filter((_, i) => i !== index)); setResult(null); }}>×</button><span title={file.name}>{file.name}</span></div>)}</div>}
-            <button className="hq-submit" type="submit" disabled={loading}>{loading ? <><span className="hq-spinner" /> Analyzing your plantation…</> : <><QualityIcon name="chart" size={19} /> Analyze Harvest Quality <QualityIcon name="arrow" size={19} /></>}</button>
+            {validatingImages && <p role="status" className="hq-field-note">Checking images for tea leaves…</p>}
+            {imageError && <p role="alert" className="hq-error">{imageError}</p>}
+            <button className="hq-submit" type="submit" disabled={loading || validatingImages || !!imageError || !files.length}>{validatingImages ? <><span className="hq-spinner" /> Checking tea images…</> : loading ? <><span className="hq-spinner" /> Analyzing your plantation…</> : <><QualityIcon name="chart" size={19} /> Analyze Harvest Quality <QualityIcon name="arrow" size={19} /></>}</button>
             <p className="hq-submit-note">Health, readiness, climate and yield — analyzed together.</p>
           </fieldset>
           {error && <p role="alert" className="hq-error">{error}</p>}
