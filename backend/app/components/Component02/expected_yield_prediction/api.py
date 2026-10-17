@@ -1,7 +1,6 @@
 
-from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.components.Component02.expected_yield_prediction.catboost.predict import (
@@ -63,3 +62,15 @@ def predict_expected_yield(request: YieldPredictionRequest):
             status_code=422,
             detail=str(exc),
         ) from exc
+
+
+@router.get("/trends")
+def yield_trends(grown_type: str = Query(default="HIGH grown")):
+    from .trends import build_trends
+
+    try:
+        return build_trends(grown_type)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail="Yield model or historical dataset is unavailable.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
