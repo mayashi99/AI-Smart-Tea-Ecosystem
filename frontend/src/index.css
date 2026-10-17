@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Shared Tailwind animation tokens retain the existing loading indicators. */
+@theme {
+  --animate-yield-pulse: yield-pulse 1.5s ease-in-out infinite;
+  --animate-planning-pulse: planning-pulse 1.8s ease-in-out infinite;
+  @keyframes yield-pulse { 50% { opacity: .45; } }
+  @keyframes planning-pulse { 50% { opacity: .4; } }
+}

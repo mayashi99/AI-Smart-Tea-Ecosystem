@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import './PlantDensity.css'
-
 const AREA_CONVERSIONS = {
   Acre: 4046.86,
   Hectare: 10000,
@@ -131,7 +129,7 @@ function PlantDensity() {
                 aria-label="Land area unit"
                 value={areaUnit}
                 onChange={(event) => setAreaUnit(event.target.value)}
-                className={`${fieldClass} plant-density-select`}
+                className={`${fieldClass} appearance-none [background-image:linear-gradient(45deg,_transparent_50%,_#4d7c0f_50%),_linear-gradient(135deg,_#4d7c0f_50%,_transparent_50%)] [background-position:calc(100%_-_20px)_20px,_calc(100%_-_14px)_20px] [background-repeat:no-repeat] [background-size:6px_6px,_6px_6px] pr-[2.5rem]`}
               >
                 <option value="">Unit</option>
                 <option value="Acre">Acre</option>
@@ -148,7 +146,7 @@ function PlantDensity() {
               id="plantation-zone"
               value={plantationZone}
               onChange={(event) => setPlantationZone(event.target.value)}
-              className={`${fieldClass} plant-density-select`}
+              className={`${fieldClass} appearance-none [background-image:linear-gradient(45deg,_transparent_50%,_#4d7c0f_50%),_linear-gradient(135deg,_#4d7c0f_50%,_transparent_50%)] [background-position:calc(100%_-_20px)_20px,_calc(100%_-_14px)_20px] [background-repeat:no-repeat] [background-size:6px_6px,_6px_6px] pr-[2.5rem]`}
             >
               <option value="">Select zone</option>
               <option value="Low Country">Low Country</option>
@@ -165,7 +163,7 @@ function PlantDensity() {
               id="terrain-type"
               value={terrainType}
               onChange={(event) => setTerrainType(event.target.value)}
-              className={`${fieldClass} plant-density-select`}
+              className={`${fieldClass} appearance-none [background-image:linear-gradient(45deg,_transparent_50%,_#4d7c0f_50%),_linear-gradient(135deg,_#4d7c0f_50%,_transparent_50%)] [background-position:calc(100%_-_20px)_20px,_calc(100%_-_14px)_20px] [background-repeat:no-repeat] [background-size:6px_6px,_6px_6px] pr-[2.5rem]`}
             >
               <option value="">Select terrain</option>
               <option value="Flat">Flat</option>
