@@ -1,10 +1,4 @@
-<<<<<<< HEAD
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from app.api.component04 import router as component04_router
-=======
->>>>>>> feature/yield-intelligence
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -88,11 +82,7 @@ app.include_router(component04_router)
 
 @app.get("/")
 def root():
-<<<<<<< HEAD
-    return {"message": "AI Smart Tea Ecosystem API"}
-=======
     return {
         "message": "AI Smart Tea Ecosystem API",
         "status": "running",
     }
->>>>>>> feature/yield-intelligence
