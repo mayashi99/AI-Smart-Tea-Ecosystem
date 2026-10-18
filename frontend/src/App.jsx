@@ -23,6 +23,24 @@ const isExportAdvisorPage = window.location.pathname.replace(/\/$/, '') === '/ex
 const isExportReadinessPage = window.location.pathname.replace(/\/$/, '') === '/export-readiness'
 const isDigitalPassportPage = window.location.pathname.replace(/\/$/, '') === '/digital-passport'
 const isZoneIntelligencePage = window.location.pathname.replace(/\/$/, '') === '/zone-intelligence'
+const isSellerPage = window.location.pathname.replace(/\/$/, '') === '/seller'
+const isTeaBoardPage = window.location.pathname.replace(/\/$/, '') === '/tea-board'
+const isBuyerPage = window.location.pathname.replace(/\/$/, '') === '/buyer'
+
+const rolePages = {
+  seller: { title: 'Seller workspace', intro: 'Prepare tea batches for export with clear readiness steps, forecast context and traceability.', links: [['Check export readiness', '/export-readiness'], ['Register a tea batch', '/digital-passport'], ['Explore growing zones', '/zone-intelligence'], ['Get export advice', '/export-advisor']] },
+  'tea-board': { title: 'Tea Board workspace', intro: 'Review export preparation signals, traceability records and market intelligence across tea batches.', links: [['Export readiness overview', '/export-readiness'], ['Batch passport registry', '/digital-passport'], ['Zone intelligence', '/zone-intelligence'], ['Export demand forecast', '/export-demand']] },
+  buyer: { title: 'Buyer workspace', intro: 'Explore Sri Lankan tea market signals and review batch traceability before you source.', links: [['Verify a batch passport', '/digital-passport'], ['Export demand outlook', '/export-demand'], ['Auction price forecast', '/'], ['Market zone intelligence', '/zone-intelligence']] },
+}
+
+function SiteNav({ active }) {
+  return <nav className="page-nav" aria-label="TeaExportAI navigation"><a className={active === 'home' ? 'active' : ''} href="/">Home</a><a className={active === 'seller' ? 'active' : ''} href="/seller">Seller</a><a className={active === 'tea-board' ? 'active' : ''} href="/tea-board">Tea Board</a><a className={active === 'buyer' ? 'active' : ''} href="/buyer">Buyer</a><a href="/export-readiness">Export Readiness</a><a href="/digital-passport">Digital Passport</a></nav>
+}
+
+function RoleHome({ role }) {
+  const page = rolePages[role]
+  return <><SiteNav active={role} /><main className="dashboard"><header className="dashboard-header"><div><p className="eyebrow">TeaExportAI · Sri Lanka Tea Intelligence</p><h1>{page.title}</h1><p className="subtle">{page.intro}</p></div></header><section className="role-link-grid">{page.links.map(([label, href]) => <a className="panel role-link-card" href={href} key={href}><span className="eyebrow">Open workspace</span><h2>{label}</h2><span className="role-link-arrow" aria-hidden="true">↗</span></a>)}</section></main></>
+}
 
 const formatNumber = (value) =>
   new Intl.NumberFormat('en-US', {
@@ -42,6 +60,7 @@ function App() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (isSellerPage || isTeaBoardPage || isBuyerPage) return
     if (isExportDemandPage || isExportAdvisorPage || isExportReadinessPage || isDigitalPassportPage || isZoneIntelligencePage) return
     fetch(API_URL)
       .then((response) => {
@@ -60,6 +79,11 @@ function App() {
         setStatus('error')
       })
   }, [])
+
+  if (isSellerPage) return <RoleHome role="seller" />
+  if (isTeaBoardPage) return <RoleHome role="tea-board" />
+  if (isBuyerPage) return <RoleHome role="buyer" />
+  if (window.location.pathname === '/') return <><SiteNav active="home" /><main className="dashboard"><header className="dashboard-header"><div><p className="eyebrow">Sri Lanka Tea Intelligence</p><h1>TeaExportAI</h1><p className="subtle">Export planning, market intelligence and trusted batch traceability for Sri Lankan tea.</p></div></header><section className="home-role-grid">{[['Seller', '/seller', 'Plan export readiness and create traceable tea batches.'], ['Tea Board', '/tea-board', 'Review readiness, traceability and market signals.'], ['Buyer', '/buyer', 'Explore market forecasts and verify tea batches.']].map(([name, href, description]) => <a className="panel home-role-card" href={href} key={href}><p className="eyebrow">Workspace</p><h2>{name}</h2><p>{description}</p><span>Open workspace →</span></a>)}</section></main></>
 
   const selectedMetrics = useMemo(() => {
     if (!dashboard || !selectedZone) return []
@@ -109,6 +133,7 @@ function App() {
   if (isExportDemandPage) {
     return (
       <>
+        <SiteNav />
         <nav className="page-nav" aria-label="Forecast pages">
           <a href="/">Auction Price</a>
           <a className="active" href="/export-demand">Export Demand</a>
@@ -125,6 +150,7 @@ function App() {
   if (isExportAdvisorPage) {
     return (
       <>
+        <SiteNav />
         <nav className="page-nav" aria-label="Component 04 pages">
           <a href="/">Auction Price</a>
           <a href="/export-demand">Export Demand</a>
@@ -139,15 +165,15 @@ function App() {
   }
 
   if (isExportReadinessPage) {
-    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a className="active" href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a></nav><ExportReadinessPage /></>
+    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a className="active" href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a></nav><ExportReadinessPage /></>
   }
 
   if (isDigitalPassportPage) {
-    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a className="active" href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a></nav><DigitalPassportPage /></>
+    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a className="active" href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a></nav><DigitalPassportPage /></>
   }
 
   if (isZoneIntelligencePage) {
-    return <><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a className="active" href="/zone-intelligence">Zone Intelligence</a></nav><ZoneIntelligencePage /></>
+    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a className="active" href="/zone-intelligence">Zone Intelligence</a></nav><ZoneIntelligencePage /></>
   }
 
   if (status === 'loading') {
@@ -167,6 +193,7 @@ function App() {
 
   return (
     <>
+      <SiteNav />
       <nav className="page-nav" aria-label="Forecast pages">
         <a className="active" href="/">Auction Price</a>
         <a href="/export-demand">Export Demand</a>
