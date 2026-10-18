@@ -31,3 +31,5 @@ backend/ml/**/*.joblib
 backend/ml/**/*.keras
 *.joblib
 *.keras
+
+backend/.env
