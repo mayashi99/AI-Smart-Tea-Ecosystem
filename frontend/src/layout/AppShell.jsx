@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../components/Icon'
 import LeafBackground from '../components/LeafBackground'
+import sidebarPhoto from '../assets/sidebar-leaves.webp'
 import { Link } from '../components/ui'
 import { navItems, workspaceRoles } from '../lib/routes'
 import { initials, useLastEri, useSettings } from '../lib/settings'
@@ -95,14 +96,15 @@ export default function AppShell({ activeKey, children }) {
             <Fragment key={item.key}>
               {index > 0 && item.group !== navItems[index - 1].group && <span className="sidebar-divider" role="separator" />}
               <Link to={item.path} className={`sidebar-link ${item.key === activeKey ? 'active' : ''}`} aria-current={item.key === activeKey ? 'page' : undefined} aria-label={item.label} onClick={(event) => { closeMenus(); if (event.detail > 0) event.currentTarget.blur() }}>
-                <span className="sidebar-tile"><Icon name={item.icon} size={20} /></span>
+                <span className="sidebar-tile"><Icon name={item.icon} size={24} /></span>
                 <span className="sidebar-label">{item.label}</span>
               </Link>
             </Fragment>
           ))}
         </nav>
+        <img className="sidebar-photo" src={sidebarPhoto} alt="" aria-hidden="true" />
         <div className="sidebar-footer">
-          <span className="sidebar-footer-icon"><Icon name="sparkle" size={22} /></span>
+          <span className="sidebar-footer-icon"><Icon name="sparkle" size={24} /></span>
           <div><strong>AI-Powered</strong><span>Tea Export Intelligence Platform</span><small>Sri Lanka</small></div>
         </div>
       </aside>
