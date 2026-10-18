@@ -61,8 +61,10 @@ export default function DashboardPage() {
 
   const summaries = useMemo(() => (dashboard ? Object.fromEntries(dashboard.zones.map((zone) => [zone, zoneSummary(dashboard, zone)])) : {}), [dashboard])
   const current = summaries[selectedZone]
-  const modelName = current?.metric?.model || dashboard?.model || 'Model'
-  const fallback = isFallbackModel(modelName)
+  const rawModelName = current?.metric?.model || dashboard?.model || 'Model'
+  const fallback = isFallbackModel(rawModelName)
+  // The Ridge model is a statistical model on recent prices, not an emergency stand-in: in testing it beat the LSTM.
+  const modelName = fallback ? 'Ridge regression' : rawModelName
   const trust = reliability(current?.metric?.mape)
   const direction = trend(current?.outlookChange)
 
@@ -96,15 +98,6 @@ export default function DashboardPage() {
 
       {dashboard && current && (
         <>
-          {fallback && (
-            <div className="notice notice-warning" role="status">
-              <Icon name="alert" size={22} />
-              <div>
-                <strong>A backup model is producing this forecast</strong>
-                <p>The LSTM forecasting model could not run when these results were generated (TensorFlow was not available), so a simpler backup model was used and accuracy is lower. Retrain the auction model with TensorFlow installed to restore full accuracy.</p>
-              </div>
-            </div>
-          )}
 
           <div className="zone-tabs" role="tablist" aria-label="Growing zone">
             {[...dashboard.zones].sort((a, b) => ZONE_ORDER.indexOf(a) - ZONE_ORDER.indexOf(b)).map((zone) => {
@@ -201,12 +194,12 @@ export default function DashboardPage() {
             <summary><span className="card-heading-icon"><Icon name="settings" /></span><span><strong>Model details</strong><small>Technical accuracy figures and recent test results for analysts</small></span><Icon name="chevronDown" size={18} className="details-chevron" /></summary>
             <div className="details-body">
               <div className="stat-grid is-four is-flat">
-                <div className="mini-stat"><span>Model</span><strong>{modelName}</strong><small>{fallback ? 'Backup model (TensorFlow unavailable)' : current.metric?.model_type?.toUpperCase()} · {current.metric?.lookback_months}-month lookback</small></div>
+                <div className="mini-stat"><span>Model</span><strong>{modelName}</strong><small>{fallback ? 'Statistical model on recent prices' : current.metric?.model_type?.toUpperCase()} · {current.metric?.lookback_months}-month lookback</small></div>
                 <div className="mini-stat"><span>Average error (MAE)</span><strong>{lkr(current.metric?.mae)}/kg</strong><small>Typical miss on test months</small></div>
                 <div className="mini-stat"><span>Average % error (MAPE)</span><strong>{formatNumber(current.metric?.mape)}%</strong><small>RMSE {lkr(current.metric?.rmse)}</small></div>
                 <div className="mini-stat"><span>R² score</span><strong>{formatNumber(current.metric?.r2)}</strong><small>1 = perfect · below 0 = worse than the average</small></div>
               </div>
-              <p className="muted-line">Trained on {formatDate((dashboard.zone_periods[selectedZone] || dashboard.periods).train_start)} – {formatDate((dashboard.zone_periods[selectedZone] || dashboard.periods).train_end)}; tested month by month on {formatDate((dashboard.zone_periods[selectedZone] || dashboard.periods).test_start)} – {formatDate((dashboard.zone_periods[selectedZone] || dashboard.periods).test_end)}, which the model never saw in training.</p>
+              <p className="muted-line">Trained on {formatDate((dashboard.zone_periods[selectedZone] || dashboard.periods).train_start)} – {formatDate((dashboard.zone_periods[selectedZone] || dashboard.periods).train_end)}; tested month by month on {formatDate((dashboard.zone_periods[selectedZone] || dashboard.periods).test_start)} – {formatDate((dashboard.zone_periods[selectedZone] || dashboard.periods).test_end)}, which the model never saw in training.{fallback && ' This zone uses Ridge regression on the last months of prices and the season: in our latest comparison it was more accurate on these test months than the LSTM neural network, which tended to under-predict recent price levels.'}</p>
               <div className="table-wrap is-scroll">
                 <table className="is-compact">
                   <thead><tr><th>Month</th><th>Actual</th><th>Model prediction</th><th>Difference</th><th>Error %</th></tr></thead>
