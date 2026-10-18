@@ -33,3 +33,5 @@ backend/ml/**/*.keras
 *.keras
 
 backend/.env
+
+backend/.env
