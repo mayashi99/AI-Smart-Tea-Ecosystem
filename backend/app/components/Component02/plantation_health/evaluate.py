@@ -18,11 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent
 # DATASET
 # ============================================================
 
-DATASET_DIR = (
-    BASE_DIR
-    / "plantation_health"
-    / "data"
-)
+DATASET_DIR = BASE_DIR / "data"
 
 TEST_DIR = DATASET_DIR / "test"
 
@@ -41,7 +37,7 @@ TEST_DIR = DATASET_DIR / "test"
 EXPERIMENT_NAME = "plantation_health_yolo11n_updated_50epochs_v2"
 
 MODEL_PATH = (
-    BASE_DIR
+    BASE_DIR.parent
     / "runs"
     / EXPERIMENT_NAME
     / "weights"
@@ -54,7 +50,7 @@ MODEL_PATH = (
 # ============================================================
 
 EVALUATION_DIR = (
-    BASE_DIR
+    BASE_DIR.parent
     / "runs"
     / EXPERIMENT_NAME
     / "evaluation"

@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 from fastapi import HTTPException, UploadFile
 from starlette.datastructures import Headers
-from app.components.Component02 import api
+from app.components.Component02.plantation_health import api
 from app.components.Component02.harvest_readiness import api as readiness_api
 
 

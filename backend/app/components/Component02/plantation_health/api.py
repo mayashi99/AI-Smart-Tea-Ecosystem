@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from starlette.concurrency import run_in_threadpool
 from ultralytics import YOLO
-from .image_validation import validate_tea_image, MAX_IMAGE_BYTES
+from ..image_validation import validate_tea_image, MAX_IMAGE_BYTES
 
 
 # ============================================================
@@ -38,7 +38,7 @@ from .image_validation import validate_tea_image, MAX_IMAGE_BYTES
 # BASE DIRECTORY
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # ============================================================

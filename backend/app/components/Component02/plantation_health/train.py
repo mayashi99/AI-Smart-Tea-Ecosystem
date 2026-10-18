@@ -36,11 +36,7 @@ BASE_DIR = Path(__file__).resolve().parent
 #         ├── healthy/
 #         └── low_health/
 
-DATASET_DIR = (
-    BASE_DIR
-    / "plantation_health"
-    / "data"
-)
+DATASET_DIR = BASE_DIR / "data"
 
 
 # ============================================================
@@ -57,10 +53,7 @@ MODEL_PATH = (
 # OUTPUT DIRECTORY
 # ============================================================
 
-RUNS_DIR = (
-    BASE_DIR
-    / "runs"
-)
+RUNS_DIR = BASE_DIR.parent / "runs"
 
 
 # ============================================================

@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from fastapi import HTTPException
 import requests
 
-from app.components.Component02.harvest_forecast import compare_forecast, harvest_forecast
+from app.components.Component02.intelligent_harvest_planning.harvest_forecast import compare_forecast, harvest_forecast
 
 
 def payload(**overrides):
@@ -75,8 +75,8 @@ class HarvestForecastTests(unittest.TestCase):
         self.assertEqual([day["date"] for day in result["days"]], ["2027-01-01", "2027-01-02", "2027-01-03"])
         self.assertIsNone(result["best_date"])
 
-    @patch("app.components.Component02.harvest_forecast.requests.get")
-    @patch("app.components.Component02.harvest_forecast.datetime")
+    @patch("app.components.Component02.intelligent_harvest_planning.harvest_forecast.requests.get")
+    @patch("app.components.Component02.intelligent_harvest_planning.harvest_forecast.datetime")
     def test_provider_request_uses_local_next_three_days_and_correct_units(self, clock, get):
         clock.now.return_value = datetime(2026, 10, 14, 10, 0)
         get.return_value = Mock(json=lambda: payload())
@@ -88,7 +88,7 @@ class HarvestForecastTests(unittest.TestCase):
         self.assertEqual(params["wind_speed_unit"], "ms")
         self.assertEqual(result["best_date"], "2026-10-16")
 
-    @patch("app.components.Component02.harvest_forecast.requests.get", side_effect=requests.Timeout)
+    @patch("app.components.Component02.intelligent_harvest_planning.harvest_forecast.requests.get", side_effect=requests.Timeout)
     def test_network_failure_is_reported_without_fabricating_forecast(self, get):
         with self.assertRaises(HTTPException) as caught:
             harvest_forecast(6.0341, 80.2155)

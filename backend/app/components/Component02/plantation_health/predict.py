@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent
 # This is the NEW model trained after adding the new
 # Low Health images to the dataset.
 MODEL_PATH = (
-    BASE_DIR
+    BASE_DIR.parent
     / "runs"
     / "plantation_health_yolo11n_updated_50epochs_v2"
     / "weights"

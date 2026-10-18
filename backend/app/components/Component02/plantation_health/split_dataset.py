@@ -25,11 +25,7 @@ SOURCE_DIR = Path(
 # COMPONENT 02 OUTPUT DATASET
 # ============================================================
 
-DEST_DIR = (
-    BASE_DIR
-    / "plantation_health"
-    / "data"
-)
+DEST_DIR = BASE_DIR / "data"
 
 
 # ============================================================

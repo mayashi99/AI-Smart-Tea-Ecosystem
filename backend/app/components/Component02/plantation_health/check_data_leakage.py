@@ -8,11 +8,7 @@ import hashlib
 
 BASE_DIR = Path(__file__).resolve().parent
 
-DATASET_DIR = (
-    BASE_DIR
-    / "plantation_health"
-    / "data"
-)
+DATASET_DIR = BASE_DIR / "data"
 
 SPLITS = ["train", "val", "test"]
 

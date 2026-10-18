@@ -2,14 +2,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.components.Component02.api import router as component02_router
+from app.components.Component02.plantation_health.api import router as component02_router
 from app.components.Component02.harvest_readiness.api import (
     router as harvest_router,
 )
 from app.components.Component02.expected_yield_prediction.api import (
     router as expected_yield_router,
 )
-from app.components.Component02.harvest_forecast import router as harvest_forecast_router
+from app.components.Component02.intelligent_harvest_planning.harvest_forecast import router as harvest_forecast_router
 
 
 # ============================================================

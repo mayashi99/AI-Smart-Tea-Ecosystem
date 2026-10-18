@@ -7,7 +7,7 @@ from ultralytics import YOLO
 # YOLO11 CLASSIFICATION
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # ============================================================
