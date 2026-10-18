@@ -73,6 +73,16 @@ export default function ExportReadinessPage() {
   }
   const capacityShare = forecastView && Number(capacity) > 0 ? (Number(capacity) / forecastView.monthlyAvg) * 100 : null
 
+  const sidebarItems = [
+    { label: 'Dashboard', active: false, icon: '⌂' },
+    { label: 'Market Analysis', active: false, icon: '▤' },
+    { label: 'Demand Forecast', active: false, icon: '↗' },
+    { label: 'Export Readiness', active: true, icon: '▣' },
+    { label: 'Trade Insights', active: false, icon: '◌' },
+    { label: 'Reports', active: false, icon: '▣' },
+    { label: 'Settings', active: false, icon: '⚙' },
+  ]
+
   return (
     <div className="page-stack eri-page">
       <PageHeader
