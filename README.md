@@ -6,7 +6,7 @@ AI-powered smart tea ecosystem for the Sri Lankan tea industry.
 
 The Component 04 dashboard has three pages:
 
-- `/` — auction price forecasts, including the combined sales-and-price workbook
+- `/auction-price` — auction price forecasts, including the combined sales-and-price workbook
 - `/export-demand` — LSTM monthly tea export-volume forecast
 - `/export-advisor` — RAG-grounded, explainable export planning recommendations
 - `/export-readiness` — evidence-based Export Readiness Index (ERI)
@@ -14,10 +14,14 @@ The Component 04 dashboard has three pages:
 - `/zone-intelligence` — weighted, explainable growing-zone quality scores
 
 The Export Advisor retrieves evidence from the forecast metrics, monthly history, and local planning
-guides. It shows the sources and evidence IDs behind every recommendation. Without an LLM endpoint it
-uses the same evidence with explainable rules; with an OpenAI-compatible endpoint it adds LLM synthesis.
-Copy `backend/.env.example` settings to `backend/.env` and configure `LLM_API_BASE_URL`, `LLM_MODEL`,
-and optionally `LLM_API_KEY` to enable that synthesis. The project does not include an LLM key.
+guides. It shows the sources and evidence IDs behind every recommendation. It retrieves relevant
+knowledge-base passages and uses them with the export data as grounded context for LLM synthesis.
+Set `LLM_API_KEY` in `backend/.env` to use OpenAI; it defaults to `https://api.openai.com/v1`
+with model `gpt-4o-mini`. Without a key it defaults to local Ollama at
+`http://localhost:11434/v1` with model `llama3.1` (start Ollama and pull that model first).
+Override `LLM_API_BASE_URL` and `LLM_MODEL` to use another OpenAI-compatible endpoint. If the
+endpoint is unavailable, the advisor returns its explainable rule-based recommendations and
+reports the LLM status in its response.
 
 ## Component 04: Auction Price Forecasting
 

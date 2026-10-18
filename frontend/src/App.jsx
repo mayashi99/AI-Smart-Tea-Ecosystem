@@ -18,6 +18,7 @@ import DigitalPassportPage from './pages/component04/DigitalPassportPage'
 import ZoneIntelligencePage from './pages/component04/ZoneIntelligencePage'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/component04/train-output'
+const isAuctionPricePage = window.location.pathname.replace(/\/$/, '') === '/auction-price'
 const isExportDemandPage = window.location.pathname.replace(/\/$/, '') === '/export-demand'
 const isExportAdvisorPage = window.location.pathname.replace(/\/$/, '') === '/export-advisor'
 const isExportReadinessPage = window.location.pathname.replace(/\/$/, '') === '/export-readiness'
@@ -30,7 +31,7 @@ const isBuyerPage = window.location.pathname.replace(/\/$/, '') === '/buyer'
 const rolePages = {
   seller: { title: 'Seller workspace', intro: 'Prepare tea batches for export with clear readiness steps, forecast context and traceability.', links: [['Check export readiness', '/export-readiness'], ['Register a tea batch', '/digital-passport'], ['Explore growing zones', '/zone-intelligence'], ['Get export advice', '/export-advisor']] },
   'tea-board': { title: 'Tea Board workspace', intro: 'Review export preparation signals, traceability records and market intelligence across tea batches.', links: [['Export readiness overview', '/export-readiness'], ['Batch passport registry', '/digital-passport'], ['Zone intelligence', '/zone-intelligence'], ['Export demand forecast', '/export-demand']] },
-  buyer: { title: 'Buyer workspace', intro: 'Explore Sri Lankan tea market signals and review batch traceability before you source.', links: [['Verify a batch passport', '/digital-passport'], ['Export demand outlook', '/export-demand'], ['Auction price forecast', '/'], ['Market zone intelligence', '/zone-intelligence']] },
+  buyer: { title: 'Buyer workspace', intro: 'Explore Sri Lankan tea market signals and review batch traceability before you source.', links: [['Verify a batch passport', '/digital-passport'], ['Export demand outlook', '/export-demand'], ['Auction price forecast', '/auction-price'], ['Market zone intelligence', '/zone-intelligence']] },
 }
 
 function SiteNav({ active }) {
@@ -135,7 +136,7 @@ function App() {
       <>
         <SiteNav />
         <nav className="page-nav" aria-label="Forecast pages">
-          <a href="/">Auction Price</a>
+          <a className={isAuctionPricePage ? 'active' : ''} href="/auction-price">Auction Price</a>
           <a className="active" href="/export-demand">Export Demand</a>
           <a href="/export-advisor">Export Advisor</a>
           <a href="/export-readiness">ERI</a>
@@ -152,7 +153,7 @@ function App() {
       <>
         <SiteNav />
         <nav className="page-nav" aria-label="Component 04 pages">
-          <a href="/">Auction Price</a>
+          <a className={isAuctionPricePage ? 'active' : ''} href="/auction-price">Auction Price</a>
           <a href="/export-demand">Export Demand</a>
           <a className="active" href="/export-advisor">Export Advisor</a>
           <a href="/export-readiness">ERI</a>
@@ -165,15 +166,15 @@ function App() {
   }
 
   if (isExportReadinessPage) {
-    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a className="active" href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a></nav><ExportReadinessPage /></>
+    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/auction-price">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a className="active" href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a></nav><ExportReadinessPage /></>
   }
 
   if (isDigitalPassportPage) {
-    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a className="active" href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a></nav><DigitalPassportPage /></>
+    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/auction-price">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a className="active" href="/digital-passport">Digital Passport</a><a href="/zone-intelligence">Zone Intelligence</a></nav><DigitalPassportPage /></>
   }
 
   if (isZoneIntelligencePage) {
-    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a className="active" href="/zone-intelligence">Zone Intelligence</a></nav><ZoneIntelligencePage /></>
+    return <><SiteNav /><nav className="page-nav" aria-label="Component 04 pages"><a href="/auction-price">Auction Price</a><a href="/export-demand">Export Demand</a><a href="/export-advisor">Export Advisor</a><a href="/export-readiness">ERI</a><a href="/digital-passport">Digital Passport</a><a className="active" href="/zone-intelligence">Zone Intelligence</a></nav><ZoneIntelligencePage /></>
   }
 
   if (status === 'loading') {
@@ -195,7 +196,7 @@ function App() {
     <>
       <SiteNav />
       <nav className="page-nav" aria-label="Forecast pages">
-        <a className="active" href="/">Auction Price</a>
+        <a className="active" href="/auction-price">Auction Price</a>
         <a href="/export-demand">Export Demand</a>
         <a href="/export-advisor">Export Advisor</a>
         <a href="/export-readiness">ERI</a>

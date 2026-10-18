@@ -182,9 +182,14 @@ def _fallback_recommendations(context: dict) -> dict:
 
 
 def _call_llm(context: dict) -> tuple[dict | None, str]:
-    base_url = os.getenv("LLM_API_BASE_URL", "").strip().rstrip("/")
-    model = os.getenv("LLM_MODEL", "").strip()
     api_key = os.getenv("LLM_API_KEY", "").strip()
+    base_url = (
+        os.getenv("LLM_API_BASE_URL", "").strip()
+        or ("https://api.openai.com/v1" if api_key else "http://localhost:11434/v1")
+    ).rstrip("/")
+    model = os.getenv("LLM_MODEL", "").strip() or (
+        "gpt-4o-mini" if api_key else "llama3.1"
+    )
     if not base_url or not model:
         return None, "not_configured_rule_based_rag"
     prompt = {"question": context["question"], "preferences": context["preferences"],
@@ -208,7 +213,7 @@ def _call_llm(context: dict) -> tuple[dict | None, str]:
                       )},
                       {"role": "user", "content": json.dumps(prompt)},
                   ]},
-            timeout=35,
+            timeout=(3, 35),
         )
         response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"]
