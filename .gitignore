@@ -9,6 +9,7 @@ venv/
 .venv*/
 
 .env
+/backend/.env
 .env.*
 !.env.example
 
@@ -31,6 +32,8 @@ backend/ml/**/*.joblib
 backend/ml/**/*.keras
 *.joblib
 *.keras
+
+backend/.env
 
 backend/.env
 
