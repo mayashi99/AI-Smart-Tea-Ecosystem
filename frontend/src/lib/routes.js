@@ -5,6 +5,7 @@ export const navItems = [
   { key: 'dashboard', group: 'overview', label: 'Dashboard', path: '/dashboard', aliases: ['/auction-price'], icon: 'grid', description: 'LSTM auction price model results by growing zone.' },
   { key: 'market', group: 'intelligence', label: 'Market Analysis', path: '/market-analysis', aliases: ['/zone-intelligence'], icon: 'bars', description: 'Zone prices, buyer share and Zone Quality Score.' },
   { key: 'forecast', group: 'intelligence', label: 'Demand Forecast', path: '/demand-forecast', aliases: ['/export-demand'], icon: 'trend', description: '12-month ML export demand forecast.' },
+  { key: 'usd-forecast', group: 'intelligence', label: 'USD/LKR Forecast', path: '/usd-forecast', icon: 'globe', description: 'Compare daily USD/LKR exchange-rate forecasts.' },
   { key: 'readiness', group: 'intelligence', label: 'Export Readiness', path: '/export-readiness', icon: 'clipboard', description: 'Explainable Export Readiness Index (ERI).' },
   { key: 'insights', group: 'intelligence', label: 'Trade Insights', path: '/trade-insights', aliases: ['/export-advisor'], icon: 'globe', description: 'Seasonality and the AI Export Advisor.' },
   { key: 'traceability', group: 'operations', label: 'Traceability', path: '/digital-passport', icon: 'shield', description: 'Tea Digital Passport and QR verification.' },

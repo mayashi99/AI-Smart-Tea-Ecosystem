@@ -20,6 +20,8 @@ const reports = [
     build: (data) => data.model_metrics.map((row) => ({ zone: row.growing_zone, model: row.model, mae: row.mae, rmse: row.rmse, mape_pct: row.mape, r2: row.r2, lookback_months: row.lookback_months })) },
   { id: 'combined-price', group: 'Market', icon: 'coins', title: 'Combined workbook price forecast', description: 'Best-model monthly average auction price forecast.', source: endpoints.combinedAuctionPrice,
     build: (data) => data.forecast.map((row) => ({ month: row.date, forecast_price_lkr_kg: round(row.forecast_avg_price_lkr), model: data.metrics.model })) },
+  { id: 'usd-forecast', group: 'Market', icon: 'globe', title: 'USD/LKR exchange-rate forecast', description: 'Compare Ridge and Extra Trees weekday exchange-rate forecasts.', source: endpoints.usdForecast,
+    build: (data) => (data.forecasts.ridge || []).map((row, index) => ({ date: row.date, ridge_lkr_per_usd: round(row.forecast_lkr_per_usd, 4), extra_trees_lkr_per_usd: round(data.forecasts.extra_trees?.[index]?.forecast_lkr_per_usd, 4), selected_model: data.metadata.best_model })) },
   { id: 'zone-summary', group: 'Market', icon: 'globe', title: 'Zone market summary', description: 'Zone prices, buyer share and demand change.', source: endpoints.zoneIntelligence,
     build: (data) => data.zones.map((row) => ({ zone: row.zone, auction_price_lkr_kg: row.auction_price_lkr, auction_price_score: row.auction_price_score, buyer_share_pct: row.buyer_preference_share_pct, demand_change_pct: row.historical_demand_change_pct, latest_period: row.latest_period })) },
   { id: 'passport-ledger', group: 'Traceability', icon: 'shield', title: 'Digital passport ledger', description: 'All traceability events with record hashes.', source: endpoints.passports,

@@ -6,6 +6,7 @@ export const endpoints = {
   trainOutput: import.meta.env.VITE_API_URL || `${API_BASE}/train-output`,
   exportDemand: `${API_BASE}/export-demand`,
   combinedAuctionPrice: `${API_BASE}/combined-auction-price`,
+  usdForecast: `${API_BASE}/usd-forecast`,
   exportAdvisor: `${API_BASE}/export-advisor`,
   exportReadiness: `${API_BASE}/export-readiness`,
   passports: `${API_BASE}/digital-passports`,
@@ -19,6 +20,7 @@ const fallbackMessages = {
   [endpoints.trainOutput]: 'Train output load failed',
   [endpoints.exportDemand]: 'Export demand forecast is not available yet',
   [endpoints.combinedAuctionPrice]: 'Combined auction price forecast is not available. Train the model first.',
+  [endpoints.usdForecast]: 'USD/LKR forecast is not available. Train the USD forecasting models first.',
   [endpoints.passports]: 'Could not load passports',
   [endpoints.zoneIntelligence]: 'Could not load zone data',
 }

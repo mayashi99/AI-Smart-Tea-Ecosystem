@@ -71,6 +71,8 @@ COMBINED_PRICE_METRICS_FILE = DATA_DIR / "combined_auction_price_metrics.json"
 COMBINED_PRICE_FORECAST_FILE = DATA_DIR / "combined_auction_price_forecast.csv"
 COMBINED_PRICE_TEST_FILE = DATA_DIR / "combined_auction_price_test_predictions.csv"
 COMBINED_PRICE_COMPARISON_FILE = DATA_DIR / "combined_auction_price_model_comparison.csv"
+USD_FORECAST_DIR = DATA_DIR / "usd_forecasting"
+USD_MODEL_NAMES = ("ridge", "extra_trees")
 
 def read_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
@@ -216,6 +218,40 @@ def get_combined_auction_price():
         raise HTTPException(status_code=500, detail=f"Could not read combined auction price outputs: {exc}") from exc
 
 
+@router.get("/usd-forecast")
+def get_usd_forecast():
+    """Return USD/LKR model comparisons, holdout predictions, and future forecasts."""
+    metadata_file = USD_FORECAST_DIR / "forecast_metadata.json"
+    comparison_file = USD_FORECAST_DIR / "model_comparison.csv"
+    required_files = [metadata_file, comparison_file]
+    required_files.extend(
+        USD_FORECAST_DIR / model_name / filename
+        for model_name in USD_MODEL_NAMES
+        for filename in ("forecast.csv", "test_predictions.csv")
+    )
+    missing_files = [path.name for path in required_files if not path.exists()]
+    if missing_files:
+        raise HTTPException(
+            status_code=404,
+            detail=f"USD forecast outputs are not available: {', '.join(missing_files)}. Train the USD forecasting models first.",
+        )
+    try:
+        return {
+            "metadata": json.loads(metadata_file.read_text(encoding="utf-8")),
+            "model_comparison": read_csv(comparison_file).to_dict(orient="records"),
+            "forecasts": {
+                model_name: read_csv(USD_FORECAST_DIR / model_name / "forecast.csv").to_dict(orient="records")
+                for model_name in USD_MODEL_NAMES
+            },
+            "test_predictions": {
+                model_name: read_csv(USD_FORECAST_DIR / model_name / "test_predictions.csv").to_dict(orient="records")
+                for model_name in USD_MODEL_NAMES
+            },
+        }
+    except (ValueError, OSError, KeyError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not read USD forecast outputs: {exc}") from exc
+
+
 @router.post("/export-advisor")
 def post_export_advisor(request: ExportAdvisorRequest):
     """Generate export planning recommendations grounded in local data and RAG documents."""
@@ -305,4 +341,3 @@ def post_zone_intelligence_score(request: ZoneQualityRequest):
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except (ValueError, KeyError, OSError) as exc:
         raise HTTPException(status_code=422, detail=f"Could not calculate zone quality score: {exc}") from exc
-

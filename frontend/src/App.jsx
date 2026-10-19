@@ -10,6 +10,7 @@ const HomePage = lazy(() => import('./pages/HomePage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const MarketAnalysisPage = lazy(() => import('./pages/MarketAnalysisPage'))
 const ExportDemandPage = lazy(() => import('./pages/component04/ExportDemandPage'))
+const UsdForecastPage = lazy(() => import('./pages/component04/UsdForecastPage'))
 const ExportReadinessPage = lazy(() => import('./pages/component04/ExportReadinessPage'))
 const ExportAdvisorPage = lazy(() => import('./pages/component04/ExportAdvisorPage'))
 const DigitalPassportPage = lazy(() => import('./pages/component04/DigitalPassportPage'))
@@ -22,6 +23,7 @@ const pages = {
   dashboard: DashboardPage,
   market: MarketAnalysisPage,
   forecast: ExportDemandPage,
+  'usd-forecast': UsdForecastPage,
   readiness: ExportReadinessPage,
   insights: ExportAdvisorPage,
   traceability: DigitalPassportPage,
