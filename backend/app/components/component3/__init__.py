@@ -11,6 +11,16 @@ from app.components.component3.predict import (
 from app.components.component3.purity import (
     analyze_tea_purity,
 )
+from app.components.component3.mixed_composition import (
+    analyze_mixed_composition,
+)
+from app.components.component3.defect_detector import (
+    detect_unauthorized_particles,
+)
+from app.components.component3.demo_samples import (
+    list_demo_samples_metadata,
+    ensure_demo_samples_exist,
+)
 from app.components.component3.api import (
     router,
     tea_grade_router,
@@ -31,9 +41,14 @@ __all__ = [
     "resolve_model_path",
     "get_loaded_model",
     "analyze_tea_purity",
+    "analyze_mixed_composition",
+    "detect_unauthorized_particles",
+    "list_demo_samples_metadata",
+    "ensure_demo_samples_exist",
     "train_tea_grade_model",
     "evaluate_tea_model",
     "validate_tea_sample_image",
     "router",
     "tea_grade_router",
 ]
+

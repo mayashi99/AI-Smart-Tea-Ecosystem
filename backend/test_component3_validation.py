@@ -35,6 +35,10 @@ def run_verification():
             get_model_info,
             resolve_model_path,
             analyze_tea_purity,
+            analyze_mixed_composition,
+            detect_unauthorized_particles,
+            list_demo_samples_metadata,
+            ensure_demo_samples_exist,
             train_tea_grade_model,
             evaluate_tea_model,
             router as component3_router,
@@ -42,7 +46,7 @@ def run_verification():
         )
         from app.components.component04.api import router as component04_router
         from app.main import app
-        print("  -> Grade prediction, purity analysis, training, evaluation, routers, and FastAPI app imported successfully.")
+        print("  -> Grade prediction, purity, mixed composition, defect detection, training, evaluation, routers, and FastAPI app imported successfully.")
     except Exception as e:
         print(f"  FAILED: Import error: {e}")
         return False
@@ -54,11 +58,19 @@ def run_verification():
     expected_c3_routes = [
         "/api/component3/predict",
         "/api/component3/purity",
+        "/api/component3/mixed-composition",
+        "/api/component3/detect-defects",
+        "/api/component3/demo-samples",
+        "/api/component3/demo-samples/{sample_id}",
         "/api/component3/info",
         "/api/component3/health",
         "/api/component3/grades",
         "/api/tea-grade/predict",
         "/api/tea-grade/purity",
+        "/api/tea-grade/mixed-composition",
+        "/api/tea-grade/detect-defects",
+        "/api/tea-grade/demo-samples",
+        "/api/tea-grade/demo-samples/{sample_id}",
         "/api/tea-grade/info",
         "/api/tea-grade/health",
         "/api/tea-grade/grades",
@@ -201,6 +213,75 @@ def run_verification():
     except ValueError as ve:
         print(f"  -> SUCCESS: Correctly rejected non-tea landscape image with message: '{ve}'")
 
+    # 9. Test Demo Samples Availability
+    print("\n[TEST 9] Testing Demo Samples generation and metadata...")
+    demo_dict = ensure_demo_samples_exist()
+    assert len(demo_dict) == 3, f"Expected 3 demo samples, found {len(demo_dict)}"
+    samples_meta = list_demo_samples_metadata()
+    assert len(samples_meta) == 3, f"Expected 3 metadata entries, found {len(samples_meta)}"
+    for s in samples_meta:
+        print(f"  -> Demo sample loaded: '{s['name']}' ({s['id']}) - Target: {s['test_target']}")
+
+    # 10. Test Mixed Tea Grade Composition Analysis
+    print("\n[TEST 10] Testing Mixed Tea Grade Composition on Pure vs. Mixed Samples...")
+    pure_bytes = demo_dict["pure_bop"].read_bytes()
+    mixed_bytes = demo_dict["mixed_bop_dust"].read_bytes()
+
+    pure_mix_result = analyze_mixed_composition(pure_bytes, filename="pure_bop_sample.jpg")
+    print(f"  -> Pure Sample Mix Status: '{pure_mix_result['mix_status']}' (Severity: {pure_mix_result['mix_severity']})")
+    print(f"     Primary Grade: {pure_mix_result['primary_grade']['grade']} ({pure_mix_result['primary_grade']['percentage']}%)")
+    print(f"     Uniformity Score: {pure_mix_result['uniformity_score']}/100")
+    assert pure_mix_result["success"] is True
+    assert pure_mix_result["is_mixed"] is False or pure_mix_result["mix_severity"] in ["pure_single_grade", "minor_grade_variation"]
+
+    mixed_result = analyze_mixed_composition(mixed_bytes, filename="mixed_bop_dust_sample.jpg")
+    print(f"  -> Mixed Sample Mix Status: '{mixed_result['mix_status']}' (Severity: {mixed_result['mix_severity']})")
+    print(f"     Primary: {mixed_result['primary_grade']['grade']} ({mixed_result['primary_grade']['percentage']}%)")
+    if mixed_result["secondary_grade"]:
+        print(f"     Secondary: {mixed_result['secondary_grade']['grade']} ({mixed_result['secondary_grade']['percentage']}%)")
+    print(f"     Uniformity Score: {mixed_result['uniformity_score']}/100")
+    print(f"     Commercial Verdict: {mixed_result['commercial_verdict']}")
+    assert mixed_result["success"] is True
+    assert len(mixed_result["composition_breakdown"]) >= 2
+    assert mixed_result["is_mixed"] is True or mixed_result["mix_severity"] in ["moderately_mixed", "heavily_blended", "minor_grade_variation"]
+
+    # 11. Test Defect & Unauthorized Particle Bounding Box Detection
+    print("\n[TEST 11] Testing Unauthorized Particle Detection & Bounding Boxes...")
+    defective_bytes = demo_dict["defective_stalks"].read_bytes()
+    defect_result = detect_unauthorized_particles(defective_bytes, filename="defective_stalks_sample.jpg")
+    print(f"  -> Total Defects Pinpointed: {defect_result['total_defects']}")
+    print(f"  -> Cleanliness Grade: {defect_result['cleanliness_grade']}")
+    print(f"  -> Defect Breakdown: {defect_result['defect_counts']}")
+    print(f"  -> Commercial Verdict: {defect_result['commercial_verdict']}")
+    assert defect_result["success"] is True
+    assert defect_result["total_defects"] > 0, "Failed to detect injected defect particles!"
+    assert defect_result["annotated_image"] is not None and defect_result["annotated_image"].startswith("data:image/jpeg;base64,")
+
+    first_box = defect_result["defects"][0]
+    print(f"  -> Sample Bounding Box #1:")
+    print(f"      Label: {first_box['label']} ({first_box['defect_type']})")
+    print(f"      Confidence: {first_box['confidence_percentage']}%")
+    print(f"      Normalized Bounding Box [ymin, xmin, ymax, xmax]: {first_box['bbox_normalized']}")
+    print(f"      Pixel Bounding Box [x, y, w, h]: {first_box['bbox_pixel']}")
+    assert len(first_box["bbox_normalized"]) == 4
+    assert len(first_box["bbox_pixel"]) == 4
+
+    # 12. Test Non-Tea Image Rejection on Mixed Composition & Defect Detection
+    print("\n[TEST 12] Testing Non-Tea Rejection on Mixed Composition & Defect Endpoints...")
+    try:
+        analyze_mixed_composition(portrait_raw, filename="person.jpg")
+        print("  FAILED: Allowed portrait image in analyze_mixed_composition!")
+        return False
+    except ValueError as ve:
+        print(f"  -> SUCCESS: Mixed composition rejected non-tea image: '{ve}'")
+
+    try:
+        detect_unauthorized_particles(portrait_raw, filename="person.jpg")
+        print("  FAILED: Allowed portrait image in detect_unauthorized_particles!")
+        return False
+    except ValueError as ve:
+        print(f"  -> SUCCESS: Defect detector rejected non-tea image: '{ve}'")
+
     print("\n" + "=" * 65)
     print("ALL COMPONENT 03 TESTS PASSED SUCCESSFULLY!")
     print("=" * 65)
@@ -210,3 +291,4 @@ def run_verification():
 if __name__ == "__main__":
     success = run_verification()
     sys.exit(0 if success else 1)
+
