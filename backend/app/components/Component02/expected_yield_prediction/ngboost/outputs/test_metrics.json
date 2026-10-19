@@ -1,0 +1,13 @@
+{
+    "model": "NGBoost",
+    "target": "kg_per_Acre",
+    "test_years": [
+        2025
+    ],
+    "test_rows": 576,
+    "MAE": 8.51532688013186,
+    "RMSE": 9.883861382963202,
+    "R2": 0.8448562858429128,
+    "MAPE_percent": 8.012617764073157,
+    "MAPE_excluded_zero_targets": 0
+}

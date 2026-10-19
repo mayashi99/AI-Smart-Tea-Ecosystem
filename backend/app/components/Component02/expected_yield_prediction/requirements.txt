@@ -8,3 +8,4 @@ ngboost
 joblib
 matplotlib
 seaborn
+statsmodels

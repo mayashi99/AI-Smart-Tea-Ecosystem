@@ -1,0 +1,14 @@
+{
+    "model": "SARIMAX",
+    "target": "kg_per_Acre",
+    "forecast_policy": "Fixed training origin; no validation/test target updates; 48 periods per year",
+    "test_years": [
+        2025
+    ],
+    "test_rows": 576,
+    "MAE": 14.670339675205835,
+    "RMSE": 17.811094327232667,
+    "R2": 0.4961954334556157,
+    "MAPE_percent": 13.10169456766323,
+    "MAPE_excluded_zero_targets": 0
+}
