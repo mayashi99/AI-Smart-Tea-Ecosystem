@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts'
 
+
 const number = (value) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value ?? 0)
 const month = (value) => new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' }).format(new Date(value))
 
