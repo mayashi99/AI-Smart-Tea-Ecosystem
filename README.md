@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-# AI-Smart-Tea-Ecosystem
-AI-Powered Smart Tea Ecosystem for Sri Lankan Tea Industry
-=======
 # AI Smart Tea Ecosystem
 
 AI-powered smart tea ecosystem for the Sri Lankan tea industry.
@@ -170,4 +166,3 @@ npm run dev
 Open the Vite URL shown in the terminal, usually:
 
 - `http://localhost:5173`
->>>>>>> 119d635afe96b6dd3265084713f2cdfb831272f2

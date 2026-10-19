@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # ========================================
 # COMPONENT01 - LARGE RESEARCH DATA
 # ========================================
@@ -43,7 +42,6 @@
 **/.env
 **/.env.local
 **/*.log
-=======
 __pycache__/
 *.py[cod]
 *$py.class
@@ -94,4 +92,3 @@ backend/.env
 backend/.env
 
 backend/.env
->>>>>>> 119d635afe96b6dd3265084713f2cdfb831272f2

@@ -2,6 +2,15 @@
 // bookmarks and printed passport QR codes keep working.
 export const navItems = [
   { key: 'home', group: 'overview', label: 'Home', path: '/', icon: 'home', description: 'Overview of exports, forecasts and readiness.' },
+  ...[
+    ['overview', 'Disease Dashboard', 'grid'],
+    ['detection', 'Disease Detection', 'leaf'],
+    ['climate', 'Climate & Severity', 'globe'],
+    ['forecast', 'Disease Spread Forecast', 'trend'],
+    ['observations', 'Officer Observations', 'clipboard'],
+    ['alerts', 'Disease Alerts & Risk', 'bell'],
+    ['recommendations', 'Disease Recommendations', 'shield'],
+  ].map(([page, label, icon]) => ({ key: `disease-${page}`, group: 'disease', label, path: `/component01/${page}`, aliases: page === 'overview' ? ['/component01'] : [], icon, component01Page: page })),
   { key: 'dashboard', group: 'overview', label: 'Dashboard', path: '/dashboard', aliases: ['/auction-price'], icon: 'grid', description: 'LSTM auction price model results by growing zone.' },
   { key: 'market', group: 'intelligence', label: 'Market Analysis', path: '/market-analysis', aliases: ['/zone-intelligence'], icon: 'bars', description: 'Zone prices, buyer share and Zone Quality Score.' },
   { key: 'forecast', group: 'intelligence', label: 'Demand Forecast', path: '/demand-forecast', aliases: ['/export-demand'], icon: 'trend', description: '12-month ML export demand forecast.' },

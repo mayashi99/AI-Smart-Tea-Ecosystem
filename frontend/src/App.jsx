@@ -1,21 +1,13 @@
-<<<<<<< HEAD
-// Group project integration point. Component01 is self-contained and can be
-// mounted by the team's shared router without importing its private pages.
-import Component01App from './components/Component01/Component01App.jsx'
-
-export default function App() {
-  return <Component01App />
-}
-=======
 import { lazy, Suspense, useEffect } from 'react'
 import './styles.css'
 import Icon from './components/Icon'
 import { Link, LoadingState } from './components/ui'
 import AppShell from './layout/AppShell'
-import { useLocation } from './lib/router'
+import { navigate, useLocation } from './lib/router'
 import { matchRoute } from './lib/routes'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
+const Component01App = lazy(() => import('./components/Component01/Component01App.jsx'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const MarketAnalysisPage = lazy(() => import('./pages/MarketAnalysisPage'))
 const ExportDemandPage = lazy(() => import('./pages/component04/ExportDemandPage'))
@@ -51,7 +43,7 @@ function NotFound() {
   )
 }
 
-function App() {
+export default function App() {
   const { path } = useLocation()
   const route = matchRoute(path)
   const Page = pages[route.key]
@@ -63,11 +55,9 @@ function App() {
   return (
     <AppShell activeKey={route.key === 'workspace' ? 'home' : route.key}>
       <Suspense fallback={<LoadingState label="Loading page…" />}>
-        {route.key === 'workspace' ? <WorkspacePage key={path} role={route.role} /> : Page ? <Page key={path} /> : <NotFound />}
+        {route.item?.component01Page ? <Component01App embedded page={route.item.component01Page} onNavigate={(page) => navigate(`/component01/${page}`)} /> : route.key === 'workspace' ? <WorkspacePage key={path} role={route.role} /> : Page ? <Page key={path} /> : <NotFound />}
       </Suspense>
     </AppShell>
   )
 }
 
-export default App
->>>>>>> 119d635afe96b6dd3265084713f2cdfb831272f2
