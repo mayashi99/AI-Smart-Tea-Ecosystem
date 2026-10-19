@@ -140,7 +140,7 @@ function PlantDensity() {
 
           <div className="grid gap-2">
             <label className="text-sm font-bold text-lime-950" htmlFor="plantation-zone">
-              Plantation  Zone
+              Plantation Zone
             </label>
             <select
               id="plantation-zone"
