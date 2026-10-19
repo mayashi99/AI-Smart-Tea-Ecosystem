@@ -34,6 +34,10 @@ app.add_middleware(
         "http://localhost:4173",
         "http://127.0.0.1:4173",
     ],
+    # Vite selects the next available development port (for example 5174)
+    # when 5173 is already occupied. Keep CORS limited to local development
+    # hosts while allowing that normal fallback behaviour.
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1):\d+",
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
