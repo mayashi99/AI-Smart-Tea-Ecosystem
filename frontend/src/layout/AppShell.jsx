@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../components/Icon'
 import LeafBackground from '../components/LeafBackground'
 import sidebarPhoto from '../assets/sidebar-leaves.webp'
+import teaExportLogo from '../assets/teaexport-logo.png'
 import { Link } from '../components/ui'
 import { navItems, workspaceRoles } from '../lib/routes'
 import { initials, useLastEri, useSettings } from '../lib/settings'
@@ -9,17 +10,7 @@ import { endpoints, useApi } from '../services/api'
 import { pctChange, sum } from '../lib/format'
 
 function BrandMark() {
-  return (
-    <svg className="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M10 40c0-17 10-28 30-31-2 19-12 30-30 31Z" fill="url(#leafA)" />
-      <path d="M8 42c3-9 8-15 15-20" stroke="#0d3b2b" strokeWidth="2.2" strokeLinecap="round" fill="none" opacity=".55" />
-      <path d="M6 33c-1-9 3-16 11-20-1 9-4 15-11 20Z" fill="url(#leafB)" />
-      <defs>
-        <linearGradient id="leafA" x1="10" y1="40" x2="40" y2="9"><stop stopColor="#2fa865" /><stop offset="1" stopColor="#b9f0b6" /></linearGradient>
-        <linearGradient id="leafB" x1="6" y1="33" x2="17" y2="13"><stop stopColor="#1d7d4c" /><stop offset="1" stopColor="#7fd38f" /></linearGradient>
-      </defs>
-    </svg>
-  )
+  return <img className="brand-mark" src={teaExportLogo} alt="" aria-hidden="true" />
 }
 
 function useOutsideClose(open, setOpen) {
