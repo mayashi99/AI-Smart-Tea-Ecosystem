@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Area, CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import Icon from '../components/Icon'
-import { Card, ErrorState, Link, LoadingState, PageHeader } from '../components/ui'
+import { Card, ErrorState, Link, LoadingState, PageHeader, StatCard } from '../components/ui'
 import { chartTheme } from '../lib/chartTheme'
 import { formatDate, formatNumber, pctChange } from '../lib/format'
 import { isFallbackModel, reliability, trend } from '../lib/forecast'
 import { endpoints, useApi } from '../services/api'
+import { useAuth } from '../lib/auth-context'
 import CombinedAuctionPriceForecast from './component04/CombinedAuctionPriceForecast'
 
 const ZONE_HELP = {
@@ -18,6 +19,31 @@ const ZONE_HELP = {
 const ZONE_ORDER = ['Total', 'High Growns', 'Medium Growns', 'Low Growns']
 
 const lkr = (value, digits = 0) => `LKR ${formatNumber(value, digits)}`
+
+function FarmerDashboard() {
+  const { data, error, loading, reload } = useApi(endpoints.passports)
+  const passports = data?.passports || []
+  const events = passports.flatMap((passport) => passport.events.map((event) => ({ ...event, batch_id: passport.batch_id })))
+    .sort((first, second) => new Date(second.timestamp) - new Date(first.timestamp))
+    .slice(0, 8)
+
+  return (
+    <div className="page-stack">
+      <PageHeader eyebrow="Farmer / Seller workspace" title="Your tea batches" description="View only the batch passports and traceability activity assigned to your account." />
+      {error && <ErrorState message={error} onRetry={reload} />}
+      <section className="stat-grid" aria-label="Your batch summary">
+        <StatCard icon="package" tone="teal" label="Your batches" value={data ? passports.length : loading ? '…' : '—'} to="/digital-passport" />
+        <StatCard icon="refresh" label="Your recorded events" value={data ? passports.reduce((count, passport) => count + passport.events.length, 0) : loading ? '…' : '—'} to="/digital-passport" />
+        <StatCard icon="shield" tone={data?.ledger_valid === false ? 'amber' : 'green'} label="Ledger integrity" value={data ? (data.ledger_valid ? 'Verified' : 'Review needed') : loading ? '…' : '—'} hint="Hash-linked record status" to="/digital-passport" />
+      </section>
+      <Card icon="shield" title="Recent batch activity" description="Latest events from your own batch records." actions={<Link className="btn btn-secondary btn-sm" to="/digital-passport">Manage my batches</Link>}>
+        {!data && loading ? <LoadingState compact label="Loading your batches…" /> : events.length ? (
+          <ul className="activity-list">{events.map((event) => <li key={event.record_hash}><span className="activity-dot" /><div><strong>{event.batch_id} · {event.event_type}</strong><small>{event.location} · {event.tea_grade}</small></div><time dateTime={event.timestamp}>{new Date(event.timestamp).toLocaleDateString()}</time></li>)}</ul>
+        ) : <p className="field-hint">No batches are assigned to your account yet.</p>}
+      </Card>
+    </div>
+  )
+}
 
 function PriceTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -54,7 +80,9 @@ function zoneSummary(dashboard, zone) {
 }
 
 export default function DashboardPage() {
-  const { data: dashboard, error, loading, reload } = useApi(endpoints.trainOutput)
+  const { user } = useAuth()
+  const sellerView = user?.role === 'farmer_seller'
+  const { data: dashboard, error, loading, reload } = useApi(endpoints.trainOutput, { enabled: !sellerView })
   const [zoneChoice, setZoneChoice] = useState('')
   const [showTest, setShowTest] = useState(false)
   const selectedZone = zoneChoice || dashboard?.default_zone || ''
@@ -83,6 +111,8 @@ export default function DashboardPage() {
 
   const firstForecastLabel = current?.forecast[0] ? formatDate(current.forecast[0].auction_date) : null
   const lastLabel = chartData.at(-1)?.date
+
+  if (sellerView) return <FarmerDashboard />
 
   return (
     <div className="page-stack">

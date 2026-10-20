@@ -2,10 +2,12 @@ import { useState } from 'react'
 import Icon from '../../components/Icon'
 import { Card, ErrorState, Link, LoadingState, PageHeader, StatCard } from '../../components/ui'
 import { useLocation } from '../../lib/router'
+import { useAuth } from '../../lib/auth-context'
+import { canAccessPage } from '../../lib/permissions'
 import { useSettings } from '../../lib/settings'
 import { endpoints, postJSON, useApi } from '../../services/api'
 
-const emptyForm = { batch_id: '', event_type: 'Batch created', location: '', tea_grade: '', quantity_kg: '', note: '' }
+const emptyForm = { batch_id: '', event_type: 'Batch created', location: '', tea_grade: '', quantity_kg: '', note: '', quality_result: '', evidence_reference: '' }
 const eventTypes = ['Batch created', 'Collected', 'Processed', 'Quality checked', 'Packed', 'Exported', 'Received']
 const [currentHost] = window.location.hostname.split('.')
 const isPrivateHost = (host) => host === 'localhost' || host === '127.0.0.1' || host === '::1' || /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)
@@ -14,11 +16,17 @@ const activeOrigin = isPrivateHost(window.location.hostname) && /^\d+\.\d+\.\d+\
 const emptyLedger = { passports: [], ledger_valid: true, ledger_records: 0 }
 
 export default function DigitalPassportPage() {
+  const { user } = useAuth()
   const settings = useSettings()
   const { query } = useLocation()
   const scannedBatchId = query.get('batch')
   const { data, error: loadError, loading, reload } = useApi(endpoints.passports)
   const ledger = data || emptyLedger
+  const allowedEventTypes = user?.role === 'quality_officer'
+    ? ['Quality checked']
+    : user?.role === 'farmer_seller'
+      ? ['Batch created', 'Collected', 'Processed', 'Packed']
+      : eventTypes
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -61,21 +69,27 @@ export default function DigitalPassportPage() {
 
       <Card number="1" title="Record a traceability event" description="Add the first event to create a passport, or append to an existing batch ID.">
         <label className="field passport-site-url"><span>Site address for QR scans</span><input type="url" required value={siteUrl} onChange={(event) => setSiteUrl(event.target.value)} placeholder="https://your-tea-site.example" /></label>
-        <p className="field-hint">For another phone on this Wi-Fi, use your computer’s LAN address (for example http://192.168.1.20:5173). Outside your network, add the deployed public site address. You can save a default in <Link to="/settings">Settings</Link>.</p>
+        <p className="field-hint">For another phone on this Wi-Fi, use your computer’s LAN address (for example http://192.168.1.20:5173). Outside your network, add the deployed public site address. {canAccessPage(user?.role, 'settings') && <>You can save a default in <Link to="/settings">Settings</Link>.</>}</p>
         <form className="form-grid" onSubmit={addEvent}>
           <div className="form-row">
             <label className="field"><span>Batch ID</span><input required minLength={3} maxLength={80} pattern="[A-Za-z0-9][A-Za-z0-9._-]*" value={form.batch_id} onChange={(e) => setForm({ ...form, batch_id: e.target.value })} placeholder="e.g. LK-TEA-2026-001" list="known-batches" /><datalist id="known-batches">{ledger.passports.map((item) => <option key={item.batch_id} value={item.batch_id} />)}</datalist></label>
-            <label className="field"><span>Traceability event</span><select value={form.event_type} onChange={(e) => setForm({ ...form, event_type: e.target.value })}>{eventTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="field"><span>Traceability event</span><select required value={form.event_type} onChange={(e) => setForm({ ...form, event_type: e.target.value })}>{allowedEventTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
           </div>
           <div className="form-row is-three">
             <label className="field"><span>Location</span><input required minLength={2} maxLength={120} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Estate, factory, port" /></label>
             <label className="field"><span>Tea grade / product</span><input required maxLength={80} value={form.tea_grade} onChange={(e) => setForm({ ...form, tea_grade: e.target.value })} placeholder="e.g. OP1" /></label>
             <label className="field"><span>Quantity (kg)</span><input required type="number" min="0.01" step="0.01" value={form.quantity_kg} onChange={(e) => setForm({ ...form, quantity_kg: e.target.value })} /></label>
           </div>
+          {form.event_type === 'Quality checked' && (
+            <div className="form-row">
+              <label className="field"><span>Inspection result</span><select required value={form.quality_result} onChange={(e) => setForm({ ...form, quality_result: e.target.value })}><option value="">Select result</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="pending">Pending</option></select></label>
+              <label className="field"><span>Evidence reference</span><input required maxLength={300} value={form.evidence_reference} onChange={(e) => setForm({ ...form, evidence_reference: e.target.value })} placeholder="Certificate or lab report reference" /></label>
+            </div>
+          )}
           <label className="field"><span>Event note (do not enter personal or confidential data)</span><textarea rows={2} maxLength={500} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></label>
           <button className="btn btn-primary" disabled={busy || !ledger.ledger_valid}><Icon name="shield" size={17} />{busy ? 'Adding record…' : 'Add signed-hash event to ledger'}</button>
         </form>
-        <p className="field-hint">Production traceability needs access controls and a shared ledger deployment.</p>
+        <p className="field-hint">Access is restricted by account role and batch ownership. Public QR passports show only the batch ID, published event stages, timestamps, and ledger verification status.</p>
       </Card>
 
       {error && <ErrorState message={error} />}

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
 import { Card, PageHeader, StatusPill } from '../components/ui'
-import { workspaceRoles } from '../lib/routes'
 import { clearLastEri, defaultSettings, markets, resetSettings, saveSettings, teaTypes, useLastEri, useSettings } from '../lib/settings'
 import { endpoints, invalidate } from '../services/api'
 
@@ -25,7 +24,7 @@ export default function SettingsPage() {
 
   function save(event) {
     event.preventDefault()
-    saveSettings({ ...form, displayName: form.displayName.trim(), defaultCapacity: Number(form.defaultCapacity) || defaultSettings.defaultCapacity, passportSiteUrl: form.passportSiteUrl.trim().replace(/\/$/, '') })
+    saveSettings({ ...form, defaultCapacity: Number(form.defaultCapacity) || defaultSettings.defaultCapacity, passportSiteUrl: form.passportSiteUrl.trim().replace(/\/$/, '') })
     setMessage('Settings saved.')
   }
 
@@ -57,12 +56,8 @@ export default function SettingsPage() {
       <PageHeader eyebrow="Platform · Settings" title="Settings" description="Manage your profile, planning defaults and platform data. Preferences are stored in this browser." />
 
       <form className="settings-grid" onSubmit={save}>
-        <Card icon="user" title="Profile" description="Shown in the top bar and on your workspace.">
-          <div className="form-grid">
-            <label className="field"><span>Display name</span><input required maxLength={60} value={form.displayName} onChange={update('displayName')} /></label>
-            <label className="field"><span>Organisation (optional)</span><input maxLength={80} value={form.organisation} onChange={update('organisation')} placeholder="e.g. Ceylon Leaf Exports" /></label>
-            <label className="field"><span>Workspace role</span><select value={form.role} onChange={update('role')}>{Object.entries(workspaceRoles).map(([key, role]) => <option key={key} value={key}>{role.title.replace(' workspace', '')}</option>)}</select></label>
-          </div>
+        <Card icon="user" title="Account" description="Your identity and role are managed by the administrator.">
+          <p className="field-hint">Account profile and permissions are supplied by secure Google sign-in. Contact an administrator if your assigned role is incorrect.</p>
         </Card>
 
         <Card icon="settings" title="Planning defaults" description="Pre-filled in Export Readiness and Trade Insights.">

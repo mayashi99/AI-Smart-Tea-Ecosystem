@@ -124,6 +124,63 @@ After saving a batch event, its passport page displays a QR code and provides a 
 The QR opens that batch passport on the same frontend site; sellers should use the deployed,
 phone-accessible site URL when generating codes for customers.
 
+### Google Sign-In and Sign-Up
+
+The frontend provides `/login` and `/signup`. Regular users authenticate with Google's OAuth 2.0
+authorization-code flow. The Super Admin uses the email/password configured for initial setup and
+must also verify a time-based code from Google Authenticator. On first Super Admin sign-in, scan the
+displayed QR code and enter a current six-digit code; only after successful verification is the
+authenticator secret saved (encrypted) in SQLite. Later Super Admin sign-ins require a fresh code.
+The password is stored as a scrypt hash, not plaintext.
+
+Set `ADMIN_BOOTSTRAP_EMAIL=admin@gmail.com` and `ADMIN_BOOTSTRAP_PASSWORD` in the untracked
+`backend/.env` before starting the backend. The bootstrap creates the protected Super Admin account
+once. Do not put the password or encryption key in source control, the frontend environment, or logs.
+Generate a Fernet key for `TOTP_ENCRYPTION_KEY` and keep it backed up securely; losing that key
+prevents decrypting the saved authenticator secret. Generate one using:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+After the first Super Admin password is accepted and its account appears in SQLite, remove
+`ADMIN_BOOTSTRAP_PASSWORD` from the environment file; the scrypt password hash remains in the
+database. Keep `TOTP_ENCRYPTION_KEY` unchanged for future authenticator logins.
+
+Sign-up offers **Admin**, **Export Manager**, **Quality & Compliance Officer**, **Data Analyst**,
+**Farmer / Seller**, and **Viewer / Buyer**. Admin, Export Manager, Quality & Compliance Officer,
+and Data Analyst registrations remain pending until approved. An Admin can approve the staff roles;
+only the Super Admin can approve Admin requests. Farmer / Seller and Viewer / Buyer registrations
+are self-service. Pending and rejected accounts cannot start a session.
+
+The Super Admin account cannot be changed or deactivated through user management. It is also
+prevented from authenticating through Google OAuth; use its password and authenticator flow.
+
+To configure Google OAuth:
+
+1. Open Google Cloud Console and create or select a project.
+2. Configure the OAuth consent screen with the application name and support email. Add the test
+   Google accounts while the consent screen is in testing mode.
+3. Create an OAuth client ID of type **Web application**.
+4. Add the app origin (for local development, `http://localhost:5173`) under Authorized JavaScript
+   origins.
+5. Add the backend callback as an Authorized redirect URI:
+   `http://localhost:8000/api/auth/google/callback`.
+6. Put the client ID and client secret in `backend/.env` as `GOOGLE_CLIENT_ID` and
+   `GOOGLE_CLIENT_SECRET`. Set `GOOGLE_REDIRECT_URI` to the exact redirect URI above and
+   `FRONTEND_URL=http://localhost:5173`.
+7. Keep the bootstrap password, `TOTP_ENCRYPTION_KEY`, and OAuth credentials on the server; never
+   add them to frontend environment variables.
+8. Install backend dependencies and restart the API. Start the Vite frontend and open
+   `http://localhost:5173/login` or `/signup`.
+
+For production, register the HTTPS app origin and HTTPS callback with Google, set
+`COOKIE_SECURE=true`, and serve the frontend and `/api` through the same site origin (or configure
+an appropriately secured same-site deployment). Use a persistent, access-controlled location for
+`RBAC_DATABASE_PATH`; it stores accounts, hashed sessions, audit records, and passport ownership.
+The local SQLite database is initialized automatically on the first API request.
+
 ### Combined Workbook Auction Price Forecast
 
 `backend/ml/datasets/raw/component04/Combined_Sales_Quantity_and_Price_Single_Sheet_2016_2026.xlsx`
