@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.component04 import router as component04_router
 from app.components.Component02.plantation_health.api import router as component02_router
 from app.components.Component02.harvest_readiness.api import (
     router as harvest_router,
@@ -38,8 +39,9 @@ app.add_middleware(
     # when 5173 is already occupied. Keep CORS limited to local development
     # hosts while allowing that normal fallback behaviour.
     allow_origin_regex=r"https?://(localhost|127\.0\.0\.1):\d+",
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -66,6 +68,7 @@ app.include_router(
 
 app.include_router(expected_yield_router)
 app.include_router(harvest_forecast_router)
+app.include_router(component04_router)
 
 
 # ============================================================

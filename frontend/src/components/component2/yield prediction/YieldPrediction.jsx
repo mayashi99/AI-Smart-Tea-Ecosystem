@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-const API_URL = 'http://127.0.0.1:8000/component02/expected-yield'
+import { Link } from '../../ui'
+const API_URL = `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/component02/expected-yield`
 const INITIAL_FORM = {
   Year: 2026, Month_Number: 10, Week_Number: 2, Temperature: 28,
   Rainfall_mm: 100, Humidity: 85, Wind_Speed: 5, Solar_Radiation: 220,
@@ -86,6 +86,9 @@ export default function YieldPrediction() {
     setError('')
   }
 
+  const predictedYield = result ? Number(result.predicted_kg_per_Acre) : null
+  const planningMargin = Number.isFinite(predictedYield) ? Math.max(1, Math.round(predictedYield * 0.06)) : null
+
   return (
     <main className="min-h-[calc(100vh_-_88px)] bg-[#f5f7f3] text-[#203b32] [font-family:inherit] [&_:is(input,_select,_button,_a):focus-visible]:[outline:3px_solid_#80b892] [&_:is(input,_select,_button,_a):focus-visible]:outline-offset-[3px] motion-reduce:[&_*]:animate-none! motion-reduce:[&_*]:[transition:none]! motion-reduce:[&_*::before]:animate-none! motion-reduce:[&_*::before]:[transition:none]! motion-reduce:[&_*::after]:animate-none! motion-reduce:[&_*::after]:[transition:none]!">
       <div className="max-w-[1200px] m-[0_auto] p-[26px_32px_0] max-[760.01px]:p-[22px_20px_0] max-[420.01px]:pr-[16px] max-[420.01px]:pl-[16px]">
@@ -129,15 +132,22 @@ export default function YieldPrediction() {
           </form>
 
           <aside className="flex flex-col gap-[20px]">
-            <section className={`relative overflow-hidden rounded-[18px] bg-[#153f30] [background-image:radial-gradient(ellipse_at_top_right,_#37795555,_transparent_65%)] text-[#fff] p-[27px_27px_0] [box-shadow:0_10px_25px_#163f3012] [&_h2]:text-[23px] [&_h2]:tracking-[-.025em] [&_h2]:font-[650] [&_h2]:mt-[19px] ${result ? "yield-result-ready" : ""}`} aria-labelledby="forecast-heading" aria-busy={loading}>
-              <div className="flex items-center justify-between text-[#aed09b]"><span className="text-[10px] tracking-[.15em] font-[700]">YOUR FORECAST</span><Icon name="chart" /></div>
-              <h2 id="forecast-heading">Expected tea yield</h2>
-              <p className="text-[#b3c8b7] text-[12px] mt-[6px] leading-[1.7]">An estimate for your selected conditions.</p>
-              <div className="min-h-[256px] flex flex-col justify-center items-center text-center p-[26px_4px] [&_h3]:text-[14px] [&_h3]:font-[600] [&_h3]:text-[#e2ebd9] [&_>_p:not(.yield-result-unit)]:text-[12px] [&_>_p:not(.yield-result-unit)]:leading-[1.85] [&_>_p:not(.yield-result-unit)]:text-[#b3c8b7] [&_>_p:not(.yield-result-unit)]:max-w-[255px] [&_>_p:not(.yield-result-unit)]:mt-[9px] max-[760.01px]:min-h-[230px]" aria-live="polite" role="status">
-                {result ? <><span className="inline-flex items-center gap-[6px] text-[#c6dfa3] text-[11px]"><Icon name="check" size={14} />Prediction complete</span><div className="text-[clamp(46px,_5.3vw,_70px)] font-[650] tracking-[-.06em] leading-[1.3] mt-[11px] [overflow-wrap:anywhere] max-w-[100%] max-[760.01px]:text-[64px]">{Number(result.predicted_kg_per_Acre).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div><p className="yield-result-unit text-[14px] text-[#b9cbb5] mt-[2px]">kilograms per acre</p></> : <><div className={`grid place-items-center h-[74px] w-[74px] text-[#bed7a3] bg-[#ffffff07] [border:1px_solid_#aace9529] rounded-[50%] mb-[21px] ${loading ? "animate-yield-pulse" : ""}`}><Icon name={loading ? 'chart' : 'leaf'} size={34} /></div><h3>{loading ? 'Calculating your outlook' : 'Your next harvest, in focus'}</h3><p>{loading ? 'Analysing the plantation and climate conditions you provided.' : 'Add your plantation details and generate a forecast to see your estimated yield here.'}</p></>}
-              </div>
-              <dl className="[border-top:1px_solid_#ffffff1c] p-[18px_0] grid gap-[12px] [&_>_div]:flex [&_>_div]:justify-between [&_>_div]:gap-[12px] [&_>_div]:text-[11px] [&_dt]:text-[#b3c8b7] [&_dt]:flex [&_dt]:items-center [&_dt]:gap-[6px] [&_dd]:text-right [&_dd]:text-[#e6eedf] [&_dd]:font-[500]"><div><dt><Icon name="pin" size={15} />Location</dt><dd>{result?.location ?? form.Location}</dd></div><div><dt>Period</dt><dd>{MONTHS[Number(result?.month ?? form.Month_Number) - 1]} {result?.year ?? form.Year} · Week {result?.week ?? form.Week_Number}</dd></div></dl>
-              <div className="m-[0_-27px] p-[14px_27px] bg-[#00000012] [border-top:1px_solid_#ffffff0d] text-[#b4c7af] flex items-center gap-[7px] text-[10px]"><span className="w-[5px] h-[5px] rounded-[50%] bg-[#b9d587]" />{result ? 'Forecast generated' : loading ? 'Forecast in progress' : 'Ready when you are'}</div>
+            <section className="relative overflow-hidden rounded-[28px] bg-[#14523f] [background-image:radial-gradient(ellipse_at_top_right,_#367a6255,_transparent_64%)] p-[34px_36px] text-[#f5f7ef] [box-shadow:0_12px_28px_#163f3018] max-[600.01px]:rounded-[22px] max-[600.01px]:p-[27px_24px]" aria-labelledby="forecast-heading" aria-busy={loading}>
+              {result ? <div aria-live="polite">
+                <div className="flex items-start justify-between gap-[20px]">
+                  <div>
+                    <div className="flex items-center gap-[13px] text-white"><span className="grid h-[38px] w-[38px] place-items-center rounded-[10px] bg-white/10"><Icon name="chart" size={23} /></span><h2 id="forecast-heading" className="m-0 text-[23px] font-[700] tracking-[-.03em]">Expected yield</h2></div>
+                    <p className="mt-[11px] flex flex-wrap items-baseline gap-x-[16px] text-[clamp(66px,_7.8vw,_98px)] font-[750] leading-none tracking-[-.08em] text-white max-[420.01px]:text-[58px]"><span>{predictedYield.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="text-[clamp(30px,_4vw,_46px)] font-[500] tracking-[-.035em] text-[#d5e1cf] max-[420.01px]:text-[27px]">kg / acre</span></p>
+                  </div>
+                  <span className="pt-[5px] text-right text-[11px] font-[800] tracking-[.15em] text-[#c8d9af] max-[420.01px]:hidden">YIELD ESTIMATE</span>
+                </div>
+                <div className="mt-[22px] inline-flex items-center rounded-[13px] border border-[#b5cda466] bg-[#ffffff0b] px-[17px] py-[13px] text-[16px] text-[#d7e4d0] max-[420.01px]:text-[14px]">Planning margin: <strong className="ml-[6px] font-[750] text-[#d6eba9]">±{planningMargin} kg / acre</strong></div>
+                <p className="mt-[35px] text-[16px] leading-[1.6] text-[#d2ddd0]">One field estimate for your selected harvest period</p>
+                <div className="mt-[48px] h-px bg-[#d9e8d040]" />
+                <div className="mt-[24px] flex flex-wrap items-center gap-x-[28px] gap-y-[10px] text-[16px] text-[#dce7d8] max-[420.01px]:text-[14px]"><span className="inline-flex items-center gap-[10px]"><Icon name="pin" size={22} />{result.location ?? form.Location}</span><span>{MONTHS[Number(result.month ?? form.Month_Number) - 1]} {result.year ?? form.Year} · Week {result.week ?? form.Week_Number}</span></div>
+              </div> : <div className="flex min-h-[340px] flex-col items-center justify-center p-[26px_4px] text-center max-[760.01px]:min-h-[260px]" aria-live="polite" role="status">
+                <div className={`grid h-[74px] w-[74px] place-items-center rounded-[50%] border border-[#aace9529] bg-[#ffffff07] text-[#bed7a3] ${loading ? "animate-yield-pulse" : ""}`}><Icon name={loading ? 'chart' : 'leaf'} size={34} /></div><h2 id="forecast-heading" className="mt-[21px] text-[20px] font-[650] tracking-[-.025em] text-[#e2ebd9]">{loading ? 'Calculating your outlook' : 'Your next harvest, in focus'}</h2><p className="mt-[9px] max-w-[255px] text-[12px] leading-[1.85] text-[#b3c8b7]">{loading ? 'Analysing the plantation and climate conditions you provided.' : 'Add your plantation details and generate a forecast to see your expected yield here.'}</p>
+              </div>}
             </section>
             {error && <div className="p-[17px] [border:1px_solid_#eec6be] rounded-[12px] bg-[#fff3ef] text-[#9f392c] text-[12px] leading-[1.7] [overflow-wrap:anywhere] [&_strong]:block [&_strong]:mb-[5px] [&_span]:block [&_span]:mt-[7px]" role="alert"><strong>We couldn’t generate your forecast</strong><p>{error}</p><span>Review your inputs and try again.</span></div>}
             <section className="flex items-start gap-[13px] [border:1px_solid_#e1e7d7] rounded-[12px] bg-[#edf1e5] p-[20px] [&_h3]:text-[#465b35] [&_h3]:text-[12px] [&_h3]:font-[750] [&_h3]:mb-[7px] [&_p]:text-[11px] [&_p]:leading-[1.85] [&_p]:text-[#6a775c]"><span className="grid place-items-center p-[9px] text-[#67804b] rounded-[9px] bg-[#e1e9d5]"><Icon name="leaf" /></span><div><h3>Better inputs. Better insights.</h3><p>Use climate values that represent your selected location and period for a more useful estimate.</p></div></section>

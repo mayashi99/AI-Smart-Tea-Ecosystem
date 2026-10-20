@@ -35,9 +35,23 @@ class ImageValidationRouteTests(unittest.IsolatedAsyncioTestCase):
             validate.assert_called_once_with(b'tea', 'tea.jpg')
 
     async def test_upload_validation_rejects_empty_batch(self):
-        with self.assertRaises(HTTPException) as error:
-            await api.validate_images([])
-        self.assertEqual(error.exception.status_code, 400)
+        result = await api.validate_images([])
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.body, b'{"success":false,"detail":"Please upload between 1 and 5 tea plantation images."}')
+
+    async def test_upload_validation_returns_message_for_invalid_image(self):
+        file = UploadFile(BytesIO(b'car'), filename='car.jpg')
+        with patch.object(api, 'validate_tea_image', side_effect=HTTPException(422, 'Not tea')):
+            result = await api.validate_images([file])
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.body, b'{"success":false,"detail":"Not tea"}')
+
+    async def test_upload_validation_preserves_service_failures(self):
+        file = UploadFile(BytesIO(b'tea'), filename='tea.jpg')
+        with patch.object(api, 'validate_tea_image', side_effect=HTTPException(503, 'Unavailable')):
+            with self.assertRaises(HTTPException) as error:
+                await api.validate_images([file])
+        self.assertEqual(error.exception.status_code, 503)
 
 
 if __name__ == '__main__':

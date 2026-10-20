@@ -15,6 +15,8 @@ export default function HarvestForecast({ api, location, today }) {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
+    // A prop change begins a fresh forecast request, so clear stale results.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setForecast(null);
     setError("");

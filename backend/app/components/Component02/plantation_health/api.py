@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from ultralytics import YOLO
 from ..image_validation import validate_tea_image, MAX_IMAGE_BYTES
@@ -985,9 +986,16 @@ def health_check():
 @router.post("/validate-images")
 async def validate_images(files: list[UploadFile] = File(...)):
     if not 1 <= len(files) <= 5:
-        raise HTTPException(400, "Please upload between 1 and 5 tea plantation images.")
-    for file in files:
-        await run_in_threadpool(validate_tea_image, await file.read(MAX_IMAGE_BYTES + 1), file.filename or "image")
+        return JSONResponse({"success": False, "detail": "Please upload between 1 and 5 tea plantation images."})
+    try:
+        for file in files:
+            await run_in_threadpool(validate_tea_image, await file.read(MAX_IMAGE_BYTES + 1), file.filename or "image")
+    except HTTPException as exc:
+        # A rejected upload is normal user feedback, not a server failure. The
+        # frontend reads this response and presents the validation message.
+        if exc.status_code >= 500:
+            raise
+        return JSONResponse({"success": False, "detail": exc.detail})
     return {"success": True}
 
 

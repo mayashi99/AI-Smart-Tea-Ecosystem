@@ -38,6 +38,11 @@ export default function IntelligentHarvestPlanning() {
   const validationController = useRef(null);
   const [validatingPhotos, setValidatingPhotos] = useState(false);
   const [photoError, setPhotoError] = useState("");
+  const [readiness, setReadiness] = useState([]);
+  const [completedPhotos, setCompletedPhotos] = useState(0);
+  const [yieldResult, setYieldResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const urls = previewUrls.current;
@@ -135,6 +140,9 @@ export default function IntelligentHarvestPlanning() {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
+    // This effect starts a new request whenever its inputs change, so its UI
+    // state must be reset before the new response is received.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setClimate(emptyClimate());
     setWeatherStatus("loading");
     setWeatherError("");
@@ -165,12 +173,6 @@ export default function IntelligentHarvestPlanning() {
       window.clearTimeout(timeout);
     };
   }, [location, today, weatherRefresh]);
-
-  const [readiness, setReadiness] = useState([]);
-  const [completedPhotos, setCompletedPhotos] = useState(0);
-  const [yieldResult, setYieldResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   function handleGrownTypeChange(event) {
     const nextGrownType = event.target.value;

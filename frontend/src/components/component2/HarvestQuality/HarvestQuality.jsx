@@ -15,6 +15,7 @@ function QualityIcon({ name = 'leaf', size = 22 }) {
     sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1" /></>,
     chart: <><path d="M4 3v17h17M8 16v-5m5 5V7m5 9v-7" /></>,
     check: <><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></>,
+    calendar: <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4m8-4v4M4 10h16" /></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
@@ -107,7 +108,15 @@ export default function HarvestQuality() {
       }
       const readiness = summarizeHarvestReadiness(readinessResults);
       if (readiness.failedCount) throw new Error('Some harvest readiness results are incomplete. Please retry.');
-      const quality = assessQuality(assessment, today, readiness.readyPercent);
+      let forecast = null;
+      let forecastError = '';
+      try {
+        const forecastParams = new URLSearchParams({ latitude, longitude });
+        forecast = await fetch(`${API}/component02/harvest-forecast?${forecastParams}`, { signal: controller.signal }).then(readResponse);
+      } catch (err) {
+        forecastError = err.name === 'AbortError' ? 'The three-day weather forecast timed out.' : 'The three-day weather forecast is unavailable.';
+      }
+      const quality = assessQuality(assessment, today, readiness.readyPercent, forecast);
       let yieldData = null;
       let yieldError = '';
       const period = harvestPeriod(today);
@@ -126,7 +135,7 @@ export default function HarvestQuality() {
           yieldError = err.name === 'AbortError' ? 'Yield prediction timed out. Please retry.' : err.message;
         }
       }
-      setResult({ assessment, quality, location, readiness, yieldData, yieldError, acres: Number(acres), period });
+      setResult({ assessment, quality, location, readiness, forecast, forecastError, yieldData, yieldError, acres: Number(acres), period });
     } catch (err) {
       controller.abort();
       setError(err.name === 'AbortError' ? 'Analysis timed out. Please try again.' : err instanceof TypeError ? 'Cannot connect to the backend. Check that it is running on port 8000.' : err.message);
@@ -182,11 +191,21 @@ export default function HarvestQuality() {
               <div><dt>Harvest readiness</dt><dd>{display(result.readiness.readyPercent, '%')}</dd><small>{result.readiness.label}</small></div>
               <div><dt>Climate</dt><dd>{result.quality.climateLabel}</dd></div>
             </dl>
-            <div className="grid gap-[16px] [&&&_.hq-card]:p-[20px] [&&&_h2]:text-[14px] [&&&_h2]:mt-[0] [&&&_h2]:tracking-[0] [&&&_.hq-yield-result>p:first-of-type]:text-[28px] [&&&_.hq-quality-result>p:nth-child(3)]:text-[10px] [&&&_.hq-quality-result_li]:text-[11px] [&&&_.hq-quality-result>p:nth-child(2)]:text-[32px]"><section className={`${panel} hq-quality-result [&]:bg-[#eef4e8] [&]:[border-color:#d9e4cf] [&&[data-quality=Moderate]]:bg-[#fcf7e9] [&&[data-quality=Moderate]]:[border-color:#ede2c0] [&&[data-quality=Poor]]:bg-[#fff2ed] [&&[data-quality=Poor]]:[border-color:#f0d8cd] [&&[data-quality='Unable_to_confirm']]:bg-[#f0f2f3] [&&[data-quality='Unable_to_confirm']]:[border-color:#dde1e4] [&&_h2]:text-[14px] [&&_h2]:font-[600] [&&>p:nth-child(2)]:text-[36px] [&&>p:nth-child(2)]:tracking-[-1px] [&&>p:nth-child(2)]:text-[#3d6333] [&&[data-quality=Moderate]>p:nth-child(2)]:text-[#93712c] [&&[data-quality=Poor]>p:nth-child(2)]:text-[#a9513a] [&&_li]:text-[12px] [&&_li]:leading-[1.8] [&&_li]:text-[#62705c]`} data-quality={result.quality.potential}>
+            <div className="grid gap-[16px] [&&&_.hq-card]:p-[20px] [&&&_h2]:text-[14px] [&&&_h2]:mt-[0] [&&&_h2]:tracking-[0] [&&&_.hq-yield-result>p:first-of-type]:text-[28px] [&&&_.hq-quality-result>p:nth-child(3)]:text-[10px] [&&&_.hq-quality-result_li]:text-[11px] [&&&_.hq-quality-result>p:nth-child(2)]:text-[32px]"><section className={`${panel} hq-quality-result [&]:bg-[#eef4e8] [&]:[border-color:#d9e4cf] [&&[data-quality=Moderate]]:bg-[#fcf7e9] [&&[data-quality=Moderate]]:[border-color:#ede2c0] [&&[data-quality=Low]]:bg-[#fff2ed] [&&[data-quality=Low]]:[border-color:#f0d8cd] [&&[data-quality='Unable_to_confirm']]:bg-[#f0f2f3] [&&[data-quality='Unable_to_confirm']]:[border-color:#dde1e4] [&&_h2]:text-[14px] [&&_h2]:font-[600] [&&>p:nth-child(2)]:text-[36px] [&&>p:nth-child(2)]:tracking-[-1px] [&&>p:nth-child(2)]:text-[#3d6333] [&&[data-quality=Moderate]>p:nth-child(2)]:text-[#93712c] [&&[data-quality=Low]>p:nth-child(2)]:text-[#a9513a] [&&_li]:text-[12px] [&&_li]:leading-[1.8] [&&_li]:text-[#62705c]`} data-quality={result.quality.potential}>
               <h2 className="text-xl font-bold">Harvest Quality Potential</h2>
               <p className="mt-3 text-3xl font-bold text-emerald-800">{result.quality.potential}</p>
               <p className="mt-2 text-sm">{result.location} · Climate data date: {assessment.climate?.data_date}</p>
               <ul className="mt-4 list-disc space-y-2 pl-5">{result.quality.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>
+            </section>
+            <section className="hq-card bg-[#fff] [border-color:#d9e4cf] p-[20px] rounded-[14px] [box-shadow:0_3px_8px_#1a3e2403]">
+              <div className="flex items-start gap-[11px]">
+                <span className="w-[34px] h-[34px] shrink-0 grid place-items-center rounded-[10px] bg-[#eaf3e4] text-[#4b783f]"><QualityIcon name="calendar" size={18} /></span>
+                <div><p className="text-[9px] font-[700] tracking-[1.4px] text-[#6f8976]">HARVEST TIMING</p><h2 className="!mt-[3px]">{result.quality.harvestPlan.title}</h2></div>
+              </div>
+              {result.quality.harvestPlan.date && <p className="mt-[14px] !text-[24px] font-[700] tracking-[-.45px] text-[#315c35]">{result.quality.harvestPlan.date}</p>}
+              <p className="mt-[7px] text-[11px] leading-[1.7] text-[#62705c]">{result.quality.harvestPlan.detail}</p>
+              <span className="inline-flex mt-[13px] rounded-full bg-[#eef5e9] px-[10px] py-[5px] text-[10px] font-[650] text-[#537548]">{result.quality.harvestPlan.status}</span>
+              {result.forecastError && <p className="mt-[10px] text-[10px] leading-[1.6] text-[#917052]">{result.forecastError}</p>}
             </section>
             </div>
           </> : <>
@@ -196,7 +215,7 @@ export default function HarvestQuality() {
           {!result && <div className={`flex gap-[10px] [border-top:1px_solid_#d6dfd0] mt-[auto] pt-[20px] items-start [&_strong]:text-[11px] [&_strong]:text-[#526c49] [&_p]:text-[10px] [&_p]:leading-[1.6] [&_p]:text-[#8a957f] [&_p]:mt-[4px] max-[800.01px]:mt-[25px] max-[600.01px]:mt-[0] ${loading ? "hq-status-loading" : ""}`}><span className={loading ? "h-[17px] w-[17px] shrink-0 [border:2px_solid_#a9b99d] [border-top-color:transparent] rounded-[50%] animate-spin [animation-duration:0.8s] mt-[2px] motion-reduce:animate-none" : "w-[6px] h-[6px] rounded-[50%] bg-[#90a871] shrink-0 mt-[7px]"} /><div><strong>{loading ? 'Building your harvest outlook' : 'Ready when you are'}</strong><p>{loading ? 'Checking plantation health, readiness, climate and yield. This may take a moment.' : 'Add your images and field details to get started.'}</p></div></div>}
         </aside>
         </div>
-        <details className="[&_summary:focus-visible]:[outline:2px_solid_#719a56] [&_summary:focus-visible]:outline-offset-[4px] mt-[25px] [border:1px_solid_#e1e6db] rounded-[10px] bg-[#f0f3ec] text-[11px] text-[#7e8c74] [&_summary]:p-[15px_18px] [&_summary]:cursor-pointer [&_summary]:flex [&_summary]:gap-[10px] [&_summary]:items-center [&_summary]:font-[500] [&_summary]:text-[#65775a] [&_p]:p-[0_18px_17px] [&_p]:leading-[1.9] [&_p]:max-w-[1000px]"><summary><span>ⓘ</span> Understanding your assessment <span className="ml-[auto] text-[10px] text-[#8c9884] max-[600.01px]:hidden">Method & limitations</span></summary><p>This is a preliminary rule-based assessment, not a validated tea-quality prediction. Premium requires health ≥80%, readiness ≥85%, Good climate. Health or readiness below 60%, or Poor climate, gives Poor potential; intermediate conditions give Moderate. These thresholds require validation against actual tea quality. Missing or outdated climate data prevents confirmation.</p></details>
+        <details className="[&_summary:focus-visible]:[outline:2px_solid_#719a56] [&_summary:focus-visible]:outline-offset-[4px] mt-[25px] [border:1px_solid_#e1e6db] rounded-[10px] bg-[#f0f3ec] text-[11px] text-[#7e8c74] [&_summary]:p-[15px_18px] [&_summary]:cursor-pointer [&_summary]:flex [&_summary]:gap-[10px] [&_summary]:items-center [&_summary]:font-[500] [&_summary]:text-[#65775a] [&_p]:p-[0_18px_17px] [&_p]:leading-[1.9] [&_p]:max-w-[1000px]"><summary><span>ⓘ</span> Understanding your assessment <span className="ml-[auto] text-[10px] text-[#8c9884] max-[600.01px]:hidden">Method & limitations</span></summary><p>This is a preliminary rule-based assessment, not a validated tea-quality prediction. Premium requires health ≥80%, readiness ≥85%, and Good climate. Health or readiness below 60%, or Poor climate, gives Low potential; intermediate conditions give Moderate. The displayed reasons identify the specific conditions that determined the result. These thresholds require validation against actual tea quality. Missing or outdated climate data prevents confirmation.</p></details>
         <footer className="flex justify-between gap-[15px] text-[#a1ab99] text-[9px] p-[23px_0_4px] [&_span:first-child]:font-[600] [&_span:first-child]:tracking-[.3px] max-[600.01px]:text-[8px]"><span>AI Smart Tea Ecosystem</span><span>Thoughtful decisions. Healthier harvests.</span></footer>
       </div>
     </main>
