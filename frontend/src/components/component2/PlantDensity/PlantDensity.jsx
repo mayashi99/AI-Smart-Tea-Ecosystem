@@ -11,6 +11,34 @@ const TERRAIN_FACTORS = {
   'Rocky/Uneven': 0.75,
 }
 
+const TERRAIN_PREVIEWS = {
+  Flat: {
+    title: 'Level planting beds',
+    ground: 'M0 119 L0 76 C48 70 78 80 119 75 C158 69 203 78 240 72 L240 120 Z',
+    rows: ['M12 84 C68 78 116 87 228 80', 'M8 96 C72 90 144 101 235 93', 'M5 108 C75 103 156 113 240 105'],
+    dots: [[42, 82], [83, 83], [125, 82], [168, 81], [205, 80], [28, 95], [70, 95], [112, 96], [153, 95], [197, 94], [47, 107], [91, 108], [136, 108], [180, 107], [220, 106]],
+  },
+  'Gentle Slope': {
+    title: 'Gentle contour slope',
+    ground: 'M0 119 L0 90 C48 85 80 72 116 60 C159 46 196 38 240 22 L240 120 Z',
+    rows: ['M5 91 C55 88 91 74 128 62 C166 49 199 42 236 28', 'M4 102 C57 99 94 85 132 73 C169 60 202 52 238 39', 'M1 113 C61 110 102 96 138 84 C174 72 207 63 240 51'],
+    dots: [[36, 88], [79, 78], [119, 65], [161, 51], [202, 39], [27, 100], [70, 91], [110, 78], [152, 64], [194, 51], [49, 109], [92, 98], [133, 85], [174, 71], [217, 58]],
+  },
+  'Steep Slope': {
+    title: 'Steep terraced slope',
+    ground: 'M0 119 L0 104 L38 96 L38 84 L78 76 L78 64 L119 55 L119 43 L160 35 L160 23 L202 14 L202 5 L240 0 L240 120 Z',
+    rows: ['M1 104 L39 96 L39 90', 'M39 84 L79 76 L79 70', 'M79 64 L120 55 L120 49', 'M120 43 L161 35 L161 29', 'M161 23 L203 14 L203 8'],
+    dots: [[19, 100], [54, 80], [95, 60], [137, 39], [179, 19], [31, 103], [66, 83], [107, 63], [149, 43], [191, 23]],
+  },
+  'Rocky/Uneven': {
+    title: 'Uneven planting pockets',
+    ground: 'M0 119 L0 93 C25 79 43 95 63 76 C82 58 103 82 121 67 C140 51 163 78 183 62 C204 45 217 57 240 42 L240 120 Z',
+    rows: ['M8 103 C39 89 47 99 68 82 C86 67 105 87 122 73 C143 57 159 82 180 67 C200 53 217 64 235 51'],
+    dots: [[22, 96], [59, 81], [101, 77], [144, 68], [188, 63], [220, 55]],
+    rocks: [[77, 98, 8], [119, 92, 6], [170, 91, 9], [37, 108, 6], [211, 85, 7]],
+  },
+}
+
 const ZONE_FACTORS = {
   'Low Country': 1,
   'Mid Country': 0.95,
@@ -19,6 +47,33 @@ const ZONE_FACTORS = {
 
 const ROW_SPACING_METERS = 1.2
 const PLANT_SPACING_METERS = 0.75
+
+function TerrainPreview({ terrainType }) {
+  const preview = TERRAIN_PREVIEWS[terrainType]
+
+  if (!preview) return null
+
+  return (
+    <aside className="overflow-hidden rounded-2xl border border-lime-900/10 bg-gradient-to-br from-lime-50 to-emerald-50 p-4 sm:col-span-2" aria-live="polite">
+      <div className="mb-3 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-green-800">Land structure preview</p>
+          <h2 className="mt-1 text-lg font-black text-lime-950">{preview.title}</h2>
+        </div>
+        <span className="rounded-full bg-green-900 px-3 py-1 text-xs font-bold text-white">{terrainType}</span>
+      </div>
+      <div>
+        <svg viewBox="0 0 240 120" className="w-full rounded-xl bg-sky-100 shadow-inner" role="img" aria-label={`${terrainType} land structure with tea planting rows`}>
+          <path d="M0 0 H240 V72 C186 55 132 77 72 60 C41 51 19 58 0 66 Z" fill="#dff3f8" />
+          <path d={preview.ground} fill="#8eb85b" />
+          {preview.rows.map((row) => <path key={row} d={row} fill="none" stroke="#456c34" strokeWidth="2" strokeLinecap="round" />)}
+          {preview.dots.map(([x, y], index) => <g key={`${x}-${y}-${index}`}><circle cx={x} cy={y} r="4.5" fill="#1f6a43" /><circle cx={x - 1.2} cy={y - 1.5} r="1.7" fill="#9bd76d" /></g>)}
+          {preview.rocks?.map(([x, y, r]) => <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill="#7b7466" />)}
+        </svg>
+      </div>
+    </aside>
+  )
+}
 
 function PlantDensity() {
   const [landArea, setLandArea] = useState('')
@@ -172,6 +227,8 @@ function PlantDensity() {
               <option value="Rocky/Uneven">Rocky/Uneven</option>
             </select>
           </div>
+
+          <TerrainPreview terrainType={terrainType} />
 
           {error && (
             <p className="rounded-xl border-l-4 border-orange-700 bg-orange-50 px-4 py-3 text-sm font-bold text-orange-900 sm:col-span-2">
