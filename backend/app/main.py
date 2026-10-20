@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.component04 import router as component04_router
 from app.components.Component02.plantation_health.api import router as component02_router
-from app.components.Component02.harvest_readiness.api import (
+from app.components.Component02.harvest_readiness.YOLOv11.api import (
     router as harvest_router,
 )
 from app.components.Component02.expected_yield_prediction.api import (

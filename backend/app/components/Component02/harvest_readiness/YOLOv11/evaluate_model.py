@@ -17,7 +17,7 @@ from sklearn.metrics import (
 # MEMORY-EFFICIENT BATCH PREDICTION
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 TEST_DIR = BASE_DIR / "data" / "test"
 

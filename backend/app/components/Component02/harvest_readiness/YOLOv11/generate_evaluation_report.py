@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 
 # Keep all outputs inside harvest_readiness/evaluation
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 EVALUATION_DIR = BASE_DIR / "evaluation"
 
 METRICS_FILE = EVALUATION_DIR / "test_metrics.json"

@@ -6,12 +6,12 @@ import torch
 from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
 from ultralytics import YOLO
 from starlette.concurrency import run_in_threadpool
-from ..image_validation import validate_tea_image, MAX_IMAGE_BYTES
+from ...image_validation import validate_tea_image, MAX_IMAGE_BYTES
 
 app = FastAPI(title="Tea Harvest Readiness API")
 router = APIRouter(tags=["Harvest Readiness"])
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 MODEL_PATH = (
     BASE_DIR
