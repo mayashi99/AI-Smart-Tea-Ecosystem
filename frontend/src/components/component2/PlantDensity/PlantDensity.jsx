@@ -159,10 +159,10 @@ function PlantDensity() {
   }
 
   return (
-    <main className="min-h-screen bg-stone-100 bg-[linear-gradient(135deg,rgba(43,93,45,0.10),rgba(139,105,62,0.16))] px-4 py-8 text-lime-950 sm:px-6 lg:px-8">
+    <main className="relative min-h-screen bg-[linear-gradient(135deg,rgba(229,245,224,0.68),rgba(241,235,218,0.62))] px-4 py-8 text-lime-950 sm:px-6 lg:px-8">
       <section className="mx-auto grid w-full max-w-4xl gap-6">
         <form
-          className="grid gap-4 rounded-3xl border border-lime-900/10 bg-stone-50/95 p-5 shadow-2xl shadow-lime-950/10 sm:grid-cols-2 sm:p-7"
+          className="grid gap-4 rounded-3xl border border-lime-900/10 bg-stone-50/85 p-5 shadow-2xl shadow-lime-950/10 backdrop-blur-sm sm:grid-cols-2 sm:p-7"
           onSubmit={handleSubmit}
         >
           <div className="grid gap-2 sm:col-span-2">
@@ -247,7 +247,7 @@ function PlantDensity() {
 
         {result && (
           <section
-            className="grid gap-4 rounded-3xl border border-lime-900/10 bg-stone-50/95 p-5 shadow-2xl shadow-lime-950/10 sm:grid-cols-3 sm:p-7"
+            className="grid gap-4 rounded-3xl border border-lime-900/10 bg-stone-50/85 p-5 shadow-2xl shadow-lime-950/10 backdrop-blur-sm sm:grid-cols-3 sm:p-7"
             aria-live="polite"
           >
             <div className="rounded-2xl bg-lime-100 p-4">

@@ -348,7 +348,7 @@ function PlantHealth() {
   ]
 
   return (
-    <main className="min-h-screen bg-[#f4f8f4] text-slate-900">
+    <main className="relative min-h-screen bg-[linear-gradient(135deg,rgba(229,245,224,0.68),rgba(241,235,218,0.62))] text-slate-900">
       <div className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
         <div className="mb-8 max-w-3xl">
           <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">AI-Powered Plantation Health Check</h2>

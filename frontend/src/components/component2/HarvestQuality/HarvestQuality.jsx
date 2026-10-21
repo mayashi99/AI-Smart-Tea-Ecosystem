@@ -147,7 +147,7 @@ export default function HarvestQuality() {
 
   const assessment = result?.assessment;
   return (
-    <main className="bg-[#f5f7f4] text-[#243b32] min-h-[100vh] p-[28px_28px_20px] [font-family:Inter,ui-sans-serif,system-ui,sans-serif] [&_h2]:text-[21px] [&_h2]:tracking-[-.55px] [&_h2]:font-[650] [&_h2]:leading-[1.4] [&_button:focus-visible]:[outline:2px_solid_#719a56] [&_button:focus-visible]:outline-offset-[4px] max-[800.01px]:p-[20px_18px] max-[600.01px]:p-[16px_14px] motion-reduce:[&_*]:[transition:none]!">
+    <main className="relative bg-[linear-gradient(135deg,rgba(229,245,224,0.68),rgba(241,235,218,0.62))] text-[#243b32] min-h-[100vh] p-[28px_28px_20px] [font-family:Inter,ui-sans-serif,system-ui,sans-serif] [&_h2]:text-[21px] [&_h2]:tracking-[-.55px] [&_h2]:font-[650] [&_h2]:leading-[1.4] [&_button:focus-visible]:[outline:2px_solid_#719a56] [&_button:focus-visible]:outline-offset-[4px] max-[800.01px]:p-[20px_18px] max-[600.01px]:p-[16px_14px] motion-reduce:[&_*]:[transition:none]!">
       <div className="max-w-[1180px] m-[auto] min-[1500px]:max-w-[1240px]">
         <h1 className="sr-only">Harvest Quality Potential</h1>
         <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-[24px] mt-[0] items-stretch max-[800.01px]:grid-cols-[1.2fr_1fr] max-[800.01px]:gap-[16px] max-[600.01px]:grid-cols-[1fr] max-[600.01px]:mt-[0]">
