@@ -102,7 +102,7 @@ export default function AppShell({ activeKey, children }) {
       <aside className="sidebar" aria-label="Sidebar">
         <div className="sidebar-brand">
           <BrandMark />
-          <div><strong>TeaExportAI</strong><span>Sri Lanka Tea Intelligence</span></div>
+          <div><strong>CeylonTea IQ</strong><span>Sri Lanka Tea Intelligence</span></div>
           <button type="button" className="sidebar-close" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}><Icon name="close" /></button>
         </div>
         <nav className="sidebar-nav" aria-label="Main navigation">
@@ -127,7 +127,7 @@ export default function AppShell({ activeKey, children }) {
       <div className="main-shell">
         <header className="topbar">
           <button type="button" className="icon-button menu-button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Icon name="menu" /></button>
-          <span className="topbar-title">{activeItem?.label || 'TeaExportAI'}</span>
+          <span className="topbar-title">{activeItem?.label || 'CeylonTea IQ'}</span>
           <div className="topbar-actions">
             <div className="dropdown" ref={notifRef}>
               <button type="button" className="icon-button" aria-label={`Notifications${unread ? ` (${unread} unread)` : ''}`} aria-expanded={notifOpen} onClick={() => { setNotifOpen(!notifOpen); setUserOpen(false) }}>
@@ -168,7 +168,7 @@ export default function AppShell({ activeKey, children }) {
           </div>
         </header>
         <main className="page" id="main-content">{children}</main>
-        <footer className="app-footer">© {new Date().getFullYear()} TeaExportAI · Planning intelligence for Sri Lankan tea exporters. Forecasts are model estimates, not guarantees.</footer>
+        <footer className="app-footer">© {new Date().getFullYear()} CeylonTea IQ · Planning intelligence for Sri Lankan tea exporters. Forecasts are model estimates, not guarantees.</footer>
       </div>
     </div>
   )

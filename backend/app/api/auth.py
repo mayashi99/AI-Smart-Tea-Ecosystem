@@ -251,7 +251,7 @@ def admin_password_login(payload: AdminPasswordRequest):
             ),
         )
 
-    issuer = "TeaExportAI"
+    issuer = "CeylonTea IQ"
     otpauth_uri = (
         f"otpauth://totp/{quote(issuer, safe='')}:{quote(email, safe='')}"
         f"?secret={secret}&issuer={quote(issuer, safe='')}&algorithm=SHA1&digits=6&period=30"

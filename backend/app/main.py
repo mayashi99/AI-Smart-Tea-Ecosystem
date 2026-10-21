@@ -21,4 +21,4 @@ app.include_router(component04_router)
 
 @app.get("/")
 def root():
-    return {"message": "AI Smart Tea Ecosystem API"}
+    return {"message": "CeylonTea IQ API"}

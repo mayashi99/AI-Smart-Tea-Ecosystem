@@ -58,7 +58,7 @@ function App() {
   useEffect(() => {
     const titles = { login: 'Sign in', signup: 'Create account' }
     const label = route.item?.label || titles[route.key]
-    document.title = label ? `${label} · TeaExportAI` : 'TeaExportAI · AI Smart Tea Ecosystem'
+    document.title = label ? `${label} · CeylonTea IQ` : 'CeylonTea IQ · Sri Lanka Tea Intelligence'
   }, [route.item, route.key])
 
   useEffect(() => {

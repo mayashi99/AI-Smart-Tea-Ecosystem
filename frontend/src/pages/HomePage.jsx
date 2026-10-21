@@ -175,7 +175,7 @@ export default function HomePage() {
       <section className="home-hero panel role-home-hero designed-home-hero">
         <img className="hero-image" src={homeHeroImage} alt="" aria-hidden="true" />
         <div className="home-hero-copy">
-          <p className="eyebrow">TeaExportAI · Sri Lanka Tea Intelligence</p>
+          <p className="eyebrow">CeylonTea IQ · Sri Lanka Tea Intelligence</p>
           <h1>{timeGreeting()}, {user?.display_name || 'Tea Export Partner'}</h1>
           <p>{roleIntros[role] || 'Welcome to the Sri Lanka tea export intelligence workspace.'}</p>
           <div className="home-hero-actions">

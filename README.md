@@ -1,6 +1,6 @@
-# AI Smart Tea Ecosystem
+# CeylonTea IQ
 
-AI-powered smart tea ecosystem for the Sri Lankan tea industry.
+Ceylon tea intelligence platform for forecasting, export planning, market analysis, readiness, and traceability.
 
 ## Component 04
 

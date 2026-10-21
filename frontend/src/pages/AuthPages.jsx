@@ -319,7 +319,7 @@ function LoginForm() {
           </>
         )}
       </form>
-      <p className="auth-switch">New to TeaExportAI? <Link to="/signup">Create an account</Link></p>
+      <p className="auth-switch">New to CeylonTea IQ? <Link to="/signup">Create an account</Link></p>
     </>
   )
 }
@@ -392,7 +392,7 @@ export function AuthPage({ mode = 'login' }) {
         <div className="landing-bokeh" aria-hidden="true"><i /><i /><i /><i /></div>
         <Link to="/" className="auth-visual-brand">
           <img src={teaExportLogo} alt="" />
-          <span><strong>TeaExportAI</strong><small>AI Smart Tea Ecosystem</small></span>
+          <span><strong>CeylonTea IQ</strong><small>Sri Lanka Tea Intelligence</small></span>
         </Link>
         <GlobeCanvas className="auth-visual-globe" />
         <div className="auth-visual-copy">
@@ -412,8 +412,8 @@ export function AuthPage({ mode = 'login' }) {
       <section className="auth-main">
         <header className="auth-main-top">
           <Link to="/" className="auth-home-link"><Icon name="arrowLeft" size={16} />Home</Link>
-          <Link to="/" className="auth-mobile-brand" aria-label="TeaExportAI home">
-            <img src={teaExportLogo} alt="" /><strong>TeaExportAI</strong>
+          <Link to="/" className="auth-mobile-brand" aria-label="CeylonTea IQ home">
+            <img src={teaExportLogo} alt="" /><strong>CeylonTea IQ</strong>
           </Link>
         </header>
         <div className={`auth-panel ${signup ? 'is-wide' : ''}`}>
@@ -438,7 +438,7 @@ export function PublicPassportPage({ publicId }) {
     <main className="public-passport-page">
       <header className="public-passport-header">
         <img className="public-passport-logo" src={teaExportLogo} alt="" />
-        <span><strong>TeaExportAI</strong><small>Public Tea Passport</small></span>
+        <span><strong>CeylonTea IQ</strong><small>Public Tea Passport</small></span>
       </header>
       <section className="panel public-passport-card">
         <p className="eyebrow">Traceability passport</p>

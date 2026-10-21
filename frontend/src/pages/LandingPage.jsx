@@ -277,7 +277,7 @@ export default function LandingPage() {
       <header className="landing-nav landing-reveal" style={{ '--d': '0ms' }}>
         <Link to="/" className="landing-brand">
           <img src={teaExportLogo} alt="" />
-          <span><strong>TeaExportAI</strong><small>AI Smart Tea Ecosystem</small></span>
+          <span><strong>CeylonTea IQ</strong><small>Sri Lanka Tea Intelligence</small></span>
         </Link>
         <nav className="landing-nav-actions" aria-label="Account">
           {user ? (
@@ -296,7 +296,7 @@ export default function LandingPage() {
           <span className="landing-kicker landing-reveal" style={{ '--d': '0ms' }}>
             <Icon name="leaf" size={15} />AI Smart · Ceylon Tea Intelligence
           </span>
-          <span className="landing-title-main"><span data-word="">Tea</span> <span data-word="">Ecosystem</span></span>
+          <span className="landing-title-main"><span data-word="">CeylonTea</span> <span data-word="">IQ</span></span>
         </h1>
         <p className="landing-tagline landing-reveal" style={{ '--d': '120ms' }}>
           From the estate to every export market — forecast demand, read auction prices, check export
@@ -320,7 +320,7 @@ export default function LandingPage() {
       </ul>
 
       <footer className="landing-footer landing-reveal" style={{ '--d': '700ms' }}>
-        <span>© {new Date().getFullYear()} TeaExportAI · Sri Lanka</span>
+        <span>© {new Date().getFullYear()} CeylonTea IQ · Sri Lanka</span>
         {!prefersReducedMotion() && (
           <button type="button" className="landing-text-button" onClick={replayIntro}>
             <Icon name="refresh" size={14} />Replay intro
