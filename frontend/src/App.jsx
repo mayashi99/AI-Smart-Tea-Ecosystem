@@ -7,7 +7,9 @@ import { navigate, useLocation } from './lib/router'
 import { matchRoute } from './lib/routes'
 import { useAuth } from './lib/auth-context'
 import { canAccessPage } from './lib/permissions'
-import { LoginPage, PublicPassportPage, SignupPage } from './pages/AuthPages'
+import { AuthPage, PublicPassportPage } from './pages/AuthPages'
+
+const LandingPage = lazy(() => import('./pages/LandingPage'))
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
@@ -54,18 +56,24 @@ function App() {
   const Page = pages[route.key]
 
   useEffect(() => {
-    document.title = route.item ? `${route.item.label} · TeaExportAI` : 'TeaExportAI · Sri Lanka Tea Intelligence'
-  }, [route.item])
+    const titles = { login: 'Sign in', signup: 'Create account' }
+    const label = route.item?.label || titles[route.key]
+    document.title = label ? `${label} · TeaExportAI` : 'TeaExportAI · AI Smart Tea Ecosystem'
+  }, [route.item, route.key])
 
   useEffect(() => {
     if (user && (route.key === 'login' || route.key === 'signup')) navigate('/')
   }, [user, route.key])
 
+  const landing = <Suspense fallback={<main className="landing" />}><LandingPage /></Suspense>
+
   if (route.key === 'public-passport') return <PublicPassportPage publicId={route.publicId} />
-  if (route.key === 'login') return <LoginPage />
-  if (route.key === 'signup') return <SignupPage />
+  if (route.key === 'login' || route.key === 'signup') return <AuthPage mode={route.key} />
+  if (route.key === 'landing') return landing
+  // Logged-out visitors to "/" get the landing page; keep it dark while the session check runs.
+  if (route.key === 'home' && (loading || !user)) return loading ? <main className="landing" /> : landing
   if (loading) return <LoadingState label="Verifying your account…" />
-  if (!user) return <LoginPage />
+  if (!user) return <AuthPage mode="login" />
   if (route.key === 'not-found') {
     return <AppShell activeKey=""><NotFound /></AppShell>
   }

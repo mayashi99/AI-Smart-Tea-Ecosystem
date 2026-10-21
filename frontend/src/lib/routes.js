@@ -25,6 +25,7 @@ export function matchRoute(path) {
   if (publicPassport) return { key: 'public-passport', publicId: publicPassport[1] }
   if (path === '/login') return { key: 'login' }
   if (path === '/signup') return { key: 'signup' }
+  if (path === '/welcome') return { key: 'landing' }
   const item = navItems.find((nav) => nav.path === path || nav.aliases?.includes(path))
   if (item) return { key: item.key, item }
   const role = Object.keys(workspaceRoles).find((key) => workspaceRoles[key].path === path)
