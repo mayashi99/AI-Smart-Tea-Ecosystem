@@ -8,6 +8,7 @@ from pathlib import Path
 from PIL import Image, ImageOps, ImageStat
 
 MESSAGE = 'Unable to verify a suitable tea leaf photograph. Please upload a clear photo of a tea leaf.'
+INVALID_MESSAGE = '⚠️ Invalid Image! Please upload a real tea leaf photo.'
 
 
 def check_training_membership(data: bytes, root: Path):
@@ -30,8 +31,8 @@ def check_training_membership(data: bytes, root: Path):
         return None
     return {
         'analysis_status': 'rejected',
-        'message_key': 'imageSuitabilityError',
-        'message': MESSAGE,
+        'message_key': 'invalidTeaImage',
+        'message': INVALID_MESSAGE,
         'suitability': {
             'method': 'exact_training_sha256_allowlist_v1',
             'reason': 'NOT_AN_ORIGINAL_TRAINING_IMAGE',
@@ -152,8 +153,8 @@ def assess_image(data: bytes) -> dict:
         status, reason = 'uncertain', 'FACE_SAFEGUARD_UNAVAILABLE'
     return {
         'analysis_status': status,
-        'message_key': 'imageSuitabilityError',
-        'message': MESSAGE,
+        'message_key': 'invalidTeaImage' if status == 'rejected' else 'imageSuitabilityError',
+        'message': INVALID_MESSAGE if status == 'rejected' else MESSAGE,
         'suitability': {
             'method': 'local_face_and_appearance_heuristics_v3', 'reason': reason,
             'face_safeguard': {'available': faces is not None, 'detected_count': faces},
