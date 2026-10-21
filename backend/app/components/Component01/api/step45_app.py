@@ -208,6 +208,7 @@ def image_artifact(filename: str):
 
 
 @app.get('/api/advisory/classes', tags=['Tea management advisory (expert review required)'])
+@app.get('/api/image/advisory/classes', tags=['Tea management advisory (expert review required)'])
 def advisory_classes():
     """Five labels supported by the rules-based informational advisory."""
     labels = available_advisory_classes()
@@ -226,6 +227,7 @@ def disease_advisory(disease_name: str):
 
 
 @app.post('/api/advisory/advanced', tags=['Tea management advisory (expert review required)'])
+@app.post('/api/image/advisory/advanced', tags=['Tea management advisory (expert review required)'])
 def advanced_disease_advisory(request: AdvancedAdvisoryRequest):
     """Officer-reported observations refine *scouting* advice, not chemical prescriptions.
 

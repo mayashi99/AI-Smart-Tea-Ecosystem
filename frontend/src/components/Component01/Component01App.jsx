@@ -9,6 +9,7 @@ import SpreadForecast from './pages/SpreadForecast.jsx'
 import OfficerObservations from './pages/OfficerObservations.jsx'
 import AlertsRisk from './pages/AlertsRisk.jsx'
 import Recommendations from './pages/Recommendations.jsx'
+import LeafBackground from '../LeafBackground'
 import './styles/component01.css'
 
 const NAV = [
@@ -44,6 +45,8 @@ function TeaApp({ embedded = false, page: routedPage, onNavigate }) {
   const props = {navigate,blocks:blocks.data?.blocks?.map(x=>typeof x==='string'?x:x.block_id)||[],diseases:diseases.data?.diseases||[],latestImage,setLatestImage,forecast,setForecast,focusBlock,setFocusBlock,focusDisease,setFocusDisease}
   const Component = {overview:Dashboard,detection:DiseaseDetection,climate:ClimateSeverity,forecast:SpreadForecast,observations:OfficerObservations,alerts:AlertsRisk,recommendations:Recommendations}[page]
   return <div className={`tg-app${embedded ? ' tg-embedded' : ''}`} data-language={language}>
+    {/* Render the Traceability animation directly for all seven disease pages. */}
+    <LeafBackground animated />
     {!embedded && <aside className={`tg-sidebar ${mobileNav?'shown':''}`}>
       <div className="tg-brand"><div className="tg-brand-symbol"><Leaf size={26} strokeWidth={2.25}/></div><div><strong>TeaGuard<span>®</span></strong><small>INTELLIGENCE SYSTEM</small></div></div>
       <div className="tg-side-caption">{t('workspace')}</div>

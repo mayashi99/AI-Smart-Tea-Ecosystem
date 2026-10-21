@@ -11,11 +11,24 @@
 @media(max-width:900px){.tg-sidebar{position:fixed;left:0;top:0;height:100vh;transform:translateX(-105%);transition:transform .2s;width:255px}.tg-sidebar.shown{transform:translateX(0)}.tg-backdrop{display:block;position:fixed;inset:0;background:rgba(9,29,19,.4);z-index:24;border:0}.tg-mobile-menu{display:grid}.tg-topbar{padding:0 22px}.tg-two-cols{grid-template-columns:1fr}.tg-map-layout{grid-template-columns:1fr 1fr}.tg-side-bottom{margin-top:30px}}
 @media(max-width:630px){.tg-content{padding:24px 14px 42px}.tg-page-title h1{font-size:23px;line-height:1.35}.tg-page-mark{display:none}.tg-page-title p{font-size:11.5px}.tg-hero{padding:25px 23px;min-height:214px}.tg-hero-art{opacity:.32}.tg-hero h2{max-width:290px}.tg-card{padding:18px 15px}.tg-four-cols,.tg-three-cols{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tg-three-cols>.tg-kpi:last-child{grid-column:span 2}.tg-kpi{padding:14px;min-height:100px}.tg-kpi strong{font-size:23px}.tg-topbar{height:65px;padding:0 15px}.tg-topbar-left{gap:6px}.tg-breadcrumb,.tg-breadcrumb-sep{display:none}.tg-topbar-right{gap:6px}.tg-connection>span:last-child{display:none}.tg-connection{padding:9px}.tg-user-icon{display:none}.tg-controls,.tg-form-grid{gap:10px}.tg-map-layout{grid-template-columns:1fr}.tg-plans{grid-template-columns:1fr}.tg-figure-bg{height:182px;min-height:182px}.tg-inspection-metrics,.tg-selected-stats{gap:5px}.tg-inspection-metrics>div,.tg-selected-stats>div{padding:9px}.tg-block{min-height:55px}.tg-block small{font-size:8px}.tg-footer{padding:17px 18px}.tg-fine-note{font-size:10px}}
 
-/* Component01 shares the project navigation and page container. */
+/* Component01 owns one instance of the same animation used by Traceability. */
+.tg-app{position:relative;isolation:isolate}
+.tg-app:not(.tg-embedded){background:#e5f5e0}
+.app-shell:has(.tg-app) > .leaf-bg,
+.app-shell:has(.tg-app) > .leaf-fg{display:none}
+.tg-app > .leaf-bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.tg-app > .leaf-fg{display:block;position:fixed;inset:0;z-index:2;overflow:hidden;pointer-events:none}
+/* Explicit Component01 animation request: shared reduced-motion rules hide it. */
+.tg-app .swirl-track{left:0;right:auto;animation:swirl-drift 46s linear infinite}
+.tg-app .swirl-track.is-second{animation-duration:38s;animation-delay:-21s}
+.tg-app .leaf-swirl{animation:leaf-wind 6s ease-in-out infinite alternate}
+.tg-app .swirl-track.is-second .leaf-swirl{animation-duration:8s}
+.tg-app > .leaf-fg .flying-leaf img{opacity:.8}
+.tg-app .tg-main{position:relative;z-index:1}
 .tg-app.tg-embedded{display:block;min-height:0;background:transparent;width:100%;border-radius:var(--radius,14px)}
-.tg-embedded .tg-main{width:100%;min-width:0}
+.tg-embedded .tg-main{width:100%;min-width:0;background:transparent}
 .tg-embedded .tg-topbar{height:auto;min-height:60px;padding:12px 0;background:transparent;border-bottom:1px solid var(--line,#e3eae5);gap:12px;flex-wrap:wrap}
-.tg-embedded .tg-content{padding:24px 0 0}
+.tg-embedded .tg-content{padding:24px 0 0;background:transparent}
 .tg-embedded .tg-footer{display:none}
 .tg-embedded .tg-card,.tg-embedded .tg-kpi{border-color:var(--line,#e3eae5);box-shadow:var(--shadow-sm,0 3px 14px rgba(25,65,40,.025))}
 @media(max-width:630px){.tg-embedded .tg-content{padding:20px 0 0}.tg-embedded .tg-topbar{padding:10px 0}}
