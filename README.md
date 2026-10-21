@@ -1,168 +1,41 @@
-# AI Smart Tea Ecosystem
+## **AI Smart Tea Ecosystem 🍃**
 
 AI-powered smart tea ecosystem for the Sri Lankan tea industry.
 
-## Component 04
+### Repository Structure
 
-The Component 04 dashboard has three pages:
-
-- `/auction-price` — auction price forecasts, including the combined sales-and-price workbook
-- `/export-demand` — LSTM monthly tea export-volume forecast
-- `/export-advisor` — RAG-grounded, explainable export planning recommendations
-- `/export-readiness` — evidence-based Export Readiness Index (ERI)
-- `/digital-passport` — tea batch traceability passport and ledger verification
-- `/zone-intelligence` — weighted, explainable growing-zone quality scores
-
-The Export Advisor retrieves evidence from the forecast metrics, monthly history, and local planning
-guides. It shows the sources and evidence IDs behind every recommendation. It retrieves relevant
-knowledge-base passages and uses them with the export data as grounded context for LLM synthesis.
-Set `LLM_API_KEY` in `backend/.env` to use OpenAI; it defaults to `https://api.openai.com/v1`
-with model `gpt-4o-mini`. Without a key it defaults to local Ollama at
-`http://localhost:11434/v1` with model `llama3.1` (start Ollama and pull that model first).
-Override `LLM_API_BASE_URL` and `LLM_MODEL` to use another OpenAI-compatible endpoint. If the
-endpoint is unavailable, the advisor returns its explainable rule-based recommendations and
-reports the LLM status in its response.
-
-## Component 04: Auction Price Forecasting
-
-This project now uses an LSTM-only model for tea auction price forecasting. The old ARIMA and ARIMA + LSTM hybrid artifacts were removed.
-
-### Current LSTM Output
-
-The pipeline trains one LSTM model per growing zone:
-
-| Growing zone | MAE | RMSE | Train period | Test period |
-| --- | ---: | ---: | --- | --- |
-| High Growns | 203.85 | 270.33 | Sep 2011 - Jun 2023 | Jul 2023 - May 2026 |
-| Low Growns | 961.83 | 1128.91 | Sep 2011 - Jun 2023 | Jul 2023 - May 2026 |
-| Medium Growns | 488.82 | 593.72 | Sep 2011 - May 2023 | Jun 2023 - May 2026 |
-| Total | 267.82 | 342.54 | Sep 2011 - May 2023 | Jun 2023 - May 2026 |
-
-Model setup:
-
-- Framework: TensorFlow/Keras LSTM when available, otherwise a NumPy fallback trainer
-- Lookback: 12 months
-- Hidden size: 128
-- Epochs: 200
-- Recursive prediction: enabled for multi-step forecasting
-- Forecast horizon: 12 months
-
-### Generated Files
-
-Processed data:
-
-- `backend/ml/datasets/processed/component04/auction_price_clean.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_train.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_test.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_predictions.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_future_forecast.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_metrics.csv`
-
-## Component 04: Export Demand Forecasting
-
-The export-volume model uses the monthly history in
-`backend/ml/datasets/raw/component04/Tea_Export_Demand_Forecast_Dataset.xlsx`. The LSTM pipeline uses
-2016-2023 for training, 2024 for recursive validation and configuration selection, and 2025 for a
-recursive test. It then refits the selected LSTM on all 2016-2025 observations for the next 12 months.
-The aggregate demand forecast does not split results by country, tea process, or package.
-
-### Train Again
-
-From the repository root:
-
-```powershell
-backend\.venv312\Scripts\python.exe -m backend.ml.training.component04.train_export_demand_lstm
+```text
+AI-Smart-Tea-Ecosystem/
+├── backend/
+├── frontend/
+├── .gitignore
+└── README.md
 ```
 
-Generated files are in `backend/ml/datasets/processed/component04/`:
+- **backend/** — Backend services and APIs for the system.
+- **frontend/** — User interface and dashboard.
+- **.gitignore** — Specifies files and directories excluded from Git tracking.
+- **README.md** — Project documentation.
 
-- `export_demand_monthly.csv`
-- `export_demand_test_predictions.csv`
-- `export_demand_forecast.csv`
-- `export_demand_metrics.json`
+### Git Branches and Development Workflow
 
-The API endpoint is `/api/component04/export-demand`. The frontend provides a separate Export Demand
-page at `/export-demand`; the Auction Price page remains at `/`.
+The project uses separate Git branches to organize component development and integrate features.
 
-Advisor API: `POST /api/component04/export-advisor` with JSON such as:
+- `main` — Main project branch.
+- `dev` — Development and integration branch.
+- `feature/disease-intelligence` — Tea disease intelligence.
+- `feature/diseases-intelligence-system` — Disease intelligence system development.
+- `feature/export-intelligence` — Tea export intelligence.
+- `feature/export-intelligence-another` — Additional export intelligence development.
+- `feature/tea-grade-ai` — Tea grading and quality analysis.
+- `feature/yield-intelligence` — Tea yield intelligence.
 
-```json
-{
-  "question": "How should we plan export volumes for the next 12 months?",
-  "destination_country": null,
-  "business_goal": "plan seasonal inventory"
-}
-```
+**Current development status:** The GitHub repository shows that the `dev` branch is 38 commits ahead of and 1 commit behind `main`. Review and test the changes before merging the branches.
 
-### Export Readiness Index and Digital Passport
+### Component 04 – AI-Powered Tea Export Intelligence Platform
 
-The ERI page combines export-demand forecast metrics with user-declared monthly capacity,
-document checks, and quality-control readiness. Its weighted criteria and recommendations are
-shown with the evidence used for each score. It is a planning aid, not an official certification
-or destination-specific compliance assessment. API: `POST /api/component04/export-readiness`.
+The Component 04 dashboard includes three pages designed to support tea export intelligence and decision-making.
 
-The conversational AI Export Advisor is at `/export-advisor`. Its optional zone context can be
-passed from the Zone Intelligence page and is added to the retrieved evidence before recommendations
-are generated.
+The component focuses on using tea auction and export-related information to support market analysis, price forecasting, and export recommendations.
 
-The Zone Intelligence Engine scores High, Medium, and Low Growns using the supplied weights:
-auction price (35%), export success rate (25%), buyer preference (20%), historical demand (10%),
-and climate suitability (10%). Auction price and quantity-based demand signals come from the
-zone auction dataset; quantity share is explicitly a buyer-preference proxy. The supplied data
-does not contain zone-level export success or climate observations, so those two scores are
-entered with optional evidence notes instead of being fabricated. Use “Use this score in Export
-Advisor” to pass the selected score into its grounded export recommendation. API routes:
-`GET /api/component04/zone-intelligence` and `POST /api/component04/zone-intelligence/score`.
 
-The Digital Passport page records batch events (collection, processing, quality checks, packing,
-export, and receipt) in `backend/data/component04/passport_ledger.jsonl`. Every event includes the
-previous record hash and its own SHA-256 hash; `GET /api/component04/digital-passports/verify`
-checks the chain. This local prototype is tamper-evident but is not connected to a distributed
-blockchain network. The ledger is gitignored because it can contain operational traceability data.
-After saving a batch event, its passport page displays a QR code and provides a PNG download.
-The QR opens that batch passport on the same frontend site; sellers should use the deployed,
-phone-accessible site URL when generating codes for customers.
-
-### Combined Workbook Auction Price Forecast
-
-`backend/ml/datasets/raw/component04/Combined_Sales_Quantity_and_Price_Single_Sheet_2016_2026.xlsx`
-contains weekly rows with repeated monthly price aggregates. The pipeline keeps one monthly average
-price per month, compares baselines and ML regressors using rolling validation through 2024, tests on
-2025, and refits the selected model through the latest available month for a 12-month forecast.
-
-```powershell
-.\.venv\Scripts\python.exe -m backend.ml.training.component04.train_combined_auction_price
-```
-
-The API endpoint is `/api/component04/combined-auction-price`; its chart and test predictions appear
-on the Auction Price page.
-
-The separate growing-zone auction pipeline stores its model metadata in
-`backend/ml/models/component04/auction_lstm_model_info.json`.
-
-### Train Again
-
-```powershell
-cd backend
-.\.venv\Scripts\python.exe ml\preprocessing\component04\clean_auction_data.py
-.\.venv\Scripts\python.exe ml\training\component04\train_lstm.py
-```
-
-### Run Backend
-
-```powershell
-cd backend
-.\.venv\Scripts\python.exe run.py
-```
-
-### Run Dashboard
-
-```powershell
-cd frontend
-npm run dev
-```
-
-Open the Vite URL shown in the terminal, usually:
-
-- `http://localhost:5173`
