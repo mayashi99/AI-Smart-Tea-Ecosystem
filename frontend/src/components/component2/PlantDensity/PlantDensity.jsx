@@ -85,7 +85,7 @@ function PlantDensity() {
   const [result, setResult] = useState(null)
 
   const fieldClass =
-    'h-12 w-full rounded-xl border border-lime-900/20 bg-stone-50 px-4 text-sm text-lime-950 outline-none transition focus:border-green-700 focus:ring-4 focus:ring-green-700/15'
+    'h-14 w-full rounded-xl border border-emerald-950/15 bg-white px-4 text-[15px] font-medium text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-emerald-800/30 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10'
 
   const formatNumber = (value) =>
     new Intl.NumberFormat('en-US', {
@@ -159,16 +159,27 @@ function PlantDensity() {
   }
 
   return (
-    <main className="relative min-h-screen bg-[linear-gradient(135deg,rgba(229,245,224,0.68),rgba(241,235,218,0.62))] px-4 py-8 text-lime-950 sm:px-6 lg:px-8">
-      <section className="mx-auto grid w-full max-w-4xl gap-6">
+    <main className="relative isolate min-h-screen overflow-hidden bg-[#f4f8f2] px-4 py-8 text-slate-900 sm:px-6 sm:py-12 lg:px-8">
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(ellipse_at_top,rgba(183,225,167,0.65),transparent_70%)]" />
+      <div aria-hidden="true" className="absolute -left-20 top-40 -z-10 h-72 w-72 rounded-full bg-lime-200/30 blur-3xl" />
+      <div aria-hidden="true" className="absolute -right-20 bottom-0 -z-10 h-96 w-96 rounded-full bg-emerald-200/35 blur-3xl" />
+      <section className="mx-auto grid w-full max-w-5xl gap-6">
+        <header className="mx-auto max-w-2xl text-center">
+          <h1 className="text-3xl font-black tracking-tight text-emerald-950 sm:text-4xl">Plant density recommendation</h1>
+        </header>
         <form
-          className="grid gap-4 rounded-3xl border border-lime-900/10 bg-stone-50/85 p-5 shadow-2xl shadow-lime-950/10 backdrop-blur-sm sm:grid-cols-2 sm:p-7"
+          className="grid gap-5 rounded-[28px] border border-white/90 bg-white/90 p-5 shadow-[0_22px_60px_rgba(21,71,40,0.12)] backdrop-blur sm:grid-cols-2 sm:p-8"
           onSubmit={handleSubmit}
         >
-          <div className="grid gap-2 sm:col-span-2">
-            <label className="text-sm font-bold text-lime-950" htmlFor="land-area">
-              Total Land Area
-            </label>
+          <div className="mb-1 flex items-center justify-between gap-4 sm:col-span-2">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-emerald-700">Site information</p>
+              <p className="mt-1 text-sm text-slate-500">All fields are required for an accurate estimate.</p>
+            </div>
+            <div className="hidden h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-lg sm:grid" aria-hidden="true">🌿</div>
+          </div>
+          <div className="grid gap-2.5 sm:col-span-2">
+            <label className="text-sm font-bold text-slate-800" htmlFor="land-area">Total land area</label>
             <div className="grid gap-3 sm:grid-cols-[1fr_150px]">
               <input
                 id="land-area"
@@ -193,10 +204,8 @@ function PlantDensity() {
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <label className="text-sm font-bold text-lime-950" htmlFor="plantation-zone">
-              Plantation Zone
-            </label>
+          <div className="grid gap-2.5">
+            <label className="text-sm font-bold text-slate-800" htmlFor="plantation-zone">Plantation zone</label>
             <select
               id="plantation-zone"
               value={plantationZone}
@@ -210,10 +219,8 @@ function PlantDensity() {
             </select>
           </div>
 
-          <div className="grid gap-2">
-            <label className="text-sm font-bold text-lime-950" htmlFor="terrain-type">
-              Terrain Type
-            </label>
+          <div className="grid gap-2.5">
+            <label className="text-sm font-bold text-slate-800" htmlFor="terrain-type">Terrain type</label>
             <select
               id="terrain-type"
               value={terrainType}
@@ -237,11 +244,12 @@ function PlantDensity() {
           )}
 
           <button
-            className="h-12 rounded-xl bg-gradient-to-r from-green-900 to-lime-700 text-sm font-extrabold text-stone-50 shadow-lg shadow-green-950/20 transition hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-wait disabled:opacity-70 sm:col-span-2"
+            className="mt-1 inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-lime-700 px-5 text-sm font-extrabold text-white shadow-lg shadow-emerald-950/20 transition hover:-translate-y-0.5 hover:shadow-xl focus:ring-4 focus:ring-emerald-700/20 disabled:cursor-wait disabled:opacity-70 sm:col-span-2"
             disabled={isLoading}
             type="submit"
           >
-            {isLoading ? 'Calculating...' : 'Calculate Recommendation'}
+            <span aria-hidden="true">{isLoading ? '◌' : '✦'}</span>
+            {isLoading ? 'Calculating recommendation...' : 'Calculate recommendation'}
           </button>
         </form>
 
