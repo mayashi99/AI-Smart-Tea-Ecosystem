@@ -6,6 +6,7 @@ DEVELOPMENT-ONLY until a separately evaluated compatible checkpoint exists.
 from __future__ import annotations
 
 from io import BytesIO
+import csv
 import os
 from pathlib import Path
 import re
@@ -17,6 +18,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from PIL import Image, UnidentifiedImageError
 from pydantic import ValidationError
+from image_suitability import assess_image, check_training_membership
 
 # Import normally so Pydantic v2 can resolve Step43's request types.
 from step43_app import app
@@ -130,6 +132,18 @@ async def image_analyze(
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     await file.close()
     _require_valid_image(data, suffix)
+    try:
+        rejection = await run_in_threadpool(check_training_membership, data, ROOT)
+    except (OSError, ValueError, csv.Error) as exc:
+        raise HTTPException(503, 'Training image allowlist is unavailable') from exc
+    if rejection is not None:
+        return rejection
+    try:
+        suitability = await run_in_threadpool(assess_image, data)
+    except (OSError, ValueError, SyntaxError, Image.DecompressionBombError) as exc:
+        raise HTTPException(422, 'Invalid or corrupt image data') from exc
+    if suitability['analysis_status'] != 'acceptable':
+        return suitability
 
     # Only a transient input file is written; output heatmap/overlay are saved
     # independently. This does not modify training data or officer CSV files.
@@ -158,6 +172,8 @@ async def image_analyze(
     dev_trained = result.get('training_mode') == 'full'
     return {
         'mode': 'DEVELOPMENT_ONLY_CNN_GRADCAM_PP',
+        'analysis_status': 'completed',
+        'suitability': suitability['suitability'],
         'predicted_class': result['predicted_class'],
         'explained_class': result['explained_class'],
         'class_names': result['class_names'],

@@ -141,5 +141,6 @@
   "red rust": "Red Rust",
   "red spider mite": "Red Spider Mite",
   "seasonalBasisNote": "Based on today's field inspection and historical seasonal patterns. Model estimates require field confirmation before treatment.",
-  "forecastInterval": "Forecast period"
+  "forecastInterval": "Forecast period",
+  "imageSuitabilityError": "Unable to verify a suitable tea leaf photograph. Please upload a clear photo of a tea leaf."
 }

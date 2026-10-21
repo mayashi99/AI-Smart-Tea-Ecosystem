@@ -26,9 +26,9 @@ async function request(path, options = {}) {
 
 export const get = (path) => request(path)
 export const post = (path, obj) => request(path, { method: 'POST', body: JSON.stringify(obj) })
-export const uploadImage = (file) => {
+export const uploadImage = (file, options = {}) => {
   const form = new FormData()
   form.append('file', file)
-  return request('/api/image/analyze', { method: 'POST', body: form })
+  return request('/api/image/analyze', { ...options, method: 'POST', body: form })
 }
 export const assetUrl = (path) => !path ? '' : `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`

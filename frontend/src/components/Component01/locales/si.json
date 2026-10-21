@@ -141,5 +141,6 @@
   "red rust": "Red Rust",
   "red spider mite": "Red Spider Mite",
   "seasonalBasisNote": "අද ක්ෂේත්‍ර නිරීක්ෂණය සහ අතීත සෘතුමය රටා මත පදනම් වේ. ප්‍රතිකාර කිරීමට පෙර ක්ෂේත්‍ර තහවුරු කිරීම අවශ්‍යයි.",
-  "forecastInterval": "පුරෝකථන කාලය"
+  "forecastInterval": "පුරෝකථන කාලය",
+  "imageSuitabilityError": "සුදුසු තේ කොළ ඡායාරූපයක් බව තහවුරු කළ නොහැක. කරුණාකර පැහැදිලි තේ කොළ ඡායාරූපයක් ඇතුළත් කරන්න."
 }
