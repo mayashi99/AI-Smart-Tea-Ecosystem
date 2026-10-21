@@ -238,7 +238,9 @@ function PlantHealth() {
       const formData = new FormData()
       files.forEach((file) => formData.append('files', file))
       const response = await fetch(`${API_BASE_URL}/component02/validate-images`, { method: 'POST', body: formData })
-      const payload = await response.json()
+      // A proxy/network failure can return an empty or HTML response. Parse it
+      // defensively so the user sees the actual validation/connection message.
+      const payload = await response.json().catch(() => ({}))
       if (!response.ok || payload.success !== true) {
         throw new Error(typeof payload.detail === 'string' ? payload.detail : 'Could not validate these images. Please try again.')
       }
