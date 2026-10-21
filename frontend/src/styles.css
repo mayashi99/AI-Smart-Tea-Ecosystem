@@ -393,6 +393,8 @@ h3 { margin-bottom: 4px; color: var(--ink); font-size: 0.95rem; }
 .auth-card > .eyebrow { margin-bottom: 9px; }
 .auth-card > p:not(.eyebrow) { color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
 .auth-form { margin-top: 22px; gap: 16px; }
+.auth-remember-option { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 0.82rem; line-height: 1.4; cursor: pointer; }
+.auth-remember-option input { width: 17px; height: 17px; margin: 0; accent-color: var(--green-600); }
 .auth-email-control { position: relative; display: block; }
 .auth-email-control input { padding-right: 160px; }
 .auth-role-hint { position: absolute; top: 50%; right: 11px; max-width: 46%; overflow: hidden; color: var(--muted); font-size: 0.74rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; transform: translateY(-50%); pointer-events: none; }
@@ -769,6 +771,15 @@ table.is-compact th, table.is-compact td { padding: 9px 14px; font-size: 0.8rem;
   mask-image: linear-gradient(90deg, transparent 0%, #000 38%);
   pointer-events: none;
 }
+.designed-home-hero { min-height: 240px; align-items: center; border-color: rgb(47 86 62 / 12%); }
+.designed-home-hero .home-hero-copy { width: min(100%, 720px); max-width: 720px; padding: clamp(24px, 4vw, 44px); }
+.designed-home-hero .home-hero-copy .eyebrow { color: var(--green-700); font-weight: 800; letter-spacing: 0.055em; text-transform: uppercase; }
+.designed-home-hero .home-hero-copy h1 { max-width: 720px; margin: 8px 0 10px; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.08; letter-spacing: -0.045em; }
+.designed-home-hero .home-hero-copy > p:not(.eyebrow) { max-width: 540px; margin: 0 0 15px; color: #596c60; font-size: clamp(0.95rem, 1.5vw, 1.1rem); }
+.designed-home-hero .hero-image { width: 70%; -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 38%) 24%, #000 48%); mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 38%) 24%, #000 48%); }
+.home-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.home-hero-actions .btn { min-height: 42px; box-shadow: 0 4px 12px rgb(30 70 47 / 12%); }
+.designed-home-hero .role-badge { margin-top: 13px; }
 
 .eri-snapshot { display: grid; justify-items: center; gap: 14px; text-align: center; }
 .eri-snapshot.is-empty { padding: 8px 6px; }
@@ -1097,6 +1108,10 @@ table.is-compact th, table.is-compact td { padding: 9px 14px; font-size: 0.8rem;
   .advisor-summary, .zone-score-summary, .cta-banner { align-items: flex-start; flex-direction: column; }
   .chart-box.is-tall { height: 320px; }
   .hero-image { width: 100%; opacity: 0.22; -webkit-mask-image: none; mask-image: none; }
+  .designed-home-hero .hero-image { opacity: 0.24; }
+  .designed-home-hero .home-hero-copy h1 { font-size: clamp(1.75rem, 8vw, 2.5rem); }
+  .home-hero-actions { align-items: stretch; flex-direction: column; }
+  .home-hero-actions .btn { justify-content: center; }
   .user-name { display: none; }
 }
 

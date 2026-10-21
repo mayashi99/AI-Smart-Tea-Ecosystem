@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth-context'
 import { navigationForRole, roleLabels } from '../lib/permissions'
 import { navItems } from '../lib/routes'
 import { endpoints, useApi } from '../services/api'
+import homeHeroImage from '../assets/home-hero.jpg'
 
 const roleIntros = {
   admin: 'Manage the platform, users, traceability, and tea export intelligence from one workspace.',
@@ -14,19 +15,57 @@ const roleIntros = {
   viewer_buyer: 'Explore approved market intelligence and reports, and verify public tea passports using QR codes.',
 }
 
+const roleActions = {
+  admin: ['readiness', 'forecast'],
+  export_manager: ['readiness', 'forecast'],
+  quality_officer: ['readiness', 'traceability'],
+  data_analyst: ['forecast', 'market'],
+  farmer_seller: ['readiness', 'traceability'],
+  viewer_buyer: ['forecast', 'reports'],
+}
+
+function timeGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export default function HomePage() {
   const { user } = useAuth()
   const farmer = user?.role === 'farmer_seller'
   const passports = useApi(endpoints.passports, { enabled: farmer })
   const links = navigationForRole(navItems.filter((item) => item.key !== 'home'), user?.role)
+  const actionKeys = roleActions[user?.role] || []
+  const actions = actionKeys
+    .map((key) => links.find((item) => item.key === key))
+    .filter(Boolean)
+    .slice(0, 2)
 
   return (
     <div className="page-stack">
-      <section className="home-hero panel role-home-hero">
+      <section className="home-hero panel role-home-hero designed-home-hero">
+        <img className="hero-image" src={homeHeroImage} alt="" aria-hidden="true" />
         <div className="home-hero-copy">
           <p className="eyebrow">TeaExportAI · Sri Lanka Tea Intelligence</p>
-          <h1>Welcome, {user?.display_name || 'Tea Export Partner'}</h1>
+          <h1>{timeGreeting()}, {user?.display_name || 'Tea Export Partner'}</h1>
           <p>{roleIntros[user?.role] || 'Welcome to the Sri Lanka tea export intelligence workspace.'}</p>
+          <div className="home-hero-actions">
+            {actions.map((item, index) => (
+              <Link
+                key={item.key}
+                to={item.path}
+                className={`btn ${index === 0 ? 'btn-primary' : 'btn-secondary'}`}
+              >
+                <Icon name={item.icon} size={17} />
+                {item.key === 'readiness' ? 'Check export readiness'
+                  : item.key === 'forecast' ? 'View demand forecast'
+                    : item.key === 'traceability' ? 'Open traceability'
+                      : item.key === 'market' ? 'Explore market analysis'
+                        : item.label}
+              </Link>
+            ))}
+          </div>
           <span className="chip role-badge">{roleLabels[user?.role]}</span>
         </div>
       </section>

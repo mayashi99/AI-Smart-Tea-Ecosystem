@@ -47,6 +47,7 @@ function EmailField({ email, setEmail, role, roleLoading, required = true }) {
       <span className="auth-email-control">
         <input
           type="email"
+          name="username"
           required={required}
           maxLength={254}
           autoComplete="email"
@@ -106,6 +107,7 @@ export function LoginPage() {
   const { query } = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [saveInPasswordManager, setSaveInPasswordManager] = useState(false)
   const [challenge, setChallenge] = useState(null)
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -147,6 +149,21 @@ export function LoginPage() {
       })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.detail || 'Authenticator verification failed')
+      if (saveInPasswordManager) {
+        const PasswordCredentialType = window.PasswordCredential
+        if (PasswordCredentialType && navigator.credentials?.store) {
+          try {
+            await navigator.credentials.store(new PasswordCredentialType({
+              id: email.trim(),
+              password,
+            }))
+          } catch {
+            window.alert('Sign-in succeeded, but your browser did not save the login. You can save it manually in your browser password manager.')
+          }
+        } else {
+          window.alert('This browser does not support saving through the password manager option. Save this login manually in your browser password manager.')
+        }
+      }
       window.location.assign('/')
     } catch (requestError) {
       setAuthError(requestError.message)
@@ -170,12 +187,21 @@ export function LoginPage() {
                 <span>Super Admin password</span>
                 <input
                   type="password"
+                  name="password"
                   required
                   maxLength={128}
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                 />
+              </label>
+              <label className="auth-remember-option">
+                <input
+                  type="checkbox"
+                  checked={saveInPasswordManager}
+                  onChange={(event) => setSaveInPasswordManager(event.target.checked)}
+                />
+                <span>Save this login in my browser password manager</span>
               </label>
               <button className="btn btn-primary auth-google-button" type="submit" disabled={busy || !emailIsValid(email) || !password}>
                 {busy ? 'Checking credentials…' : 'Continue as Super Admin'}
