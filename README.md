@@ -1,213 +1,223 @@
-# AI-Smart-Tea-Ecosystem
-AI-Powered Smart Tea Ecosystem for Sri Lankan Tea Industry
+# Yield Intelligence — Component 02
 
-## Run the web application locally
+This document describes the work on the `feature/yield-intelligence` branch of
+the AI Smart Tea Ecosystem. It delivers Component 02: plantation-focused
+decision-support tools for Sri Lankan tea growers. The tools are intended to
+support field planning; they are not a replacement for agronomist inspections
+or operational harvest decisions.
 
-Start the combined backend from the `backend` directory, using the Python
-environment with FastAPI, Ultralytics and PyTorch installed:
+## What this branch includes
+
+| Area | User-facing capability | Main implementation |
+| --- | --- | --- |
+| Expected yield | Estimate expected yield from plantation and climate inputs | CatBoost prediction API and comparison/training scripts for multiple models |
+| Yield trends | View yield trends by grown type | `GET /component02/expected-yield/trends` and the Yield Trends page |
+| Plant density | Calculate a recommended tea-bush count for land size, terrain, and zone | Client-side calculator with terrain previews |
+| Plantation health | Assess tea plantation photos alongside climate conditions | FastAPI assessment service and image-content validation |
+| Harvest readiness | Classify harvest readiness from a tea image | YOLOv11 API, training, leakage checks, and evaluation tools |
+| Harvest quality | Combine field images and conditions into a preliminary quality assessment | Frontend rule-based assessment flow |
+| Intelligent harvest planning | Compare the next three weather days and recommend the least-wet suitable option | Open-Meteo-backed FastAPI route with unit tests |
+| User interface | Component 02 navigation and consistent animated tea-leaf visual treatment | React/Vite pages under `frontend/src/components/component2/` |
+
+## Architecture
+
+```text
+React + Vite frontend (port 5173)
+  └─ Component 02 pages
+       ├─ Yield Prediction / Trends
+       ├─ Plant Density
+       ├─ Plantation Health
+       ├─ Harvest Readiness
+       ├─ Harvest Quality
+       └─ Intelligent Harvest Planning
+                │
+                ▼
+FastAPI backend (port 8000)
+  └─ backend/app/main.py
+       ├─ /component02/expected-yield/*
+       ├─ /component02/assess and image validation routes
+       ├─ /component02/harvest-readiness/*
+       └─ /component02/harvest-forecast
+```
+
+The Vite development server proxies API calls to FastAPI. The backend permits
+local development origins on `localhost` and `127.0.0.1`, including the normal
+Vite fallback ports.
+
+## Project locations
+
+```text
+backend/app/components/Component02/
+├── expected_yield_prediction/     # model training, prediction, evaluation and API
+├── plantation_health/             # health assessment service and ML utilities
+├── harvest_readiness/YOLOv11/     # readiness API, training and evaluation
+├── intelligent_harvest_planning/  # three-day weather comparison API
+├── image_validation.py            # tea-image screening
+└── setup_image_validation.py      # one-time local CLIP setup
+
+frontend/src/components/component2/
+├── yield prediction/
+├── yield trend/
+├── PlantDensity/
+├── PlantHelth/
+├── HarvestReadiness/
+├── HarvestQuality/
+└── IntelligentHarvestPlanning/
+```
+
+## Run locally
+
+### 1. Start the backend
+
+From the repository root:
 
 ```sh
 cd backend
 source venv/bin/activate
+pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-If a standalone harvest API is already running on port 8000, stop it with
-Ctrl+C in its terminal before starting this command. The frontend needs the
-combined app, which exposes both:
+On Windows, activate the virtual environment with the equivalent
+`venv\Scripts\activate` command.
 
-- `POST /component02/assess` — plantation health and climate assessment.
-- `POST /component02/harvest-readiness/predict` — harvest readiness prediction.
+### 2. Start the frontend
 
-Start the frontend in a second terminal from the project root:
+In a second terminal:
 
 ```sh
-# AI Smart Tea Ecosystem
-
-AI-powered smart tea ecosystem for the Sri Lankan tea industry.
-
-## Component 04
-
-The Component 04 dashboard has three pages:
-
-- `/auction-price` — auction price forecasts, including the combined sales-and-price workbook
-- `/export-demand` — LSTM monthly tea export-volume forecast
-- `/export-advisor` — RAG-grounded, explainable export planning recommendations
-- `/export-readiness` — evidence-based Export Readiness Index (ERI)
-- `/digital-passport` — tea batch traceability passport and ledger verification
-- `/zone-intelligence` — weighted, explainable growing-zone quality scores
-
-The Export Advisor retrieves evidence from the forecast metrics, monthly history, and local planning
-guides. It shows the sources and evidence IDs behind every recommendation. It retrieves relevant
-knowledge-base passages and uses them with the export data as grounded context for LLM synthesis.
-Set `LLM_API_KEY` in `backend/.env` to use OpenAI; it defaults to `https://api.openai.com/v1`
-with model `gpt-4o-mini`. Without a key it defaults to local Ollama at
-`http://localhost:11434/v1` with model `llama3.1` (start Ollama and pull that model first).
-Override `LLM_API_BASE_URL` and `LLM_MODEL` to use another OpenAI-compatible endpoint. If the
-endpoint is unavailable, the advisor returns its explainable rule-based recommendations and
-reports the LLM status in its response.
-
-## Component 04: Auction Price Forecasting
-
-This project now uses an LSTM-only model for tea auction price forecasting. The old ARIMA and ARIMA + LSTM hybrid artifacts were removed.
-
-### Current LSTM Output
-
-The pipeline trains one LSTM model per growing zone:
-
-| Growing zone | MAE | RMSE | Train period | Test period |
-| --- | ---: | ---: | --- | --- |
-| High Growns | 203.85 | 270.33 | Sep 2011 - Jun 2023 | Jul 2023 - May 2026 |
-| Low Growns | 961.83 | 1128.91 | Sep 2011 - Jun 2023 | Jul 2023 - May 2026 |
-| Medium Growns | 488.82 | 593.72 | Sep 2011 - May 2023 | Jun 2023 - May 2026 |
-| Total | 267.82 | 342.54 | Sep 2011 - May 2023 | Jun 2023 - May 2026 |
-
-Model setup:
-
-- Framework: TensorFlow/Keras LSTM when available, otherwise a NumPy fallback trainer
-- Lookback: 12 months
-- Hidden size: 128
-- Epochs: 200
-- Recursive prediction: enabled for multi-step forecasting
-- Forecast horizon: 12 months
-
-### Generated Files
-
-Processed data:
-
-- `backend/ml/datasets/processed/component04/auction_price_clean.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_train.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_test.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_predictions.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_future_forecast.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_metrics.csv`
-
-## Component 04: Export Demand Forecasting
-
-The export-volume model uses the monthly history in
-`backend/ml/datasets/raw/component04/Tea_Export_Demand_Forecast_Dataset.xlsx`. The LSTM pipeline uses
-2016-2023 for training, 2024 for recursive validation and configuration selection, and 2025 for a
-recursive test. It then refits the selected LSTM on all 2016-2025 observations for the next 12 months.
-The aggregate demand forecast does not split results by country, tea process, or package.
-
-### Train Again
-
-From the repository root:
-
-```powershell
-backend\.venv312\Scripts\python.exe -m backend.ml.training.component04.train_export_demand_lstm
-```
-
-Generated files are in `backend/ml/datasets/processed/component04/`:
-
-- `export_demand_monthly.csv`
-- `export_demand_test_predictions.csv`
-- `export_demand_forecast.csv`
-- `export_demand_metrics.json`
-
-The API endpoint is `/api/component04/export-demand`. The frontend provides a separate Export Demand
-page at `/export-demand`; the Auction Price page remains at `/`.
-
-Advisor API: `POST /api/component04/export-advisor` with JSON such as:
-
-```json
-{
-  "question": "How should we plan export volumes for the next 12 months?",
-  "destination_country": null,
-  "business_goal": "plan seasonal inventory"
-}
-```
-
-### Export Readiness Index and Digital Passport
-
-The ERI page combines export-demand forecast metrics with user-declared monthly capacity,
-document checks, and quality-control readiness. Its weighted criteria and recommendations are
-shown with the evidence used for each score. It is a planning aid, not an official certification
-or destination-specific compliance assessment. API: `POST /api/component04/export-readiness`.
-
-The conversational AI Export Advisor is at `/export-advisor`. Its optional zone context can be
-passed from the Zone Intelligence page and is added to the retrieved evidence before recommendations
-are generated.
-
-The Zone Intelligence Engine scores High, Medium, and Low Growns using the supplied weights:
-auction price (35%), export success rate (25%), buyer preference (20%), historical demand (10%),
-and climate suitability (10%). Auction price and quantity-based demand signals come from the
-zone auction dataset; quantity share is explicitly a buyer-preference proxy. The supplied data
-does not contain zone-level export success or climate observations, so those two scores are
-entered with optional evidence notes instead of being fabricated. Use “Use this score in Export
-Advisor” to pass the selected score into its grounded export recommendation. API routes:
-`GET /api/component04/zone-intelligence` and `POST /api/component04/zone-intelligence/score`.
-
-The Digital Passport page records batch events (collection, processing, quality checks, packing,
-export, and receipt) in `backend/data/component04/passport_ledger.jsonl`. Every event includes the
-previous record hash and its own SHA-256 hash; `GET /api/component04/digital-passports/verify`
-checks the chain. This local prototype is tamper-evident but is not connected to a distributed
-blockchain network. The ledger is gitignored because it can contain operational traceability data.
-After saving a batch event, its passport page displays a QR code and provides a PNG download.
-The QR opens that batch passport on the same frontend site; sellers should use the deployed,
-phone-accessible site URL when generating codes for customers.
-
-### Combined Workbook Auction Price Forecast
-
-`backend/ml/datasets/raw/component04/Combined_Sales_Quantity_and_Price_Single_Sheet_2016_2026.xlsx`
-contains weekly rows with repeated monthly price aggregates. The pipeline keeps one monthly average
-price per month, compares baselines and ML regressors using rolling validation through 2024, tests on
-2025, and refits the selected model through the latest available month for a 12-month forecast.
-
-```powershell
-.\.venv\Scripts\python.exe -m backend.ml.training.component04.train_combined_auction_price
-```
-
-The API endpoint is `/api/component04/combined-auction-price`; its chart and test predictions appear
-on the Auction Price page.
-
-The separate growing-zone auction pipeline stores its model metadata in
-`backend/ml/models/component04/auction_lstm_model_info.json`.
-
-### Train Again
-
-```powershell
-cd backend
-.\.venv\Scripts\python.exe ml\preprocessing\component04\clean_auction_data.py
-.\.venv\Scripts\python.exe ml\training\component04\train_lstm.py
-```
-
-### Run Backend
-
-```powershell
-cd backend
-.\.venv\Scripts\python.exe run.py
-```
-
-### Run Dashboard
-
-```powershell
 cd frontend
+npm install
 npm run dev
 ```
 
-Plantation Health checks uploaded image content before allowing analysis.
-Install and provision the local screening model once from `backend`:
+Open the URL printed by Vite, normally `http://localhost:5173`.
+
+### 3. Optional: enable image-content screening
+
+Plantation Health and Harvest Quality use a local CLIP-based screen to reject
+unreadable, oversized, unrelated, or uncertain image uploads. After installing
+the backend dependencies, provision its weights once:
 
 ```sh
-venv/bin/python -m pip install 'transformers>=4.45,<5'
+cd backend
 venv/bin/python -m app.components.Component02.setup_image_validation
 ```
 
-This downloads OpenAI CLIP ViT-B/32 weights; subsequent image checks run locally.
-The `/component02/validate-images`, `/predict` and `/assess` routes reject
-unreadable, oversized, unrelated or ambiguous images. If the screening model
-is unavailable, validation returns HTTP 503 rather than allowing unchecked
-health predictions. Each image must pass, including images in a mixed batch.
-CLIP compares tea-related descriptions against unrelated subjects using a
-similarity margin of 2.0. This is a preliminary zero-shot screen, not a validated
-tea-species detector; other plants may pass and some tea photos may be rejected.
-Calibrate it with representative tea and non-tea photos before production use.
+The model weights are downloaded on first setup. If the screening service is
+not available, the relevant validation endpoint returns HTTP 503 instead of
+accepting unverified images.
 
-Vite proxies both API routes to port 8000. `VITE_API_URL` can override the backend
-base URL. The combined backend also allows direct requests from localhost and
-127.0.0.1 on frontend ports 5173 and 4173.
-Open the Vite URL shown in the terminal, usually:
+## Expected Yield API
 
-- `http://localhost:5173`
+Base path: `/component02/expected-yield`
+
+| Method | Route | Description |
+| --- | --- | --- |
+| `GET` | `/health` | Confirms that the Expected Yield API is registered. |
+| `POST` | `/predict` | Returns a CatBoost yield estimate in `kg/acre`. |
+| `GET` | `/trends?grown_type=HIGH%20grown` | Produces historical/model-derived trend data for a grown type. |
+
+Example request:
+
+```json
+{
+  "Year": 2026,
+  "Month_Number": 10,
+  "Week_Number": 3,
+  "Temperature": 25.4,
+  "Rainfall_mm": 88.2,
+  "Humidity": 79,
+  "Wind_Speed": 3.1,
+  "Solar_Radiation": 4.8,
+  "Location": "Nuwara Eliya",
+  "Grown_Type": "HIGH grown"
+}
+```
+
+Example response shape:
+
+```json
+{
+  "location": "Nuwara Eliya",
+  "year": 2026,
+  "month": 10,
+  "week": 3,
+  "predicted_kg_per_Acre": 0,
+  "unit": "kg/acre",
+  "model": "CatBoost"
+}
+```
+
+`predicted_kg_per_Acre` above is only a response-shape placeholder. Actual
+values depend on the model artifact and the submitted inputs.
+
+### Yield modelling utilities
+
+The `expected_yield_prediction` folder includes CatBoost, LightGBM, Random
+Forest, Extra Trees, HistGradientBoosting, XGBoost, NGBoost, and SARIMAX
+training/evaluation utilities, plus scripts for data validation, leakage
+checking, comparison, feature importance, SHAP analysis, location evaluation,
+and dataset splitting. Output metrics are retained in each model's `outputs/`
+folder where available.
+
+## Harvest planning API
+
+`GET /component02/harvest-forecast?latitude=6.9271&longitude=79.8612`
+
+The route fetches the next three days from Open-Meteo in `Asia/Colombo` time.
+It rejects incomplete weather data, excludes thunderstorm days, then ranks
+remaining days by rainfall, rain probability, maximum wind, and maximum
+temperature. It returns the raw day values, chosen date, explanatory method,
+and any cautions. It deliberately does not claim to be a calibrated agronomic
+suitability model.
+
+## Frontend pages
+
+| Route | Page | Purpose |
+| --- | --- | --- |
+| `/yield-prediction` | Yield Prediction | Submit plantation and climate inputs for an expected-yield estimate. |
+| `/yield-trends` | Yield Trends | Explore yield patterns by grown type. |
+| `/plant-density` | Plant Density | Calculate planting density and visualize terrain choices. |
+| `/plantation-health` | Plantation Health | Upload field images and review health/climate signals. |
+| `/harvest-readiness` | Harvest Readiness | Check image-based readiness classification. |
+| `/harvest-quality` | Harvest Quality | Get a preliminary combined quality assessment. |
+| `/intelligent-harvest-planning` | Intelligent Harvest Planning | Review field signals and next-three-day harvest weather. |
+
+These Component 02 pages use the same animated tea-leaf background system as
+the traceability experience. The setting can be disabled from the application
+settings; reduced-motion preferences also disable motion automatically.
+
+## Verification
+
+Run the frontend production build:
+
+```sh
+cd frontend
+npm run build
+```
+
+Run the harvest-forecast unit tests:
+
+```sh
+cd backend
+python -m unittest app.components.Component02.intelligent_harvest_planning.test_harvest_forecast
+```
+
+Before merging, also run model-specific evaluation and leakage-check scripts
+when datasets or model artifacts change. Do not interpret an interface result
+as a validated field recommendation without checking the input data, model
+version, and local plantation conditions.
+
+## Important limitations
+
+- Yield, health, readiness, and quality outputs are decision-support signals,
+  not guarantees of yield or product quality.
+- Image screening is a preliminary zero-shot check; unrelated plants may pass
+  and legitimate tea images may be rejected.
+- Weather recommendations depend on an external forecast provider and can
+  change after the result is returned.
+- Model artifacts and local datasets must be present for model-backed API
+  routes to work.
+- Production deployment needs authentication, authorization, monitoring,
+  dataset governance, and validation against representative field data.
