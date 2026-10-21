@@ -94,6 +94,33 @@ class RbacPermissionTests(unittest.TestCase):
         self.assertFalse(self.rbac.role_has_permission("viewer_buyer", "users:manage"))
         self.assertFalse(self.rbac.role_has_permission("farmer_seller", "market:view"))
 
+    def test_neon_connection_uses_postgres_schema_and_parameter_syntax(self):
+        with patch.dict(os.environ, {
+            "DATABASE_URL": "postgresql://user:password@example.com/database?channel_binding=&sslmode=verify-full",
+            "RBAC_DATABASE_PATH": "",
+        }), patch("app.core.rbac.psycopg2.connect") as postgres_connect:
+            postgres_connection = postgres_connect.return_value
+            cursor = postgres_connection.cursor.return_value
+
+            with self.rbac.connect() as connection:
+                connection.execute("SELECT id FROM users WHERE id = ?", (12,))
+
+            postgres_connect.assert_called_once()
+            self.assertNotIn("channel_binding=", postgres_connect.call_args.args[0])
+            self.assertEqual(postgres_connect.call_args.kwargs["sslmode"], "require")
+            self.assertTrue(
+                any(
+                    call.args[0].startswith("CREATE TABLE IF NOT EXISTS users")
+                    for call in cursor.execute.call_args_list
+                )
+            )
+            self.assertIn(
+                ("SELECT id FROM users WHERE id = %s", (12,)),
+                [call.args for call in cursor.execute.call_args_list],
+            )
+            postgres_connection.commit.assert_called_once()
+            postgres_connection.close.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

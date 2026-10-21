@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import quote, urlencode
 
+import psycopg2
 import qrcode
 import requests
 from cryptography.fernet import Fernet, InvalidToken
@@ -440,10 +441,10 @@ def google_login_callback(request: Request, code: str, state: str):
             cursor = connection.execute(
                 """INSERT INTO users
                    (email, display_name, role, active, approval_status, created_at, updated_at)
-                   VALUES (?, ?, ?, 1, ?, ?, ?)""",
+                   VALUES (?, ?, ?, 1, ?, ?, ?) RETURNING id""",
                 (email, display_name, requested_role, approval_status, now, now),
             )
-            user_id = cursor.lastrowid
+            user_id = cursor.fetchone()["id"]
         user = {
             "id": user_id,
             "email": email,
@@ -570,11 +571,11 @@ def create_user(payload: UserCreateRequest, user: dict = Depends(require_user_ma
     try:
         with connect() as connection:
             cursor = connection.execute(
-                "INSERT INTO users (email, display_name, role, active, created_at, updated_at) VALUES (?, ?, ?, 1, ?, ?)",
+                "INSERT INTO users (email, display_name, role, active, created_at, updated_at) VALUES (?, ?, ?, 1, ?, ?) RETURNING id",
                 (email, payload.display_name.strip(), payload.role, now, now),
             )
-            user_id = cursor.lastrowid
-    except sqlite3.IntegrityError as exc:
+            user_id = cursor.fetchone()["id"]
+    except (sqlite3.IntegrityError, psycopg2.IntegrityError) as exc:
         raise HTTPException(status_code=409, detail="A user with that email already exists") from exc
     audit("user_created", actor=user, target_type="user", target_id=user_id, details=f"role={payload.role}")
     return {"id": user_id, "email": email, "display_name": payload.display_name.strip(), "role": payload.role, "active": True}

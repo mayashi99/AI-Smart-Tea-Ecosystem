@@ -130,7 +130,8 @@ The frontend provides `/login` and `/signup`. Regular users authenticate with Go
 authorization-code flow. The Super Admin uses the email/password configured for initial setup and
 must also verify a time-based code from Google Authenticator. On first Super Admin sign-in, scan the
 displayed QR code and enter a current six-digit code; only after successful verification is the
-authenticator secret saved (encrypted) in SQLite. Later Super Admin sign-ins require a fresh code.
+authenticator secret saved (encrypted) in the configured database. Later Super Admin sign-ins
+require a fresh code.
 The password is stored as a scrypt hash, not plaintext.
 
 Set `ADMIN_BOOTSTRAP_EMAIL=admin@gmail.com` and `ADMIN_BOOTSTRAP_PASSWORD` in the untracked
@@ -144,7 +145,7 @@ cd backend
 .\.venv\Scripts\python.exe -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
-After the first Super Admin password is accepted and its account appears in SQLite, remove
+After the first Super Admin password is accepted and its account appears in the database, remove
 `ADMIN_BOOTSTRAP_PASSWORD` from the environment file; the scrypt password hash remains in the
 database. Keep `TOTP_ENCRYPTION_KEY` unchanged for future authenticator logins.
 
@@ -177,9 +178,12 @@ To configure Google OAuth:
 
 For production, register the HTTPS app origin and HTTPS callback with Google, set
 `COOKIE_SECURE=true`, and serve the frontend and `/api` through the same site origin (or configure
-an appropriately secured same-site deployment). Use a persistent, access-controlled location for
-`RBAC_DATABASE_PATH`; it stores accounts, hashed sessions, audit records, and passport ownership.
-The local SQLite database is initialized automatically on the first API request.
+an appropriately secured same-site deployment). Set `DATABASE_URL` in `backend/.env` to the Neon
+PostgreSQL connection URL to store accounts, hashed sessions, OAuth state, audit records, and
+passport ownership in Neon. The backend requires SSL for this connection and initializes the
+required tables automatically. Leave `DATABASE_URL` empty to use SQLite locally; setting
+`RBAC_DATABASE_PATH` explicitly selects SQLite even if `DATABASE_URL` is also set. Existing local
+SQLite records are not copied to Neon automatically.
 
 ### Combined Workbook Auction Price Forecast
 

@@ -1,10 +1,15 @@
-"""SQLite-backed roles, sessions, audit records, and passport ownership."""
+"""Database-backed roles, sessions, audit records, and passport ownership."""
 import hashlib
 import os
 import secrets
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+import psycopg2
+from psycopg2.extras import DictCursor
 
 from fastapi import HTTPException, Request
 
@@ -47,6 +52,32 @@ class _ClosingConnection(sqlite3.Connection):
             self.close()
 
 
+class _PostgresConnection:
+    def __init__(self, connection):
+        self._connection = connection
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            if exc_type is None:
+                self._connection.commit()
+            else:
+                self._connection.rollback()
+        finally:
+            self._connection.close()
+        return False
+
+    def execute(self, sql: str, parameters=()):
+        cursor = self._connection.cursor()
+        if sql.strip().upper() == "BEGIN IMMEDIATE":
+            cursor.execute("SELECT pg_advisory_xact_lock(846292341)")
+            return cursor
+        cursor.execute(sql.replace("?", "%s"), parameters)
+        return cursor
+
+
 def _database_path() -> Path:
     configured = os.getenv("RBAC_DATABASE_PATH")
     if configured:
@@ -54,7 +85,110 @@ def _database_path() -> Path:
     return Path(__file__).resolve().parents[2] / "data" / "rbac.sqlite3"
 
 
-def connect() -> sqlite3.Connection:
+def _postgres_dsn(database_url: str) -> str:
+    parts = urlsplit(database_url)
+    query = [
+        (key, value)
+        for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        if key.lower() != "channel_binding" or value.strip()
+    ]
+    return urlunsplit(parts._replace(query=urlencode(query)))
+
+
+def _initialize_postgres(connection: _PostgresConnection) -> None:
+    statements = (
+        """CREATE TABLE IF NOT EXISTS users (
+            id BIGSERIAL PRIMARY KEY,
+            email TEXT NOT NULL,
+            display_name TEXT NOT NULL,
+            role TEXT NOT NULL CHECK (role IN (
+                'admin', 'export_manager', 'quality_officer',
+                'data_analyst', 'farmer_seller', 'viewer_buyer'
+            )),
+            active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+            is_super_admin INTEGER NOT NULL DEFAULT 0 CHECK (is_super_admin IN (0, 1)),
+            approval_status TEXT NOT NULL DEFAULT 'approved' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+            password_hash TEXT,
+            totp_secret_encrypted TEXT,
+            totp_enabled INTEGER NOT NULL DEFAULT 0 CHECK (totp_enabled IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )""",
+        """CREATE TABLE IF NOT EXISTS sessions (
+            token_hash TEXT PRIMARY KEY,
+            csrf_token TEXT NOT NULL,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""",
+        """CREATE TABLE IF NOT EXISTS oauth_states (
+            state_hash TEXT PRIMARY KEY,
+            nonce TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            intent TEXT NOT NULL DEFAULT 'login',
+            requested_role TEXT NOT NULL DEFAULT 'viewer_buyer',
+            login_email TEXT,
+            requested_name TEXT
+        )""",
+        """CREATE TABLE IF NOT EXISTS admin_auth_challenges (
+            token_hash TEXT PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            purpose TEXT NOT NULL CHECK (purpose IN ('enroll', 'login')),
+            secret_encrypted TEXT,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""",
+        """CREATE TABLE IF NOT EXISTS audit_log (
+            id BIGSERIAL PRIMARY KEY,
+            actor_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+            actor_email TEXT,
+            action TEXT NOT NULL,
+            target_type TEXT,
+            target_id TEXT,
+            outcome TEXT NOT NULL,
+            details TEXT,
+            created_at TEXT NOT NULL
+        )""",
+        """CREATE TABLE IF NOT EXISTS passport_batches (
+            batch_id TEXT PRIMARY KEY,
+            owner_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+            public_id TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL
+        )""",
+        "CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique ON users (LOWER(email))",
+    )
+    for statement in statements:
+        connection.execute(statement)
+    for table, name, sql_type in (
+        ("users", "is_super_admin", "INTEGER NOT NULL DEFAULT 0"),
+        ("users", "approval_status", "TEXT NOT NULL DEFAULT 'approved'"),
+        ("users", "password_hash", "TEXT"),
+        ("users", "totp_secret_encrypted", "TEXT"),
+        ("users", "totp_enabled", "INTEGER NOT NULL DEFAULT 0"),
+        ("oauth_states", "intent", "TEXT NOT NULL DEFAULT 'login'"),
+        ("oauth_states", "requested_role", "TEXT NOT NULL DEFAULT 'viewer_buyer'"),
+        ("oauth_states", "login_email", "TEXT"),
+        ("oauth_states", "requested_name", "TEXT"),
+        ("admin_auth_challenges", "attempts", "INTEGER NOT NULL DEFAULT 0"),
+    ):
+        connection.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {name} {sql_type}")
+
+
+def connect() -> sqlite3.Connection | _PostgresConnection:
+    database_url = os.getenv("DATABASE_URL", "").strip()
+    if database_url and not os.getenv("RBAC_DATABASE_PATH"):
+        connection = _PostgresConnection(
+            psycopg2.connect(_postgres_dsn(database_url), sslmode="require", cursor_factory=DictCursor)
+        )
+        try:
+            _initialize_postgres(connection)
+        except Exception:
+            connection._connection.rollback()
+            connection._connection.close()
+            raise
+        return connection
+
     path = _database_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(path, timeout=15, factory=_ClosingConnection)
@@ -165,12 +299,12 @@ def new_opaque_id() -> str:
     return secrets.token_urlsafe(32)
 
 
-def get_user_by_email(email: str) -> sqlite3.Row | None:
+def get_user_by_email(email: str) -> Any | None:
     with connect() as connection:
         return connection.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
 
 
-def get_user_by_id(user_id: int) -> sqlite3.Row | None:
+def get_user_by_id(user_id: int) -> Any | None:
     with connect() as connection:
         return connection.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 
