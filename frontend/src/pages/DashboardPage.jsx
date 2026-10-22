@@ -123,6 +123,8 @@ export default function DashboardPage() {
         note="Forecasts are estimates from past auction prices. They don't account for sudden events such as weather shocks or policy changes."
       />
 
+      <CombinedAuctionPriceForecast />
+
       {loading && !dashboard && <LoadingState label="Loading auction price forecast…" />}
       {error && <ErrorState message={`Auction price forecast unavailable: ${error}`} onRetry={reload} />}
 
@@ -251,7 +253,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      <CombinedAuctionPriceForecast />
     </div>
   )
 }
