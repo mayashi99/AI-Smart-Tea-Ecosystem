@@ -14,6 +14,15 @@ export const endpoints = {
   passportVerify: `${API_BASE}/digital-passports/verify`,
   zoneIntelligence: `${API_BASE}/zone-intelligence`,
   zoneScore: `${API_BASE}/zone-intelligence/score`,
+  currentUser: '/api/auth/me',
+  roleHint: '/api/auth/role-hint',
+  logout: '/api/auth/logout',
+  users: '/api/auth/users',
+  userRequests: '/api/auth/user-requests',
+  userApproval: (userId) => `/api/auth/users/${userId}/approval`,
+  auditLog: '/api/auth/audit',
+  publicPassport: (publicId) => `${API_BASE}/digital-passports/public/${encodeURIComponent(publicId)}`,
+  reportExport: '/api/auth/report-export',
 }
 
 const fallbackMessages = {
@@ -31,13 +40,18 @@ async function parse(response, fallback) {
   return payload
 }
 
+function csrfHeaders() {
+  const match = document.cookie.match(/(?:^|;\s*)tea_csrf=([^;]+)/)
+  return match ? { 'X-CSRF-Token': decodeURIComponent(match[1]) } : {}
+}
+
 // Model outputs only change when models are retrained, so GET responses are
 // cached for the session and shared between pages (Home, Reports, etc.).
 const cache = new Map()
 
 export function getJSON(url, { force = false } = {}) {
   if (force || !cache.has(url)) {
-    const request = fetch(url)
+    const request = fetch(url, { credentials: 'include' })
       .then((response) => parse(response, fallbackMessages[url] || 'Request failed'))
       .catch((error) => { cache.delete(url); throw error })
     cache.set(url, request)
@@ -51,7 +65,12 @@ export function invalidate(url) {
 }
 
 export async function postJSON(url, body, fallback = 'Request failed') {
-  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const response = await fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...csrfHeaders() }, body: JSON.stringify(body) })
+  return parse(response, fallback)
+}
+
+export async function patchJSON(url, body, fallback = 'Request failed') {
+  const response = await fetch(url, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json', ...csrfHeaders() }, body: JSON.stringify(body) })
   return parse(response, fallback)
 }
 

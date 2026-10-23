@@ -8,7 +8,7 @@ export default function WorkspacePage({ role }) {
 
   return (
     <div className="page-stack">
-      <PageHeader eyebrow="TeaExportAI · Sri Lanka Tea Intelligence" title={page.title} description={page.intro} />
+      <PageHeader eyebrow="CeylonTea IQ · Sri Lanka Tea Intelligence" title={page.title} description={page.intro} />
       <section className="quick-grid is-two">
         {page.links.map(([label, href, icon]) => (
           <Link className="quick-card panel" to={href} key={href}>

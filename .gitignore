@@ -34,6 +34,9 @@ yarn-error.log*
 # ML training artifacts
 /backend/ml/datasets/
 /backend/data/component04/passport_ledger.jsonl
+/backend/data/rbac.sqlite3
+/backend/data/rbac.sqlite3-shm
+/backend/data/rbac.sqlite3-wal
 backend/ml/**/*.joblib
 backend/ml/**/*.keras
 *.joblib

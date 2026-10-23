@@ -11,6 +11,7 @@ export const navItems = [
   { key: 'traceability', group: 'operations', label: 'Traceability', path: '/digital-passport', icon: 'shield', description: 'Tea Digital Passport and QR verification.' },
   { key: 'reports', group: 'operations', label: 'Reports', path: '/reports', icon: 'file', description: 'Download forecast, market and ledger reports.' },
   { key: 'settings', group: 'system', label: 'Settings', path: '/settings', icon: 'settings', description: 'Profile, defaults and system status.' },
+  { key: 'user-management', group: 'system', label: 'User Management', path: '/user-management', icon: 'user', description: 'Manage accounts, roles and audit activity.' },
 ]
 
 export const workspaceRoles = {
@@ -20,6 +21,11 @@ export const workspaceRoles = {
 }
 
 export function matchRoute(path) {
+  const publicPassport = path.match(/^\/passport\/([A-Za-z0-9_-]{20,100})$/)
+  if (publicPassport) return { key: 'public-passport', publicId: publicPassport[1] }
+  if (path === '/login') return { key: 'login' }
+  if (path === '/signup') return { key: 'signup' }
+  if (path === '/welcome') return { key: 'landing' }
   const item = navItems.find((nav) => nav.path === path || nav.aliases?.includes(path))
   if (item) return { key: item.key, item }
   const role = Object.keys(workspaceRoles).find((key) => workspaceRoles[key].path === path)

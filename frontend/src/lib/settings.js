@@ -5,9 +5,6 @@ const ERI_KEY = 'teaexport.lastEri'
 const CHANGE_EVENT = 'teaexport:storage'
 
 export const defaultSettings = {
-  displayName: 'Mayashi Kodikara',
-  organisation: '',
-  role: 'seller',
   defaultMarket: 'Japan',
   defaultTeaType: 'Black Tea',
   defaultCapacity: 10,
