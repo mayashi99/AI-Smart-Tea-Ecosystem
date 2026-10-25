@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from app.components.Component02.expected_yield_prediction.catboost.predict import (
+from app.components.Component02.expected_yield_prediction.catboost.catboost_predict import (
     predict_yield,
 )
 

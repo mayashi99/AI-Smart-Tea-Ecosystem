@@ -7,9 +7,9 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 if __package__:
-    from .predict import BASE_DIR, MODEL_PATH, load_model, prepare_features
+    from .lightgbm_predict import BASE_DIR, MODEL_PATH, load_model, prepare_features
 else:
-    from predict import BASE_DIR, MODEL_PATH, load_model, prepare_features
+    from lightgbm_predict import BASE_DIR, MODEL_PATH, load_model, prepare_features
 
 TEST_PATH = BASE_DIR.parent / "data" / "splits" / "test.csv"
 OUTPUT_DIR = BASE_DIR / "outputs"

@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
-from app.components.Component02.expected_yield_prediction.lightgbm import predict, evaluate
+from app.components.Component02.expected_yield_prediction.lightgbm import lightgbm_predict as predict, lightgbm_evaluate as evaluate
 
 ROW = dict(Year=2025, Month_Number=1, Week_Number=1, Temperature=23,
            Rainfall_mm=50, Humidity=84, Wind_Speed=3, Solar_Radiation=215,

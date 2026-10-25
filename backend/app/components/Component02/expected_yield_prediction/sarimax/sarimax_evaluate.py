@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 
 if __package__:
-    from .predict import predict_rows
+    from .sarimax_predict import predict_rows
 else:
-    from predict import predict_rows
+    from sarimax_predict import predict_rows
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score

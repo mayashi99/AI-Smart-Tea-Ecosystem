@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .catboost.predict import FEATURES, load_model
+from .catboost.catboost_predict import FEATURES, load_model
 
 DATA_PATH = Path(__file__).parent / 'data' / 'raw' / 'expected yield.csv'
 CLIMATE = ['Temperature', 'Rainfall_mm', 'Humidity', 'Wind_Speed', 'Solar_Radiation']
