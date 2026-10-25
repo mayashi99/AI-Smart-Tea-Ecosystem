@@ -47,7 +47,17 @@ def _load_model():
 
 
 def _is_tea_image(image):
-    import torch
+    # The zero-shot CLIP check is an optional upload-screening layer. The
+    # actual health classification is performed by the local YOLO model after
+    # this step. Do not make the complete Plantation Health workflow
+    # unavailable merely because the optional Transformers dependency is not
+    # installed in a local development environment.
+    try:
+        import torch
+        from transformers import CLIPModel, CLIPProcessor  # noqa: F401
+    except ImportError:
+        return True
+
     with _model_lock:
         processor, model = _load_model()
         inputs = processor(text=list(TEA_PROMPTS + OTHER_PROMPTS), images=image,
