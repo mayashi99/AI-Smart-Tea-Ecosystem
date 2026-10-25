@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from '../../ui'
+import { Link } from '../../../components/ui'
 const API_URL = `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/component02/expected-yield`
 const INITIAL_FORM = {
   Year: 2026, Month_Number: 10, Week_Number: 2, Temperature: 28,
