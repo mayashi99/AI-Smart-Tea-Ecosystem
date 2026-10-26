@@ -39,7 +39,7 @@ from ..image_validation import validate_tea_image, MAX_IMAGE_BYTES
 # BASE DIRECTORY
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 
 # ============================================================

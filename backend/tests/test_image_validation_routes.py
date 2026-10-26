@@ -4,7 +4,7 @@ from unittest.mock import patch
 from fastapi import HTTPException, UploadFile
 from starlette.datastructures import Headers
 from app.components.Component02.plantation_health import api
-from app.components.Component02.harvest_readiness import api as readiness_api
+from app.components.Component02.harvest_readiness.YOLOv11 import api as readiness_api
 
 
 class ImageValidationRouteTests(unittest.IsolatedAsyncioTestCase):

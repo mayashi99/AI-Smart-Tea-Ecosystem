@@ -7,7 +7,7 @@ from ultralytics import YOLO
 # YOLO11 CLASSIFICATION
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 
 # ============================================================
@@ -29,7 +29,6 @@ MODEL_PATH = (
 
 TEST_DIR = (
     BASE_DIR
-    / "plantation_health"
     / "data"
     / "test"
 )

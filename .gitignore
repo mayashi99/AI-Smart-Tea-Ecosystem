@@ -123,6 +123,13 @@ yarn-error.log*
 
 # ML training artifacts
 /backend/ml/datasets/
+!/backend/ml/datasets/
+!/backend/ml/datasets/processed/
+!/backend/ml/datasets/processed/.gitkeep
+!/backend/ml/datasets/raw/
+!/backend/ml/datasets/raw/.gitkeep
+!/backend/ml/datasets/tests/
+!/backend/ml/datasets/tests/.gitkeep
 /backend/data/component04/passport_ledger.jsonl
 backend/ml/**/*.joblib
 backend/ml/**/*.keras
