@@ -1,30 +1,32 @@
 # CeylonTea IQ
-AI-Powered Intelligence Platform for Sri Lanka's Ceylon Tea Industry
+### AI-Powered Intelligence Platform for Sri Lanka's Ceylon Tea Industry
 
 CeylonTea IQ brings together tea auction price forecasting,
 export-demand prediction, export planning, growing-zone intelligence,
 export readiness assessment, and tea-batch traceability in one platform.
+
 Key Features
-- Auction Price Forecasting --- LSTM-based price forecasts for
+- #### Auction Price Forecasting --- LSTM-based price forecasts for
   High, Medium, and Low Growns, with a combined sales-and-price
   forecasting pipeline.
-- Export Demand Forecasting --- Forecasts monthly tea export
+- #### Export Demand Forecasting --- Forecasts monthly tea export
   volume using historical data and an LSTM model.
-- AI Export Advisor --- Generates explainable export-planning
+- #### AI Export Advisor --- Generates explainable export-planning
   recommendations using retrieved data, knowledge-base evidence, and
   an optional LLM.
-- Export Readiness Index (ERI) --- Assesses readiness using
+- #### Export Readiness Index (ERI) --- Assesses readiness using
   forecast metrics, declared capacity, document checks, and
   quality-control readiness.
-- Zone Intelligence --- Calculates weighted growing-zone scores
+- #### Zone Intelligence --- Calculates weighted growing-zone scores
   using auction price, demand, buyer-preference proxies, and supplied
   evidence for other factors.
-- Digital Tea Passport --- Records batch lifecycle events and
+- #### Digital Tea Passport --- Records batch lifecycle events and
   verifies a SHA-256 hash-linked ledger.
-- Authentication and Roles --- Supports Google sign-in for regular
+- #### Authentication and Roles --- Supports Google sign-in for regular
   users and a protected Super Admin login with authenticator-based
   verification.
-Technology Stack
+  
+### Technology Stack
 - Frontend: React, Vite
 - Backend: Python, FastAPI
 - Machine Learning: TensorFlow/Keras, LSTM
@@ -36,7 +38,8 @@ Technology Stack
   password hashing, TOTP verification, Fernet-encrypted authenticator
   secrets
 - Traceability: SHA-256 hash-linked event ledger
-Main Dashboard Pages
+  
+### Main Dashboard Pages
   Page                   Purpose
   /auction-price       Auction price forecasting
   /export-demand       Monthly export-volume forecasting
@@ -44,7 +47,8 @@ Main Dashboard Pages
   /export-readiness    Export Readiness Index
   /digital-passport    Tea-batch traceability and ledger verification
   /zone-intelligence   Growing-zone quality scoring
-Project Structure
+  
+### Project Structure
 CeylonTea-IQ/
 ├── backend/
 │   ├── ml/
@@ -56,9 +60,10 @@ CeylonTea-IQ/
 │   ├── .env
 │   └── run.py
 └── frontend/
+
 This is a representative overview; exact folders may vary by repository
 version.
-Getting Started
+#### Getting Started
 Prerequisites
 - Python 3.12 environment (the repository includes commands using
   .venv312)
@@ -68,11 +73,13 @@ Prerequisites
   LLM-based advisor responses
 - Optional: Neon PostgreSQL database for deployed or shared account
   storage
-1. Clone the Repository
+  
+### 1. Clone the Repository
 git clone <your-repository-url>
 cd <repository-folder>
 Replace the placeholders with your Git repository URL and folder name.
-2. Configure the Backend
+
+### 2. Configure the Backend
 Create backend/.env and configure the environment variables required
 by your setup. Common optional settings include:
 LLM_API_KEY=
@@ -92,20 +99,23 @@ Security: Never commit .env files, passwords, API keys, OAuth
 secrets, encryption keys, or operational passport-ledger data to source
 control. Follow the repository's environment configuration and
 deployment requirements.
-3. Run the Backend
+
+### 3. Run the Backend
 From the repository root, use the Python environment configured for the
 project:
 cd backend
 python run.py
 If the project uses its documented Windows virtual environment, activate
 it first or run the Python executable from that environment.
-4. Run the Frontend
+
+### 4. Run the Frontend
 Open a second terminal:
 cd frontend
 npm install
 npm run dev
 Open the local URL printed by Vite, typically http://localhost:5173.
-Model Training
+
+### Model Training
 The repository includes separate pipelines for auction-price and
 export-demand forecasting. Run these from the repository root using the
 project's configured Python environment.
@@ -118,6 +128,7 @@ Export-demand pipeline (from the repository root):
 python -m backend.ml.training.component04.train_export_demand_lstm
 Check the scripts and dataset paths in the repository before training.
 Training time and results depend on the environment and available data.
+
 API Overview
   Endpoint                                          Purpose
   POST /api/component04/export-advisor            Generate export-planning
@@ -133,7 +144,8 @@ API Overview
   GET /api/component04/export-demand              Export-demand forecast API
 Confirm endpoint methods and availability against the current backend
 implementation.
-Important Notes
+
+### Important Notes
 - Forecasts are model-based estimates and should be evaluated against
   relevant historical and real-world outcomes.
 - The Export Readiness Index is a planning aid, not an official
