@@ -1,149 +1,112 @@
 # CeylonTea IQ
+### AI-Powered Intelligence Platform for Sri Lanka's Ceylon Tea Industry
 
-Ceylon tea intelligence platform for forecasting, export planning, market analysis, readiness, and traceability.
+CeylonTea IQ brings together tea auction price forecasting,
+export-demand prediction, export planning, growing-zone intelligence,
+export readiness assessment, and tea-batch traceability in one platform.
 
-## Component 04
+Key Features
+- #### Auction Price Forecasting --- LSTM-based price forecasts for
+  High, Medium, and Low Growns, with a combined sales-and-price
+  forecasting pipeline.
+- #### Export Demand Forecasting --- Forecasts monthly tea export
+  volume using historical data and an LSTM model.
+- #### AI Export Advisor --- Generates explainable export-planning
+  recommendations using retrieved data, knowledge-base evidence, and
+  an optional LLM.
+- #### Export Readiness Index (ERI) --- Assesses readiness using
+  forecast metrics, declared capacity, document checks, and
+  quality-control readiness.
+- #### Zone Intelligence --- Calculates weighted growing-zone scores
+  using auction price, demand, buyer-preference proxies, and supplied
+  evidence for other factors.
+- #### Digital Tea Passport --- Records batch lifecycle events and
+  verifies a SHA-256 hash-linked ledger.
+- #### Authentication and Roles --- Supports Google sign-in for regular
+  users and a protected Super Admin login with authenticator-based
+  verification.
+  
+### Technology Stack
+- Frontend: React, Vite
+- Backend: Python, FastAPI
+- Machine Learning: TensorFlow/Keras, LSTM
+- AI Recommendations: Retrieval-Augmented Generation (RAG),
+  OpenAI-compatible LLM endpoints, optional local Ollama
+- Database: SQLite for local development; PostgreSQL (Neon)
+  supported
+- Security: Google OAuth 2.0, role-based access control, scrypt
+  password hashing, TOTP verification, Fernet-encrypted authenticator
+  secrets
+- Traceability: SHA-256 hash-linked event ledger
+  
+### Main Dashboard Pages
+  Page                   Purpose
+  /auction-price       Auction price forecasting
+  /export-demand       Monthly export-volume forecasting
+  /export-advisor      Evidence-grounded export recommendations
+  /export-readiness    Export Readiness Index
+  /digital-passport    Tea-batch traceability and ledger verification
+  /zone-intelligence   Growing-zone quality scoring
+  
+### Project Structure
+CeylonTea-IQ/
+├── backend/
+│   ├── ml/
+│   │   ├── datasets/
+│   │   ├── preprocessing/
+│   │   ├── training/
+│   │   └── models/
+│   ├── data/
+│   ├── .env
+│   └── run.py
+└── frontend/
 
-The Component 04 dashboard has three pages:
+This is a representative overview; exact folders may vary by repository
+version.
+#### Getting Started
+Prerequisites
+- Python 3.12 environment (the repository includes commands using
+  .venv312)
+- Node.js and npm
+- Git
+- Optional: OpenAI API key or a local Ollama installation for
+  LLM-based advisor responses
+- Optional: Neon PostgreSQL database for deployed or shared account
+  storage
+  
+### 1. Clone the Repository
+git clone <your-repository-url>
+cd <repository-folder>
+Replace the placeholders with your Git repository URL and folder name.
 
-- `/auction-price` — auction price forecasts, including the combined sales-and-price workbook
-- `/export-demand` — LSTM monthly tea export-volume forecast
-- `/export-advisor` — RAG-grounded, explainable export planning recommendations
-- `/export-readiness` — evidence-based Export Readiness Index (ERI)
-- `/digital-passport` — tea batch traceability passport and ledger verification
-- `/zone-intelligence` — weighted, explainable growing-zone quality scores
+### 2. Configure the Backend
+Create backend/.env and configure the environment variables required
+by your setup. Common optional settings include:
+LLM_API_KEY=
+LLM_API_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o-mini
 
-The Export Advisor retrieves evidence from the forecast metrics, monthly history, and local planning
-guides. It shows the sources and evidence IDs behind every recommendation. It retrieves relevant
-knowledge-base passages and uses them with the export data as grounded context for LLM synthesis.
-Set `LLM_API_KEY` in `backend/.env` to use OpenAI; it defaults to `https://api.openai.com/v1`
-with model `gpt-4o-mini`. Without a key it defaults to local Ollama at
-`http://localhost:11434/v1` with model `llama3.1` (start Ollama and pull that model first).
-Override `LLM_API_BASE_URL` and `LLM_MODEL` to use another OpenAI-compatible endpoint. If the
-endpoint is unavailable, the advisor returns its explainable rule-based recommendations and
-reports the LLM status in its response.
+# Configure these only when enabling Google OAuth:
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
+FRONTEND_URL=http://localhost:5173
+For local LLM use, start Ollama and download the configured model. The
+advisor can fall back to explainable rule-based recommendations if the
+configured LLM endpoint is unavailable.
 
-## Component 04: Auction Price Forecasting
+Security: Never commit .env files, passwords, API keys, OAuth
+secrets, encryption keys, or operational passport-ledger data to source
+control. Follow the repository's environment configuration and
+deployment requirements.
 
-This project now uses an LSTM-only model for tea auction price forecasting. The old ARIMA and ARIMA + LSTM hybrid artifacts were removed.
-
-### Current LSTM Output
-
-The pipeline trains one LSTM model per growing zone:
-
-| Growing zone | MAE | RMSE | Train period | Test period |
-| --- | ---: | ---: | --- | --- |
-| High Growns | 203.85 | 270.33 | Sep 2011 - Jun 2023 | Jul 2023 - May 2026 |
-| Low Growns | 961.83 | 1128.91 | Sep 2011 - Jun 2023 | Jul 2023 - May 2026 |
-| Medium Growns | 488.82 | 593.72 | Sep 2011 - May 2023 | Jun 2023 - May 2026 |
-| Total | 267.82 | 342.54 | Sep 2011 - May 2023 | Jun 2023 - May 2026 |
-
-Model setup:
-
-- Framework: TensorFlow/Keras LSTM when available, otherwise a NumPy fallback trainer
-- Lookback: 12 months
-- Hidden size: 128
-- Epochs: 200
-- Recursive prediction: enabled for multi-step forecasting
-- Forecast horizon: 12 months
-
-### Generated Files
-
-Processed data:
-
-- `backend/ml/datasets/processed/component04/auction_price_clean.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_train.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_test.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_predictions.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_future_forecast.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_metrics.csv`
-
-## Component 04: Export Demand Forecasting
-
-The export-volume model uses the monthly history in
-`backend/ml/datasets/raw/component04/Tea_Export_Demand_Forecast_Dataset.xlsx`. The LSTM pipeline uses
-2016-2023 for training, 2024 for recursive validation and configuration selection, and 2025 for a
-recursive test. It then refits the selected LSTM on all 2016-2025 observations for the next 12 months.
-The aggregate demand forecast does not split results by country, tea process, or package.
-
-### Train Again
-
-From the repository root:
-
-```powershell
-backend\.venv312\Scripts\python.exe -m backend.ml.training.component04.train_export_demand_lstm
-```
-
-Generated files are in `backend/ml/datasets/processed/component04/`:
-
-- `export_demand_monthly.csv`
-- `export_demand_test_predictions.csv`
-- `export_demand_forecast.csv`
-- `export_demand_metrics.json`
-
-The API endpoint is `/api/component04/export-demand`. The frontend provides a separate Export Demand
-page at `/export-demand`; the Auction Price page remains at `/`.
-
-Advisor API: `POST /api/component04/export-advisor` with JSON such as:
-
-```json
-{
-  "question": "How should we plan export volumes for the next 12 months?",
-  "destination_country": null,
-  "business_goal": "plan seasonal inventory"
-}
-```
-
-### Export Readiness Index and Digital Passport
-
-The ERI page combines export-demand forecast metrics with user-declared monthly capacity,
-document checks, and quality-control readiness. Its weighted criteria and recommendations are
-shown with the evidence used for each score. It is a planning aid, not an official certification
-or destination-specific compliance assessment. API: `POST /api/component04/export-readiness`.
-
-The conversational AI Export Advisor is at `/export-advisor`. Its optional zone context can be
-passed from the Zone Intelligence page and is added to the retrieved evidence before recommendations
-are generated.
-
-The Zone Intelligence Engine scores High, Medium, and Low Growns using the supplied weights:
-auction price (35%), export success rate (25%), buyer preference (20%), historical demand (10%),
-and climate suitability (10%). Auction price and quantity-based demand signals come from the
-zone auction dataset; quantity share is explicitly a buyer-preference proxy. The supplied data
-does not contain zone-level export success or climate observations, so those two scores are
-entered with optional evidence notes instead of being fabricated. Use “Use this score in Export
-Advisor” to pass the selected score into its grounded export recommendation. API routes:
-`GET /api/component04/zone-intelligence` and `POST /api/component04/zone-intelligence/score`.
-
-The Digital Passport page records batch events (collection, processing, quality checks, packing,
-export, and receipt) in `backend/data/component04/passport_ledger.jsonl`. Every event includes the
-previous record hash and its own SHA-256 hash; `GET /api/component04/digital-passports/verify`
-checks the chain. This local prototype is tamper-evident but is not connected to a distributed
-blockchain network. The ledger is gitignored because it can contain operational traceability data.
-After saving a batch event, its passport page displays a QR code and provides a PNG download.
-The QR opens that batch passport on the same frontend site; sellers should use the deployed,
-phone-accessible site URL when generating codes for customers.
-
-### Google Sign-In and Sign-Up
-
-The frontend provides `/login` and `/signup`. Regular users authenticate with Google's OAuth 2.0
-authorization-code flow. The Super Admin uses the email/password configured for initial setup and
-must also verify a time-based code from Google Authenticator. On first Super Admin sign-in, scan the
-displayed QR code and enter a current six-digit code; only after successful verification is the
-authenticator secret saved (encrypted) in the configured database. Later Super Admin sign-ins
-require a fresh code.
-The password is stored as a scrypt hash, not plaintext.
-
-Set `ADMIN_BOOTSTRAP_EMAIL=admin@gmail.com` and `ADMIN_BOOTSTRAP_PASSWORD` in the untracked
-`backend/.env` before starting the backend. The bootstrap creates the protected Super Admin account
-once. Do not put the password or encryption key in source control, the frontend environment, or logs.
-Generate a Fernet key for `TOTP_ENCRYPTION_KEY` and keep it backed up securely; losing that key
-prevents decrypting the saved authenticator secret. Generate one using:
-
-```powershell
+### 3. Run the Backend
+From the repository root, use the Python environment configured for the
+project:
 cd backend
-.\.venv\Scripts\python.exe -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
+python run.py
+If the project uses its documented Windows virtual environment, activate
+it first or run the Python executable from that environment.
 
 After the first Super Admin password is accepted and its account appears in the database, remove
 `ADMIN_BOOTSTRAP_PASSWORD` from the environment file; the scrypt password hash remains in the
@@ -229,9 +192,51 @@ cd backend
 
 ```powershell
 cd frontend
+npm install
 npm run dev
-```
+Open the local URL printed by Vite, typically http://localhost:5173.
 
-Open the Vite URL shown in the terminal, usually:
+### Model Training
+The repository includes separate pipelines for auction-price and
+export-demand forecasting. Run these from the repository root using the
+project's configured Python environment.
 
-- `http://localhost:5173`
+Auction-price pipeline:
+cd backend
+python ml/preprocessing/component04/clean_auction_data.py
+python ml/training/component04/train_lstm.py
+Export-demand pipeline (from the repository root):
+python -m backend.ml.training.component04.train_export_demand_lstm
+Check the scripts and dataset paths in the repository before training.
+Training time and results depend on the environment and available data.
+
+API Overview
+  Endpoint                                          Purpose
+  POST /api/component04/export-advisor            Generate export-planning
+                                                    recommendations
+
+  POST /api/component04/export-readiness          Assess export readiness
+
+  GET /api/component04/zone-intelligence          Retrieve growing-zone intelligence
+
+  POST /api/component04/zone-intelligence/score   Calculate a zone score
+
+  GET /api/component04/digital-passports/verify   Verify the digital-passport ledger
+  GET /api/component04/export-demand              Export-demand forecast API
+Confirm endpoint methods and availability against the current backend
+implementation.
+
+### Important Notes
+- Forecasts are model-based estimates and should be evaluated against
+  relevant historical and real-world outcomes.
+- The Export Readiness Index is a planning aid, not an official
+  certification or destination-specific compliance assessment.
+- Zone-level export-success and climate scores must be supported by
+  evidence; unavailable observations should not be fabricated.
+- The Digital Passport is a local tamper-evident prototype using a
+  hash-linked ledger. It is not connected to a distributed blockchain
+  network.
+- Keep credentials and sensitive operational data out of Git.
+License
+Add the appropriate license and copyright information before public
+distribution.
