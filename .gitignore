@@ -23,6 +23,32 @@ __pycache__/
 !.env.example
 backend/.env
 
+# Local editor and operating-system files
+.DS_Store
+**/.DS_Store
+.vscode/
+
+# Local training datasets (keep only directory placeholders in Git)
+/backend/DL/datasets/**
+!/backend/DL/datasets/**/
+!/backend/DL/datasets/**/.gitkeep
+
+# Generated/downloaded deep-learning artifacts
+/backend/DL/models/**/runs/
+/backend/app/components/Component02/models/download_cache/
+/backend/app/components/Component02/models/tea_image_screening/
+*.pt
+*.pth
+
+# Generated model evaluation outputs and trained model binaries
+/backend/DL/models/**/evaluation/*.csv
+/backend/DL/models/**/evaluation/*.png
+/backend/ml/models/**/evaluation/*.csv
+/backend/ml/models/**/evaluation/*.png
+/backend/ml/tests/**/outputs/*.csv
+*.cbm
+*.safetensors
+
 node_modules/
 dist/
 build/
