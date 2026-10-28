@@ -1,0 +1,13 @@
+{
+    "model": "Random Forest",
+    "target": "kg_per_Acre",
+    "test_years": [
+        2025
+    ],
+    "test_rows": 576,
+    "MAE": 8.904860244715255,
+    "RMSE": 10.290286722434585,
+    "R2": 0.8318349100015341,
+    "MAPE_percent": 8.262130115489578,
+    "MAPE_excluded_zero_targets": 0
+}

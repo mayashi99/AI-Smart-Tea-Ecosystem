@@ -65,7 +65,7 @@ function useNotifications(enabled, user) {
   }, [enabled, demandEnabled, ledgerEnabled, readinessEnabled, requestsEnabled, userRequests.data, demand.data, demand.error, ledger.data])
 }
 
-export default function AppShell({ activeKey, children }) {
+export default function AppShell({ activeKey, children, contentClassName = '', notificationsEnabled = true }) {
   const settings = useSettings()
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -105,17 +105,19 @@ export default function AppShell({ activeKey, children }) {
           <div><strong>CeylonTea IQ</strong><span>Sri Lanka Tea Intelligence</span></div>
           <button type="button" className="sidebar-close" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}><Icon name="close" /></button>
         </div>
-        <nav className="sidebar-nav" aria-label="Main navigation">
-          {visibleItems.map((item, index) => (
-            <Fragment key={item.key}>
-              {index > 0 && item.group !== visibleItems[index - 1].group && <span className="sidebar-divider" role="separator" />}
-              <Link to={item.path} className={`sidebar-link ${item.key === activeKey ? 'active' : ''}`} aria-current={item.key === activeKey ? 'page' : undefined} aria-label={item.label} onClick={(event) => { closeMenus(); if (event.detail > 0) event.currentTarget.blur() }}>
-                <span className="sidebar-tile"><Icon name={item.icon} size={24} /></span>
-                <span className="sidebar-label">{item.label}</span>
-              </Link>
-            </Fragment>
-          ))}
-        </nav>
+        <div className="sidebar-nav-scroll">
+          <nav className="sidebar-nav" aria-label="Main navigation">
+            {visibleItems.map((item, index) => (
+              <Fragment key={item.key}>
+                {index > 0 && item.group !== visibleItems[index - 1].group && <span className="sidebar-divider" role="separator" />}
+                <Link to={item.path} className={`sidebar-link ${item.key === activeKey ? 'active' : ''}`} aria-current={item.key === activeKey ? 'page' : undefined} aria-label={item.label} onClick={(event) => { closeMenus(); if (event.detail > 0) event.currentTarget.blur() }}>
+                  <span className="sidebar-tile"><Icon name={item.icon} size={24} /></span>
+                  <span className="sidebar-label">{item.label}</span>
+                </Link>
+              </Fragment>
+            ))}
+          </nav>
+        </div>
         <img className="sidebar-photo" src={sidebarPhoto} alt="" aria-hidden="true" />
         <div className="sidebar-footer">
           <span className="sidebar-footer-icon"><Icon name="sparkle" size={24} /></span>

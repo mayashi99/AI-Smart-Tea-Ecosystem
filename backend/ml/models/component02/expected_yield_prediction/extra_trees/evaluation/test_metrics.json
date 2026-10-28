@@ -1,0 +1,13 @@
+{
+    "model": "Extra Trees",
+    "target": "kg_per_Acre",
+    "test_years": [
+        2025
+    ],
+    "test_rows": 576,
+    "MAE": 8.800331929976867,
+    "RMSE": 10.360461521893011,
+    "R2": 0.829533479499416,
+    "MAPE_percent": 8.272022828561713,
+    "MAPE_excluded_zero_targets": 0
+}

@@ -1,3 +1,93 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Frontend builds
+frontend/dist/
+frontend/dist-ssr/
+
+# Logs
+logs/
+*.log
+
+# Data and model artifacts
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+models/
+checkpoints/
+artifacts/
+backend/plantation_health_dataset/
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.svg
+
+
+backend/app/components/Component02/dataset/
+backend/app/components/Component02/models/
+backend/app/components/Component02/runs/
+backend/app/components/Component02/uploads/
+backend/app/components/Component02/venv/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -63,6 +153,13 @@ yarn-error.log*
 
 # ML training artifacts
 /backend/ml/datasets/
+!/backend/ml/datasets/
+!/backend/ml/datasets/processed/
+!/backend/ml/datasets/processed/.gitkeep
+!/backend/ml/datasets/raw/
+!/backend/ml/datasets/raw/.gitkeep
+!/backend/ml/datasets/tests/
+!/backend/ml/datasets/tests/.gitkeep
 /backend/data/component04/passport_ledger.jsonl
 /backend/data/rbac.sqlite3
 /backend/data/rbac.sqlite3-shm
@@ -71,6 +168,65 @@ backend/ml/**/*.joblib
 backend/ml/**/*.keras
 *.joblib
 *.keras
+*.cbm
+
+# Keep ML source modules and lightweight metadata under backend/ml/models.
+# Large trained artifacts remain ignored by their file extensions above.
+!/backend/ml/models/
+/backend/ml/models/*
+!/backend/ml/models/component02/
+/backend/ml/models/component02/*
+!/backend/ml/models/component02/__init__.py
+!/backend/ml/models/component02/expected_yield_prediction/
+!/backend/ml/models/component02/expected_yield_prediction/**/
+
+# Preserve the expected-yield dataset directory layout without committing data.
+!/backend/ml/datasets/raw/component02/
+!/backend/ml/datasets/raw/component02/expected_yield_prediction/
+!/backend/ml/datasets/raw/component02/expected_yield_prediction/.gitkeep
+!/backend/ml/datasets/processed/component02/
+!/backend/ml/datasets/processed/component02/expected_yield_prediction/
+!/backend/ml/datasets/processed/component02/expected_yield_prediction/.gitkeep
+
+# DL datasets are local training artifacts; preserve only their directory layout.
+/backend/DL/datasets/
+!/backend/DL/datasets/
+!/backend/DL/datasets/raw/
+!/backend/DL/datasets/raw/.gitkeep
+!/backend/DL/datasets/raw/component02/
+!/backend/DL/datasets/raw/component02/harvest_readiness/
+!/backend/DL/datasets/raw/component02/harvest_readiness/.gitkeep
+!/backend/DL/datasets/raw/component02/plantation_health/
+!/backend/DL/datasets/raw/component02/plantation_health/.gitkeep
+!/backend/DL/datasets/processed/
+!/backend/DL/datasets/processed/.gitkeep
+!/backend/DL/datasets/processed/component02/
+!/backend/DL/datasets/processed/component02/harvest_readiness/
+!/backend/DL/datasets/processed/component02/harvest_readiness/.gitkeep
+!/backend/DL/datasets/processed/component02/plantation_health/
+!/backend/DL/datasets/processed/component02/plantation_health/.gitkeep
+!/backend/DL/datasets/tests/
+!/backend/DL/datasets/tests/.gitkeep
+!/backend/DL/datasets/tests/component02/
+!/backend/DL/datasets/tests/component02/harvest_readiness/
+!/backend/DL/datasets/tests/component02/harvest_readiness/.gitkeep
+!/backend/DL/datasets/tests/component02/plantation_health/
+!/backend/DL/datasets/tests/component02/plantation_health/.gitkeep
+/backend/DL/datasets/**/*.cache
+
+# Keep DL Python model code while large weight and run artifacts stay ignored.
+!/backend/DL/models/
+/backend/DL/models/*
+!/backend/DL/models/.gitkeep
+!/backend/DL/models/component02/
+/backend/DL/models/component02/*
+!/backend/DL/models/component02/__init__.py
+!/backend/DL/models/component02/harvest_readiness/
+!/backend/DL/models/component02/harvest_readiness/**/
+!/backend/DL/models/component02/harvest_readiness/**/*.py
+!/backend/DL/models/component02/plantation_health/
+!/backend/DL/models/component02/plantation_health/**/
+!/backend/DL/models/component02/plantation_health/**/*.py
 
 backend/.env
 

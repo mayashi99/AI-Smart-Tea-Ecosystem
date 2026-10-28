@@ -104,7 +104,7 @@ h3 { margin-bottom: 4px; color: var(--ink); font-size: 0.95rem; }
   width: var(--rail-w);
   height: 100vh;
   padding: 18px 13px 16px;
-  overflow: hidden auto;
+  overflow: hidden;
   color: var(--sb-mist);
   background: var(--sb-forest);
   border-radius: 0 20px 20px 0;
@@ -151,7 +151,7 @@ h3 { margin-bottom: 4px; color: var(--ink); font-size: 0.95rem; }
 
 .main-shell { grid-column: 2; }
 
-.sidebar-brand, .sidebar-nav, .sidebar-footer { position: relative; z-index: 1; }
+.sidebar-brand, .sidebar-nav-scroll, .sidebar-footer { position: relative; z-index: 1; }
 
 .sidebar-label,
 .sidebar-brand > div,
@@ -176,6 +176,18 @@ h3 { margin-bottom: 4px; color: var(--ink); font-size: 0.95rem; }
 .brand-mark { flex: 0 0 50px; width: 50px; height: 50px; padding: 2px; border: 1px solid rgb(216 231 188 / 72%); border-radius: 14px; background: #f7f5ef; object-fit: contain; box-shadow: 0 3px 8px rgb(15 26 20 / 35%); }
 
 .sidebar-close { display: none; margin-left: auto; padding: 6px; border: 0; border-radius: 8px; background: rgb(241 235 226 / 14%); color: #fff; cursor: pointer; }
+
+.sidebar-nav-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(241 235 226 / 42%) transparent;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar { width: 6px; }
+.sidebar-nav-scroll::-webkit-scrollbar-thumb { background: rgb(241 235 226 / 42%); border-radius: 999px; }
 
 .sidebar-nav { display: grid; gap: 7px; }
 
@@ -372,6 +384,10 @@ h3 { margin-bottom: 4px; color: var(--ink); font-size: 0.95rem; }
 .menu-item:hover { background: var(--green-50); color: var(--green-800); }
 
 .page { flex: 1; width: 100%; max-width: 1480px; margin: 0 auto; padding: 22px 28px 28px; }
+
+/* Component 02 screens provide their own full-page layouts. Keep their
+   original spacing, backgrounds and responsive widths inside the shared shell. */
+.page.is-component02 { max-width: none; padding: 0; }
 
 .app-footer { padding: 16px 28px 22px; color: var(--muted); font-size: 0.75rem; text-align: center; }
 

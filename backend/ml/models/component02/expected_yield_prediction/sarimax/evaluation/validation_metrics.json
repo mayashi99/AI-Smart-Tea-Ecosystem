@@ -1,0 +1,12 @@
+{
+    "model": "SARIMAX",
+    "target": "kg_per_Acre",
+    "train_years": "2016-2023",
+    "validation_year": 2024,
+    "locations_trained": 12,
+    "MAE": 11.843445278244648,
+    "RMSE": 14.398044676829318,
+    "R2": 0.6063213113729189,
+    "MAPE_percent": 10.36436799154578,
+    "note": "Separate univariate SARIMAX model per location; no 2025 test data used."
+}

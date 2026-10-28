@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect } from 'react'
-import './styles.css'
 import Icon from './components/Icon'
 import { Link, LoadingState } from './components/ui'
 import AppShell from './layout/AppShell'
@@ -10,6 +9,17 @@ import { canAccessPage } from './lib/permissions'
 import { AuthPage, PublicPassportPage } from './pages/AuthPages'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
+
+const component02RouteKeys = new Set([
+  'plantation-hub',
+  'yield-prediction',
+  'yield-trends',
+  'harvest-quality',
+  'plant-density',
+  'plantation-health',
+  'harvest-readiness',
+  'intelligent-harvest-planning',
+])
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
@@ -22,6 +32,14 @@ const DigitalPassportPage = lazy(() => import('./pages/component04/DigitalPasspo
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage'))
+const PlantationHubPage = lazy(() => import('./Home/Home'))
+const YieldPredictionPage = lazy(() => import('./pages/component02/yield prediction/YieldPrediction'))
+const YieldTrendsPage = lazy(() => import('./pages/component02/yield trend/YieldTrends'))
+const HarvestQualityPage = lazy(() => import('./pages/component02/HarvestQuality/HarvestQuality'))
+const PlantDensityPage = lazy(() => import('./pages/component02/PlantDensity/PlantDensity'))
+const PlantationHealthPage = lazy(() => import('./pages/component02/PlantHelth/PlantHealth'))
+const HarvestReadinessPage = lazy(() => import('./pages/component02/HarvestReadiness/HarvestReadiness'))
+const IntelligentHarvestPlanningPage = lazy(() => import('./pages/component02/IntelligentHarvestPlanning/IntelligentHarvestPlanning'))
 const UserManagementPage = lazy(() => import('./pages/UserManagementPage'))
 
 const pages = {
@@ -35,6 +53,14 @@ const pages = {
   traceability: DigitalPassportPage,
   reports: ReportsPage,
   settings: SettingsPage,
+  'plantation-hub': PlantationHubPage,
+  'yield-prediction': YieldPredictionPage,
+  'yield-trends': YieldTrendsPage,
+  'harvest-quality': HarvestQualityPage,
+  'plant-density': PlantDensityPage,
+  'plantation-health': PlantationHealthPage,
+  'harvest-readiness': HarvestReadinessPage,
+  'intelligent-harvest-planning': IntelligentHarvestPlanningPage,
   'user-management': UserManagementPage,
 }
 
@@ -54,6 +80,7 @@ function App() {
   const { user, loading } = useAuth()
   const route = matchRoute(path)
   const Page = pages[route.key]
+  const isComponent02Route = component02RouteKeys.has(route.key)
 
   useEffect(() => {
     const titles = { login: 'Sign in', signup: 'Create account' }
@@ -97,7 +124,11 @@ function App() {
   }
 
   return (
-    <AppShell activeKey={route.key === 'workspace' ? 'home' : route.key}>
+    <AppShell
+      activeKey={route.key === 'workspace' ? 'home' : route.key}
+      contentClassName={isComponent02Route ? 'is-component02 !max-w-none !p-0' : ''}
+      notificationsEnabled={!isComponent02Route}
+    >
       <Suspense fallback={<LoadingState label="Loading page…" />}>
         {route.key === 'workspace' ? <WorkspacePage key={path} role={route.role} /> : Page ? <Page key={path} /> : <NotFound />}
       </Suspense>

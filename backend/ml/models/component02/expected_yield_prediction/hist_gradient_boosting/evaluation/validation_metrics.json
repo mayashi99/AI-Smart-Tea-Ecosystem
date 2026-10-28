@@ -1,0 +1,12 @@
+{
+    "model": "HistGradientBoosting",
+    "target": "kg_per_Acre",
+    "train_years": "2016-2023",
+    "validation_year": 2024,
+    "train_rows": 4608,
+    "validation_rows": 576,
+    "MAE": 10.354622158266839,
+    "RMSE": 12.666712231406757,
+    "R2": 0.6953068575095768,
+    "MAPE_percent": 9.296485427053526
+}

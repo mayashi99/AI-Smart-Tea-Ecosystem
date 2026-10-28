@@ -1,0 +1,12 @@
+{
+    "model": "LightGBM",
+    "target": "kg_per_Acre",
+    "train_years": "2016-2023",
+    "validation_year": 2024,
+    "train_rows": 4608,
+    "validation_rows": 576,
+    "MAE": 10.802385699019048,
+    "RMSE": 13.197352193934355,
+    "R2": 0.6692434257368265,
+    "MAPE_percent": 9.690870131442264
+}

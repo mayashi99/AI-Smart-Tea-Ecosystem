@@ -10,8 +10,24 @@ export const navItems = [
   { key: 'insights', group: 'intelligence', label: 'Trade Insights', path: '/trade-insights', aliases: ['/export-advisor'], icon: 'globe', description: 'Seasonality and the AI Export Advisor.' },
   { key: 'traceability', group: 'operations', label: 'Traceability', path: '/digital-passport', icon: 'shield', description: 'Tea Digital Passport and QR verification.' },
   { key: 'reports', group: 'operations', label: 'Reports', path: '/reports', icon: 'file', description: 'Download forecast, market and ledger reports.' },
+  { key: 'plant-density', group: 'plantation', label: 'Density', path: '/plant-density', icon: 'grid', description: 'Calculate recommended plantation density.' },
+  { key: 'plantation-health', group: 'plantation', label: 'Health', path: '/plantation-health', icon: 'leaf', description: 'Analyse tea-plant health from field images.' },
+  { key: 'intelligent-harvest-planning', group: 'plantation', label: 'Intelligent Harvest Planning', path: '/intelligent-harvest-planning', icon: 'calendar', description: 'Plan harvest timing using field, image and climate signals.' },
+  { key: 'yield-trends', group: 'plantation', label: 'Yield Prediction', path: '/yield-trends', icon: 'trend', description: 'Review historical yield and forecast trends by grown type.' },
+  { key: 'harvest-quality', group: 'plantation', label: 'Harvest Quality', path: '/harvest-quality', icon: 'check', description: 'Assess tea-leaf quality and harvest conditions.' },
   { key: 'settings', group: 'system', label: 'Settings', path: '/settings', icon: 'settings', description: 'Profile, defaults and system status.' },
   { key: 'user-management', group: 'system', label: 'User Management', path: '/user-management', icon: 'user', description: 'Manage accounts, roles and audit activity.' },
+]
+
+export const component02Routes = [
+  { key: 'plantation-hub', label: 'Plantation Hub', path: '/plantation-tools' },
+  { key: 'yield-prediction', label: 'Yield Prediction', path: '/yield-prediction' },
+  { key: 'yield-trends', label: 'Yield Prediction', path: '/yield-trends' },
+  { key: 'harvest-quality', label: 'Harvest Quality', path: '/harvest-quality' },
+  { key: 'plant-density', label: 'Density', path: '/plant-density' },
+  { key: 'plantation-health', label: 'Health', path: '/plantation-health' },
+  { key: 'harvest-readiness', label: 'Harvest Readiness', path: '/harvest-readiness' },
+  { key: 'intelligent-harvest-planning', label: 'Intelligent Harvest Planning', path: '/intelligent-harvest-planning' },
 ]
 
 export const workspaceRoles = {

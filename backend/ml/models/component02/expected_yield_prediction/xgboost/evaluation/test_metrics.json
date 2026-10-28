@@ -1,0 +1,13 @@
+{
+    "model": "XGBoost",
+    "target": "kg_per_Acre",
+    "test_years": [
+        2025
+    ],
+    "test_rows": 576,
+    "MAE": 8.813698919084338,
+    "RMSE": 10.415021541385,
+    "R2": 0.8277333384320349,
+    "MAPE_percent": 8.20536989380311,
+    "MAPE_excluded_zero_targets": 0
+}
