@@ -7,6 +7,10 @@ venv/
 .env/
 .venv312/
 .venv*/
+ 
+
+__pycache__/
+*.py[cod]
 
 .env
 /backend/.env

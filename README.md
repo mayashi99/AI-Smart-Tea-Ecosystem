@@ -5,6 +5,7 @@ CeylonTea IQ brings together tea auction price forecasting,
 export-demand prediction, export planning, growing-zone intelligence,
 export readiness assessment, and tea-batch traceability in one platform.
 
+<<<<<<< HEAD
 Key Features
 - #### Auction Price Forecasting --- LSTM-based price forecasts for
   High, Medium, and Low Growns, with a combined sales-and-price
@@ -103,6 +104,72 @@ deployment requirements.
 ### 3. Run the Backend
 From the repository root, use the Python environment configured for the
 project:
+=======
+### Repository Structure
+
+```text
+AI-Smart-Tea-Ecosystem/
+├── backend/
+├── frontend/
+├── .gitignore
+└── README.md
+```
+
+- **backend/** — Backend services and APIs for the system.
+- **frontend/** — User interface and dashboard.
+- **.gitignore** — Specifies files and directories excluded from Git tracking.
+- **README.md** — Project documentation.
+
+### Git Branches and Development Workflow
+
+The project uses separate Git branches to organize component development and integrate features.
+
+- `main` — Main project branch.
+- `dev` — Development and integration branch.
+- `feature/disease-intelligence` — Tea disease intelligence.
+- `feature/diseases-intelligence-system` — Disease intelligence system development.
+- `feature/export-intelligence` — Tea export intelligence.
+- `feature/export-intelligence-another` — Additional export intelligence development.
+- `feature/tea-grade-ai` — Tea grading and quality analysis.
+- `feature/yield-intelligence` — Tea yield intelligence.
+
+**Current development status:** The GitHub repository shows that the `dev` branch is 38 commits ahead of and 1 commit behind `main`. Review and test the changes before merging the branches.
+
+### Component 04 – AI-Powered Tea Export Intelligence Platform
+
+The Component 04 dashboard includes three pages designed to support tea export intelligence and decision-making.
+
+The component focuses on using tea auction and export-related information to support market analysis, price forecasting, and export recommendations.
+
+
+<<<<<<< HEAD
+The Digital Passport page records batch events (collection, processing, quality checks, packing,
+export, and receipt) in `backend/data/component04/passport_ledger.jsonl`. Every event includes the
+previous record hash and its own SHA-256 hash; `GET /api/component04/digital-passports/verify`
+checks the chain. This local prototype is tamper-evident but is not connected to a distributed
+blockchain network. The ledger is gitignored because it can contain operational traceability data.
+After saving a batch event, its passport page displays a QR code and provides a PNG download.
+The QR opens that batch passport on the same frontend site; sellers should use the deployed,
+phone-accessible site URL when generating codes for customers.
+
+### Google Sign-In and Sign-Up
+
+The frontend provides `/login` and `/signup`. Regular users authenticate with Google's OAuth 2.0
+authorization-code flow. The Super Admin uses the email/password configured for initial setup and
+must also verify a time-based code from Google Authenticator. On first Super Admin sign-in, scan the
+displayed QR code and enter a current six-digit code; only after successful verification is the
+authenticator secret saved (encrypted) in the configured database. Later Super Admin sign-ins
+require a fresh code.
+The password is stored as a scrypt hash, not plaintext.
+
+Set `ADMIN_BOOTSTRAP_EMAIL=admin@gmail.com` and `ADMIN_BOOTSTRAP_PASSWORD` in the untracked
+`backend/.env` before starting the backend. The bootstrap creates the protected Super Admin account
+once. Do not put the password or encryption key in source control, the frontend environment, or logs.
+Generate a Fernet key for `TOTP_ENCRYPTION_KEY` and keep it backed up securely; losing that key
+prevents decrypting the saved authenticator secret. Generate one using:
+
+```powershell
+>>>>>>> 2c68846819ffcb209c73142239027eaef3ac089f
 cd backend
 python run.py
 If the project uses its documented Windows virtual environment, activate
@@ -201,6 +268,7 @@ The repository includes separate pipelines for auction-price and
 export-demand forecasting. Run these from the repository root using the
 project's configured Python environment.
 
+<<<<<<< HEAD
 Auction-price pipeline:
 cd backend
 python ml/preprocessing/component04/clean_auction_data.py
@@ -240,3 +308,8 @@ implementation.
 License
 Add the appropriate license and copyright information before public
 distribution.
+=======
+- `http://localhost:5173`
+=======
+>>>>>>> ddfab2352c38bb5f856adc60d0d69d19323e9544
+>>>>>>> 2c68846819ffcb209c73142239027eaef3ac089f
