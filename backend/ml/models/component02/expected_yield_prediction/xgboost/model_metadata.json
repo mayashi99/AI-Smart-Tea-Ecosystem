@@ -1,0 +1,7 @@
+{
+  "component": "Component 02",
+  "use_case": "Expected tea yield prediction",
+  "algorithm": "XGBoost Regressor",
+  "model_file": "xgboost_yield.joblib",
+  "target": "kg_per_Acre"
+}

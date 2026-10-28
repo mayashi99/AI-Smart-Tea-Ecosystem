@@ -1,15 +1,21 @@
-from pathlib import Path
 import tempfile
 import requests
 from datetime import datetime, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
-from ultralytics import YOLO
 from ..image_validation import validate_tea_image, MAX_IMAGE_BYTES
+from DL.models.component02.plantation_health.yolo11.inference import (
+    build_health_reason,
+    canonical_health_class,
+    extract_health_prediction as extract_health_prediction_for_model,
+    load_model,
+)
+from DL.utils.component02.paths import PLANTATION_PRODUCTION_MODEL
 
 
 # ============================================================
@@ -35,42 +41,8 @@ from ..image_validation import validate_tea_image, MAX_IMAGE_BYTES
 # ============================================================
 
 
-# ============================================================
-# BASE DIRECTORY
-# ============================================================
-
-BASE_DIR = Path(__file__).resolve().parent
-
-
-# ============================================================
-# TRAINED YOLO11 MODEL
-# ============================================================
-
-MODEL_PATH = (
-    BASE_DIR
-    / "runs"
-    / "plantation_health_yolo11n_updated_50epochs_v2"
-    / "weights"
-    / "best.pt"
-)
-
-
-# ============================================================
-# CHECK MODEL
-# ============================================================
-
-if not MODEL_PATH.exists():
-
-    raise FileNotFoundError(
-        f"Trained model not found:\n{MODEL_PATH}"
-    )
-
-
-# ============================================================
-# LOAD YOLO11 MODEL
-# ============================================================
-
-model = YOLO(str(MODEL_PATH))
+MODEL_PATH = PLANTATION_PRODUCTION_MODEL
+model = load_model()
 
 
 print("=" * 70)
@@ -132,76 +104,9 @@ router = APIRouter(
 )
 
 
-# ============================================================
-# HEALTH CLASSIFICATION RULE
-# ============================================================
-
-def canonical_health_class(class_name):
-    """
-    Keep the public API to two categories.
-
-    The trained healthy class is the only class that can be
-    returned as healthy. Every other class is treated as low
-    health, including unexpected or future model labels.
-    """
-
-    normalized_name = str(class_name).strip().lower()
-    normalized_name = normalized_name.replace("-", "_").replace(" ", "_")
-
-    if normalized_name == "healthy":
-        return "healthy"
-
-    return "low_health"
-
-
-def build_health_reason(prediction, low_health_image_count=None, image_count=None):
-    """Explain the result without claiming a specific disease."""
-
-    if prediction == "low_health":
-        count_message = ""
-        if low_health_image_count is not None and image_count is not None:
-            count_message = (
-                f"{low_health_image_count} of {image_count} uploaded image(s) "
-                "were classified as low health. "
-            )
-        return (
-            f"{count_message}The AI model detected visual patterns associated "
-            "with reduced tea plant health. This classification does not "
-            "identify a specific disease or cause, so the affected area should "
-            "be checked in the field."
-        )
-
-    return "The AI model did not detect visual patterns associated with low health."
-
-
 def extract_health_prediction(probabilities):
     """Convert model output into the API's healthy/low_health categories."""
-
-    predicted_class_id = int(probabilities.top1)
-    raw_predicted_class = model.names[predicted_class_id]
-
-    # Aggregate all model outputs into the two public categories.
-    category_probabilities = {
-        "healthy": 0.0,
-        "low_health": 0.0,
-    }
-
-    for class_id, probability in enumerate(probabilities.data):
-        model_class = model.names[class_id]
-        category = canonical_health_class(model_class)
-        category_probabilities[category] += float(probability)
-
-    predicted_class = canonical_health_class(raw_predicted_class)
-    confidence = category_probabilities[predicted_class]
-
-    return {
-        "prediction": predicted_class,
-        "confidence": confidence,
-        "class_probabilities": {
-            category: round(probability * 100, 2)
-            for category, probability in category_probabilities.items()
-        },
-    }
+    return extract_health_prediction_for_model(probabilities, model)
 
 
 # ============================================================
