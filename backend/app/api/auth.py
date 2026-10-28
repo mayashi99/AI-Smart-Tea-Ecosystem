@@ -37,7 +37,13 @@ from app.core.rbac import (
     utc_now,
 )
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = BACKEND_ROOT.parent
+
+# Local development keeps shared frontend/backend settings in the project-root
+# .env. A backend-specific .env can override those values when present.
+load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv(BACKEND_ROOT / ".env", override=True)
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
