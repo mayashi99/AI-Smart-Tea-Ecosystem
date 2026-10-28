@@ -139,6 +139,14 @@ def _initialize_postgres(connection: _PostgresConnection) -> None:
             expires_at TEXT NOT NULL,
             created_at TEXT NOT NULL
         )""",
+        """CREATE TABLE IF NOT EXISTS super_admin_invites (
+            token_hash TEXT PRIMARY KEY,
+            email TEXT NOT NULL,
+            display_name TEXT NOT NULL,
+            inviter_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""",
         """CREATE TABLE IF NOT EXISTS audit_log (
             id BIGSERIAL PRIMARY KEY,
             actor_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
@@ -157,6 +165,7 @@ def _initialize_postgres(connection: _PostgresConnection) -> None:
             created_at TEXT NOT NULL
         )""",
         "CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique ON users (LOWER(email))",
+        "CREATE UNIQUE INDEX IF NOT EXISTS super_admin_invites_email_lower_unique ON super_admin_invites (LOWER(email))",
     )
     for statement in statements:
         connection.execute(statement)
@@ -239,6 +248,14 @@ def connect() -> sqlite3.Connection | _PostgresConnection:
             expires_at TEXT NOT NULL,
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS super_admin_invites (
+            token_hash TEXT PRIMARY KEY,
+            email TEXT NOT NULL,
+            display_name TEXT NOT NULL,
+            inviter_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS audit_log (
             id INTEGER PRIMARY KEY,
             actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -256,6 +273,8 @@ def connect() -> sqlite3.Connection | _PostgresConnection:
             public_id TEXT NOT NULL UNIQUE,
             created_at TEXT NOT NULL
         );
+        CREATE UNIQUE INDEX IF NOT EXISTS super_admin_invites_email_lower_unique
+            ON super_admin_invites (LOWER(email));
         """
     )
     user_columns = {row["name"] for row in connection.execute("PRAGMA table_info(users)")}

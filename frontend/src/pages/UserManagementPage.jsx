@@ -20,6 +20,9 @@ export default function UserManagementPage() {
   const [email, setEmail] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [role, setRole] = useState('export_manager')
+  const [superAdminEmail, setSuperAdminEmail] = useState('')
+  const [superAdminName, setSuperAdminName] = useState('')
+  const [superAdminInviteLink, setSuperAdminInviteLink] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
@@ -37,6 +40,31 @@ export default function UserManagementPage() {
       setDisplayName('')
       setMessage('Account created. The user can sign in with this Google email.')
       users.reload()
+      auditLog.reload()
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function createSuperAdminInvite(event) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      const invitation = await postJSON(
+        endpoints.superAdminInvites,
+        { email: superAdminEmail, display_name: superAdminName },
+        'Could not create Super Admin invitation',
+      )
+      const inviteUrl = new URL('/super-admin-invite', window.location.origin)
+      inviteUrl.hash = `token=${invitation.invite_token}`
+      setSuperAdminInviteLink(inviteUrl.toString())
+      setSuperAdminEmail('')
+      setSuperAdminName('')
+      setMessage(`Invitation for ${invitation.email} created. It expires in 24 hours.`)
       auditLog.reload()
     } catch (requestError) {
       setError(requestError.message)
@@ -121,6 +149,22 @@ export default function UserManagementPage() {
           <button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Create account'}</button>
         </form>
       </Card>
+
+      {currentUser?.is_super_admin && (
+        <Card icon="shield" title="Invite Super Admin" description="Create a one-time setup link for a new Super Admin. The invitee chooses their password and enrolls Google Authenticator on first sign-in. Creating another link for the same email invalidates the previous one.">
+          <form className="form-grid user-create-form" onSubmit={createSuperAdminInvite}>
+            <label className="field"><span>Name</span><input required maxLength={100} value={superAdminName} onChange={(event) => setSuperAdminName(event.target.value)} /></label>
+            <label className="field"><span>Email address</span><input type="email" required maxLength={254} value={superAdminEmail} onChange={(event) => setSuperAdminEmail(event.target.value)} /></label>
+            <button className="btn btn-primary" disabled={busy}>{busy ? 'Creating link…' : 'Create invite link'}</button>
+          </form>
+          {superAdminInviteLink && (
+            <label className="field auth-invite-link">
+              <span>One-time link — share through a trusted channel</span>
+              <input readOnly value={superAdminInviteLink} onFocus={(event) => event.target.select()} aria-label="One-time Super Admin invitation link" />
+            </label>
+          )}
+        </Card>
+      )}
 
       <Card icon="user" title="Accounts" description="Deactivated users are immediately signed out and cannot use protected APIs.">
         {!users.data && users.loading ? <LoadingState compact label="Loading accounts…" /> : (

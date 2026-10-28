@@ -126,7 +126,7 @@ function useRoleHint(email) {
 
 function LoginForm() {
   const { query } = useLocation()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => query.get('email') || '')
   const [password, setPassword] = useState('')
   const [adminMode, setAdminMode] = useState(query.get('error') === 'super-admin-password')
   const [showPassword, setShowPassword] = useState(false)

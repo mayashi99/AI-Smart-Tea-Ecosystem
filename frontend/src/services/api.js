@@ -18,6 +18,8 @@ export const endpoints = {
   roleHint: '/api/auth/role-hint',
   logout: '/api/auth/logout',
   users: '/api/auth/users',
+  superAdminInvites: '/api/auth/super-admin-invites',
+  acceptSuperAdminInvite: '/api/auth/super-admin-invites/accept',
   userRequests: '/api/auth/user-requests',
   userApproval: (userId) => `/api/auth/users/${userId}/approval`,
   auditLog: '/api/auth/audit',

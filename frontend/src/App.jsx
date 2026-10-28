@@ -8,6 +8,7 @@ import { matchRoute } from './lib/routes'
 import { useAuth } from './lib/auth-context'
 import { canAccessPage } from './lib/permissions'
 import { AuthPage, PublicPassportPage } from './pages/AuthPages'
+import SuperAdminInvitePage from './pages/SuperAdminInvitePage'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 
@@ -68,6 +69,7 @@ function App() {
   const landing = <Suspense fallback={<main className="landing" />}><LandingPage /></Suspense>
 
   if (route.key === 'public-passport') return <PublicPassportPage publicId={route.publicId} />
+  if (route.key === 'super-admin-invite') return <SuperAdminInvitePage />
   if (route.key === 'login' || route.key === 'signup') return <AuthPage mode={route.key} />
   if (route.key === 'landing') return landing
   // Logged-out visitors to "/" get the landing page; keep it dark while the session check runs.

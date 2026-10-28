@@ -67,6 +67,16 @@ class TotpVerifyRequest(BaseModel):
     code: str = Field(pattern=r"^\d{6}$")
 
 
+class SuperAdminInviteRequest(BaseModel):
+    email: EmailStr
+    display_name: str = Field(min_length=1, max_length=100)
+
+
+class SuperAdminInviteAcceptRequest(BaseModel):
+    invite_token: str = Field(min_length=32, max_length=128)
+    password: str = Field(min_length=12, max_length=128)
+
+
 def _frontend_url(path: str) -> str:
     base = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
     return f"{base}{path}"
@@ -327,6 +337,98 @@ def admin_totp_verify(payload: TotpVerifyRequest, response: Response):
     _set_session_cookies(response, token, csrf_token)
     audit("login", actor=dict(user), target_type="user", target_id=user["id"])
     return {"authenticated": True, "role": "admin", "is_super_admin": True}
+
+
+@router.post("/super-admin-invites", status_code=201)
+def create_super_admin_invite(
+    payload: SuperAdminInviteRequest,
+    user: dict = Depends(require_user_management),
+):
+    if not user["is_super_admin"]:
+        raise HTTPException(status_code=403, detail="Only the Super Admin can invite another Super Admin")
+
+    email = str(payload.email).strip().lower()
+    display_name = payload.display_name.strip()
+    now = utc_now()
+    invite_token = secrets.token_urlsafe(32)
+    try:
+        with connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute("DELETE FROM super_admin_invites WHERE expires_at <= ?", (iso_time(now),))
+            if connection.execute("SELECT 1 FROM users WHERE LOWER(email) = LOWER(?)", (email,)).fetchone():
+                raise HTTPException(status_code=409, detail="An account with that email already exists")
+            connection.execute("DELETE FROM super_admin_invites WHERE LOWER(email) = LOWER(?)", (email,))
+            connection.execute(
+                """INSERT INTO super_admin_invites
+                   (token_hash, email, display_name, inviter_user_id, expires_at, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    digest(invite_token),
+                    email,
+                    display_name,
+                    user["id"],
+                    iso_time(now + timedelta(hours=24)),
+                    iso_time(now),
+                ),
+            )
+    except (sqlite3.IntegrityError, psycopg2.IntegrityError) as exc:
+        raise HTTPException(status_code=409, detail="An account or invitation conflict exists for that email") from exc
+    audit(
+        "super_admin_invited",
+        actor=user,
+        target_type="user",
+        details=f"email={email}; expires_in_hours=24",
+    )
+    return {"invite_token": invite_token, "email": email, "expires_at": iso_time(now + timedelta(hours=24))}
+
+
+@router.post("/super-admin-invites/accept", status_code=201)
+def accept_super_admin_invite(payload: SuperAdminInviteAcceptRequest):
+    now = utc_now()
+    invite_expired = False
+    invite = None
+    user_id = None
+    try:
+        with connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            invite = connection.execute(
+                "SELECT * FROM super_admin_invites WHERE token_hash = ?",
+                (digest(payload.invite_token),),
+            ).fetchone()
+            if invite is None:
+                raise HTTPException(status_code=400, detail="This invitation is invalid or has expired")
+            if datetime.fromisoformat(invite["expires_at"]) <= now:
+                connection.execute(
+                    "DELETE FROM super_admin_invites WHERE token_hash = ?",
+                    (digest(payload.invite_token),),
+                )
+                invite_expired = True
+            else:
+                password_hash = _password_hash(payload.password)
+                cursor = connection.execute(
+                    """INSERT INTO users
+                       (email, display_name, role, active, is_super_admin, approval_status,
+                        password_hash, created_at, updated_at)
+                       VALUES (?, ?, 'admin', 1, 1, 'approved', ?, ?, ?) RETURNING id""",
+                    (invite["email"], invite["display_name"], password_hash, iso_time(now), iso_time(now)),
+                )
+                user_id = cursor.fetchone()["id"]
+                connection.execute(
+                    "DELETE FROM super_admin_invites WHERE token_hash = ?",
+                    (digest(payload.invite_token),),
+                )
+    except (sqlite3.IntegrityError, psycopg2.IntegrityError) as exc:
+        raise HTTPException(status_code=409, detail="An account with the invited email already exists") from exc
+
+    if invite_expired:
+        raise HTTPException(status_code=400, detail="This invitation is invalid or has expired")
+    audit(
+        "super_admin_invite_accepted",
+        actor={"id": user_id, "email": invite["email"]},
+        target_type="user",
+        target_id=user_id,
+    )
+    return {"email": invite["email"], "message": "Invitation accepted. Sign in with your password to set up Google Authenticator."}
 
 
 @router.get("/google/start")

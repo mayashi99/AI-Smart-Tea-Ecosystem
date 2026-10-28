@@ -158,6 +158,14 @@ are self-service. Pending and rejected accounts cannot start a session.
 The Super Admin account cannot be changed or deactivated through user management. It is also
 prevented from authenticating through Google OAuth; use its password and authenticator flow.
 
+To add another Super Admin, sign in as the current Super Admin and open **User Management**.
+Create an invitation under **Invite Super Admin**, then share the displayed one-time link using
+a trusted channel. The link expires after 24 hours and can only be used once; it is not emailed
+automatically. Creating a replacement link for the same email invalidates the previous link.
+The invitee chooses a password (at least 12 characters) and sets up Google
+Authenticator on their first password sign-in. The invitation token is stored hashed in the
+database and is not included in server request logs because it is carried in the URL fragment.
+
 To configure Google OAuth:
 
 1. Open Google Cloud Console and create or select a project.
