@@ -135,6 +135,24 @@ backend/ml/**/*.joblib
 backend/ml/**/*.keras
 *.joblib
 *.keras
+*.cbm
+
+# Keep ML source modules and lightweight metadata under backend/ml/models.
+# Large trained artifacts remain ignored by their file extensions above.
+!/backend/ml/models/
+/backend/ml/models/*
+!/backend/ml/models/component02/
+/backend/ml/models/component02/*
+!/backend/ml/models/component02/expected_yield_prediction/
+!/backend/ml/models/component02/expected_yield_prediction/**/
+
+# Preserve the expected-yield dataset directory layout without committing data.
+!/backend/ml/datasets/raw/component02/
+!/backend/ml/datasets/raw/component02/expected_yield_prediction/
+!/backend/ml/datasets/raw/component02/expected_yield_prediction/.gitkeep
+!/backend/ml/datasets/processed/component02/
+!/backend/ml/datasets/processed/component02/expected_yield_prediction/
+!/backend/ml/datasets/processed/component02/expected_yield_prediction/.gitkeep
 
 backend/.env
 

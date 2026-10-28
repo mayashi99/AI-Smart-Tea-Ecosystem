@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from app.components.Component02.expected_yield_prediction.catboost.catboost_predict import (
+from ml.models.component02.expected_yield_prediction.catboost.catboost_predict import (
     predict_yield,
 )
 
@@ -66,7 +66,7 @@ def predict_expected_yield(request: YieldPredictionRequest):
 
 @router.get("/trends")
 def yield_trends(grown_type: str = Query(default="HIGH grown")):
-    from .trends import build_trends
+    from ml.utils.component02.expected_yield_prediction.trends import build_trends
 
     try:
         return build_trends(grown_type)
