@@ -47,6 +47,7 @@ export default function ExportDemandPage() {
   const next12 = data ? sum(data.forecast || [], 'forecast_export_volume_kg') : 0
   const last12 = data ? sum((data.history || []).slice(-12), 'export_volume_kg') : 0
   const peak = data?.forecast?.length ? data.forecast.reduce((best, row) => (row.forecast_export_volume_kg > best.forecast_export_volume_kg ? row : best)) : null
+  const low = data?.forecast?.length ? data.forecast.reduce((lowest, row) => (row.forecast_export_volume_kg < lowest.forecast_export_volume_kg ? row : lowest)) : null
 
   const header = (
     <PageHeader
@@ -102,6 +103,23 @@ export default function ExportDemandPage() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+      </Card>
+
+      <Card
+        icon="globe"
+        title="AI Multi-Country Export Optimizer"
+        description="Use the national export forecast to plan shipment timing across your target markets."
+        actions={<Link className="btn btn-secondary" to="/trade-insights">Ask the AI Export Advisor</Link>}
+      >
+        <section className="stat-grid" aria-label="Forecast-based export planning">
+          <StatCard icon="trend" label="National forecast · next 12 months" value={`${formatCompact(next12 / 1000)} t`} hint="Planning baseline, not destination demand" />
+          <StatCard icon="target" tone="amber" label="Highest forecast month" value={peak ? formatDate(peak.date) : '—'} hint={peak ? `${formatCompact(peak.forecast_export_volume_kg / 1000)} t · plan capacity ahead` : 'No forecast available'} />
+          <StatCard icon="bars" tone="teal" label="Lowest forecast month" value={low ? formatDate(low.date) : '—'} hint={low ? `${formatCompact(low.forecast_export_volume_kg / 1000)} t · consider lower-volume shipments` : 'No forecast available'} />
+        </section>
+        <aside className="info-note optimizer-note">
+          <Icon name="info" size={22} />
+          <p>This forecast contains national monthly export totals only. It can guide shipment timing, but it does not include destination-level demand, import history, or price stability, so country opportunity scores and rankings cannot be calculated from it.</p>
+        </aside>
       </Card>
 
       <div className="grid-2">

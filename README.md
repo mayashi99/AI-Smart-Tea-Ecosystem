@@ -1,10 +1,6 @@
-## **AI Smart Tea Ecosystem 🍃**
+# CeylonTea IQ
 
-This document describes the work on the `feature/yield-intelligence` branch of
-the AI Smart Tea Ecosystem. It delivers Component 02: plantation-focused
-decision-support tools for Sri Lankan tea growers. The tools are intended to
-support field planning; they are not a replacement for agronomist inspections
-or operational harvest decisions.
+Ceylon tea intelligence platform for forecasting, export planning, market analysis, readiness, and traceability.
 
 ### Repository Structure
 

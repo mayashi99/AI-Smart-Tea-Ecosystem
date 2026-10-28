@@ -97,6 +97,10 @@ venv/
 .env/
 .venv312/
 .venv*/
+ 
+
+__pycache__/
+*.py[cod]
 
 .env
 /backend/.env
@@ -131,6 +135,9 @@ yarn-error.log*
 !/backend/ml/datasets/tests/
 !/backend/ml/datasets/tests/.gitkeep
 /backend/data/component04/passport_ledger.jsonl
+/backend/data/rbac.sqlite3
+/backend/data/rbac.sqlite3-shm
+/backend/data/rbac.sqlite3-wal
 backend/ml/**/*.joblib
 backend/ml/**/*.keras
 *.joblib

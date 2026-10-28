@@ -40,13 +40,25 @@ def list_passports() -> dict:
     return {"passports": list(batches.values()), "ledger_valid": verify_ledger()["valid"], "ledger_records": len(events)}
 
 
-def add_passport_event(batch_id: str, event_type: str, location: str, tea_grade: str, quantity_kg: float, note: str | None) -> dict:
+def add_passport_event(
+    batch_id: str,
+    event_type: str,
+    location: str,
+    tea_grade: str,
+    quantity_kg: float,
+    note: str | None,
+    quality_result: str | None = None,
+    evidence_reference: str | None = None,
+    actor_user_id: int | None = None,
+) -> dict:
     with _LOCK:
         events = _read_events()
         previous_hash = events[-1]["record_hash"] if events else GENESIS
         body = {"batch_id": batch_id, "event_type": event_type, "location": location,
                 "tea_grade": tea_grade, "quantity_kg": quantity_kg,
-                "note": note, "timestamp": datetime.now(timezone.utc).isoformat()}
+                "note": note, "quality_result": quality_result,
+                "evidence_reference": evidence_reference, "actor_user_id": actor_user_id,
+                "timestamp": datetime.now(timezone.utc).isoformat()}
         entry = _seal(body, previous_hash)
         LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
         with LEDGER_PATH.open("a", encoding="utf-8", newline="\n") as ledger:

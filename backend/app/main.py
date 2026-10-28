@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.auth import router as auth_router
 from app.api.component04 import router as component04_router
 from app.components.Component02.plantation_health.api import router as component02_router
 from app.components.Component02.harvest_readiness.YOLOv11.api import (
@@ -68,6 +69,7 @@ app.include_router(
 
 app.include_router(expected_yield_router)
 app.include_router(harvest_forecast_router)
+app.include_router(auth_router)
 app.include_router(component04_router)
 
 
@@ -77,7 +79,4 @@ app.include_router(component04_router)
 
 @app.get("/")
 def root():
-    return {
-        "message": "AI Smart Tea Ecosystem API",
-        "status": "running",
-    }
+    return {"message": "CeylonTea IQ API"}

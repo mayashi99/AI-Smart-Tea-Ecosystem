@@ -1,163 +1,340 @@
 import { useMemo } from 'react'
-import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import Icon from '../components/Icon'
 import { Card, ErrorState, Link, LoadingState, StatCard } from '../components/ui'
+import { useAuth } from '../lib/auth-context'
+import { canAccessPage, navigationForRole, roleLabels } from '../lib/permissions'
+import { navItems } from '../lib/routes'
 import { chartTheme } from '../lib/chartTheme'
 import { formatCompact, formatDate, formatNumber, pctChange, sum } from '../lib/format'
-import { navItems, workspaceRoles } from '../lib/routes'
-import { useLastEri, useSettings } from '../lib/settings'
+import { useLastEri } from '../lib/settings'
 import { endpoints, useApi } from '../services/api'
-import heroImage from '../assets/home-hero.jpg'
+import homeHeroImage from '../assets/home-hero.jpg'
 
-function greeting() {
+const roleIntros = {
+  admin: 'Manage the platform, users, traceability, and tea export intelligence from one workspace.',
+  export_manager: 'Plan exports with market intelligence, monthly forecasts, readiness checks, and batch traceability.',
+  quality_officer: 'Review export readiness, record evidence-backed quality checks, and verify batch documentation.',
+  data_analyst: 'Explore market signals, forecasting outputs, model performance, and analytics reports.',
+  farmer_seller: 'Manage your tea batches, follow traceability events, and track export-readiness requirements.',
+  viewer_buyer: 'Explore approved market intelligence and reports, and verify public tea passports using QR codes.',
+}
+
+const roleActions = {
+  admin: ['readiness', 'forecast'],
+  export_manager: ['readiness', 'forecast'],
+  quality_officer: ['readiness', 'traceability'],
+  data_analyst: ['forecast', 'market'],
+  farmer_seller: ['readiness', 'traceability'],
+  viewer_buyer: ['forecast', 'reports'],
+}
+
+function timeGreeting() {
   const hour = new Date().getHours()
-  return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function DemandTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="chart-tooltip">
+      <strong>{label}</strong>
+      {payload.filter((item) => item.value != null).map((item) => (
+        <span key={item.dataKey}><i style={{ background: item.color }} />{item.name}: <b>{formatCompact(item.value)} tonnes</b></span>
+      ))}
+    </div>
+  )
+}
+
+function PriceTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="chart-tooltip">
+      <strong>{label}</strong>
+      {payload.filter((item) => item.value != null).map((item) => (
+        <span key={item.dataKey}><i style={{ background: item.color }} />{item.name}: <b>LKR {formatNumber(item.value, 0)}/kg</b></span>
+      ))}
+    </div>
+  )
+}
+
+function EventTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return <div className="chart-tooltip"><strong>{label}</strong><span><i style={{ background: chartTheme.primary }} />Events: <b>{payload[0].value}</b></span></div>
 }
 
 export default function HomePage() {
-  const settings = useSettings()
+  const { user } = useAuth()
+  const role = user?.role
+  const canForecast = canAccessPage(role, 'forecast')
+  const canDashboard = canAccessPage(role, 'dashboard') && role !== 'farmer_seller'
+  const canTraceability = canAccessPage(role, 'traceability')
+  const canReadiness = canAccessPage(role, 'readiness') && role !== 'data_analyst'
+  const demand = useApi(endpoints.exportDemand, { enabled: canForecast })
+  const auction = useApi(endpoints.trainOutput, { enabled: canDashboard })
+  const passports = useApi(endpoints.passports, { enabled: canTraceability })
   const lastEri = useLastEri()
-  const demand = useApi(endpoints.exportDemand)
-  const price = useApi(endpoints.combinedAuctionPrice)
-  const ledger = useApi(endpoints.passports)
-  const zones = useApi(endpoints.zoneIntelligence)
+  const links = navigationForRole(navItems.filter((item) => item.key !== 'home'), role)
+  const actionKeys = roleActions[role] || []
+  const actions = actionKeys
+    .map((key) => links.find((item) => item.key === key))
+    .filter(Boolean)
+    .slice(0, 2)
 
-  const demandStats = useMemo(() => {
-    if (!demand.data) return null
-    const history = demand.data.history || []
+  const demandChart = useMemo(() => {
+    if (!demand.data) return []
+    const history = (demand.data.history || []).slice(-24)
     const forecast = demand.data.forecast || []
-    const next12 = sum(forecast, 'forecast_export_volume_kg')
-    const last12 = sum(history.slice(-12), 'export_volume_kg')
-    const chart = [
-      ...history.slice(-24).map((row) => ({ date: formatDate(row.date), historical: row.export_volume_kg / 1000, forecast: null })),
-      ...forecast.map((row) => ({ date: formatDate(row.date), historical: null, forecast: row.forecast_export_volume_kg / 1000 })),
+    return [
+      ...history.map((row) => ({ month: formatDate(row.date), historical: Number(row.export_volume_kg) / 1000, forecast: null })),
+      ...forecast.map((row) => ({ month: formatDate(row.date), historical: null, forecast: Number(row.forecast_export_volume_kg) / 1000 })),
     ]
-    // Bridge the forecast line to the last observed month so the series join visually.
-    const bridge = chart[Math.min(24, history.length) - 1]
-    if (bridge) bridge.forecast = bridge.historical
-    return { next12, last12, change: pctChange(next12, last12), accuracy: 100 - Number(demand.data.metrics?.mape ?? 100), model: demand.data.metrics?.model, chart }
   }, [demand.data])
 
-  const priceStats = useMemo(() => {
-    const history = price.data?.history || []
-    if (history.length < 2) return null
-    const latest = history.at(-1)
-    const previous = history.at(-2)
-    return { latest: latest.avg_price_lkr, month: formatDate(latest.date), change: pctChange(latest.avg_price_lkr, previous.avg_price_lkr) }
-  }, [price.data])
+  const priceChart = useMemo(() => {
+    if (!auction.data) return []
+    const zone = auction.data.default_zone || 'Total'
+    const history = (auction.data.predictions || []).filter((row) => row.growing_zone === zone)
+    const forecast = (auction.data.future_forecast || []).filter((row) => row.growing_zone === zone)
+    const rows = history.slice(-24).map((row) => ({
+      month: formatDate(row.auction_date),
+      actual: Number(row.actual_avg_price_lkr),
+      forecast: null,
+    }))
+    if (rows.length) rows[rows.length - 1].forecast = rows[rows.length - 1].actual
+    forecast.forEach((row) => rows.push({
+      month: formatDate(row.auction_date),
+      actual: null,
+      forecast: Number(row.lstm_forecast_avg_price_lkr),
+    }))
+    return rows
+  }, [auction.data])
 
-  const recentEvents = useMemo(() => (ledger.data?.passports || [])
-    .flatMap((passport) => passport.events)
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice(0, 5), [ledger.data])
+  const allEvents = useMemo(() => (passports.data?.passports || [])
+    .flatMap((passport) => passport.events.map((event) => ({ ...event, batch_id: passport.batch_id })))
+    .sort((first, second) => new Date(second.timestamp) - new Date(first.timestamp)), [passports.data])
 
-  const zoneChart = (zones.data?.zones || []).map((zone) => ({ zone: zone.zone.replace(' Growns', ''), price: zone.auction_price_lkr, share: zone.buyer_preference_share_pct }))
-  const quickLinks = navItems.filter((item) => !['home', 'settings'].includes(item.key))
-  const firstName = (settings.displayName || '').split(' ')[0]
+  const eventChart = useMemo(() => {
+    const counts = new Map()
+    allEvents.forEach((event) => counts.set(event.event_type, (counts.get(event.event_type) || 0) + 1))
+    return [...counts.entries()].map(([stage, count]) => ({ stage, count }))
+  }, [allEvents])
+
+  const next12Demand = demand.data ? sum(demand.data.forecast || [], 'forecast_export_volume_kg') : null
+  const previous12Demand = demand.data ? sum((demand.data.history || []).slice(-12), 'export_volume_kg') : null
+  const latestPrice = auction.data?.predictions?.filter((row) => row.growing_zone === (auction.data.default_zone || 'Total')).at(-1)
+  const accuracy = demand.data ? 100 - Number(demand.data.metrics?.mape ?? 100) : null
+  const batchCount = passports.data?.passports?.length
+  const recordCount = passports.data?.ledger_records
+  const latestQuantity = passports.data?.passports?.reduce((total, passport) => total + Number(passport.events.at(-1)?.quantity_kg || 0), 0)
+
+  const kpis = canForecast || canDashboard
+    ? [
+      ...(canForecast ? [{
+        icon: 'trend', tone: 'green', label: 'Forecast export demand · next 12 months',
+        value: next12Demand == null ? (demand.error ? 'Unavailable' : '…') : `${formatCompact(next12Demand / 1000)} t`,
+        trend: demand.data ? pctChange(next12Demand, previous12Demand) : null,
+        hint: demand.data ? 'vs latest 12 months' : demand.error || '',
+        to: '/demand-forecast',
+      }] : []),
+      ...(canDashboard ? [{
+        icon: 'coins', tone: 'amber', label: 'Latest average auction price',
+        value: latestPrice ? `LKR ${formatNumber(latestPrice.actual_avg_price_lkr, 0)}/kg` : auction.error ? 'Unavailable' : '…',
+        hint: latestPrice ? formatDate(latestPrice.auction_date) : auction.error || '',
+        to: '/dashboard',
+      }] : []),
+      ...(canForecast ? [{
+        icon: 'target', tone: 'blue', label: 'Demand model test accuracy',
+        value: accuracy == null ? (demand.error ? 'Unavailable' : '…') : `${formatNumber(accuracy, 1)}%`,
+        hint: accuracy == null ? demand.error || '' : '100% − holdout MAPE',
+        to: '/demand-forecast',
+      }] : []),
+      ...(canTraceability ? [{
+        icon: 'shield', tone: 'teal', label: 'Traceable tea batches',
+        value: batchCount == null ? (passports.error ? 'Unavailable' : '…') : batchCount,
+        hint: passports.data ? `${passports.data.ledger_valid ? 'Ledger verified' : 'Integrity issue'} · ${recordCount} records` : passports.error || '',
+        to: '/digital-passport',
+      }] : [{
+        icon: 'bars', tone: 'teal', label: 'Auction records analysed',
+        value: auction.data ? auction.data.predictions.length.toLocaleString() : auction.error ? 'Unavailable' : '…',
+        hint: auction.data ? `${auction.data.zones?.length || 0} growing zones` : auction.error || '',
+        to: '/dashboard',
+      }]),
+    ]
+    : [
+      { icon: 'package', tone: 'teal', label: 'Your batch passports', value: batchCount == null ? (passports.error ? 'Unavailable' : '…') : batchCount, hint: 'Assigned batch records', to: '/digital-passport' },
+      { icon: 'refresh', tone: 'blue', label: 'Traceability events', value: recordCount ?? (passports.error ? 'Unavailable' : '…'), hint: 'Hash-linked ledger records', to: '/digital-passport' },
+      { icon: 'leaf', tone: 'amber', label: 'Latest recorded quantity', value: latestQuantity == null ? (passports.error ? 'Unavailable' : '…') : `${formatCompact(latestQuantity)} kg`, hint: 'Sum of latest batch events', to: '/digital-passport' },
+      { icon: 'shield', tone: passports.data?.ledger_valid === false ? 'amber' : 'green', label: 'Ledger integrity', value: passports.data ? (passports.data.ledger_valid ? 'Verified' : 'Review needed') : passports.error ? 'Unavailable' : '…', hint: 'SHA-256 hash-chain status', to: '/digital-passport' },
+    ]
 
   return (
-    <div className="page-stack">
-      <section className="home-hero panel">
+    <div className="page-stack home-dashboard">
+      <section className="home-hero panel role-home-hero designed-home-hero">
+        <img className="hero-image" src={homeHeroImage} alt="" aria-hidden="true" />
         <div className="home-hero-copy">
-          <p className="eyebrow">TeaExportAI · Sri Lanka Tea Intelligence</p>
-          <h1>{greeting()}{firstName ? `, ${firstName}` : ''}</h1>
-          <p>Export planning, market intelligence and trusted batch traceability for Sri Lankan tea — powered by ML demand and auction price forecasts.</p>
-          <div className="button-row">
-            <Link className="btn btn-primary" to="/export-readiness"><Icon name="clipboard" size={18} />Check export readiness</Link>
-            <Link className="btn btn-secondary" to="/demand-forecast"><Icon name="trend" size={18} />View demand forecast</Link>
+          <p className="eyebrow">CeylonTea IQ · Sri Lanka Tea Intelligence</p>
+          <h1>{timeGreeting()}, {user?.display_name || 'Tea Export Partner'}</h1>
+          <p>{roleIntros[role] || 'Welcome to the Sri Lanka tea export intelligence workspace.'}</p>
+          <div className="home-hero-actions">
+            {actions.map((item, index) => (
+              <Link key={item.key} to={item.path} className={`btn ${index === 0 ? 'btn-primary' : 'btn-secondary'}`}>
+                <Icon name={item.icon} size={17} />
+                {item.key === 'readiness' ? 'Check export readiness'
+                  : item.key === 'forecast' ? 'View demand forecast'
+                    : item.key === 'traceability' ? 'Open traceability'
+                      : item.key === 'market' ? 'Explore market analysis'
+                        : item.label}
+              </Link>
+            ))}
           </div>
+          <span className="chip role-badge">{roleLabels[role]}</span>
         </div>
-        <img className="hero-image" src={heroImage} alt="" aria-hidden="true" />
       </section>
 
-      <section className="stat-grid" aria-label="Key statistics">
-        <StatCard icon="trend" label="Forecast export demand · next 12 months" value={demandStats ? `${formatCompact(demandStats.next12 / 1000)} t` : demand.error ? 'Unavailable' : '…'} trend={demandStats?.change} hint={demandStats ? 'vs latest 12 months' : demand.error} to="/demand-forecast" />
-        <StatCard icon="coins" tone="amber" label="Average auction price" value={priceStats ? `LKR ${formatNumber(priceStats.latest, 0)}/kg` : price.error ? 'Unavailable' : '…'} trend={priceStats?.change} hint={priceStats ? `${priceStats.month} vs prior month` : price.error} to="/dashboard" />
-        <StatCard icon="target" tone="blue" label="Demand model test accuracy" value={demandStats ? `${formatNumber(demandStats.accuracy, 1)}%` : '…'} hint={demandStats ? '100% − holdout MAPE' : demand.error} to="/demand-forecast" />
-        <StatCard icon="shield" tone="teal" label="Traceable tea batches" value={ledger.data ? formatNumber(ledger.data.passports.length, 0) : ledger.error ? 'Unavailable' : '…'} hint={ledger.data ? (ledger.data.ledger_valid ? `Ledger verified · ${ledger.data.ledger_records} records` : 'Ledger integrity issue') : ledger.error} to="/digital-passport" />
+      <section className="stat-grid home-kpis" aria-label="Tea export key performance indicators">
+        {kpis.slice(0, 4).map((item) => <StatCard key={item.label} {...item} />)}
       </section>
 
-      <div className="grid-2-1">
-        <Card icon="bars" title="Export demand analytics" description="Monthly national export volume (tonnes): last 24 months and the 12-month ML forecast." actions={<Link className="btn btn-ghost btn-sm" to="/demand-forecast">Details<Icon name="arrowRight" size={15} /></Link>}>
-          {demand.loading ? <LoadingState compact label="Loading export demand…" /> : demand.error ? <ErrorState compact message={demand.error} onRetry={demand.reload} /> : (
-            <div className="chart-box">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={demandStats.chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke={chartTheme.grid} vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke={chartTheme.axis} minTickGap={18} />
-                  <YAxis tick={{ fontSize: 11 }} stroke={chartTheme.axis} tickFormatter={formatCompact} width={48} />
-                  <Tooltip formatter={(value) => `${formatNumber(value, 0)} t`} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="historical" name="Historical" fill={chartTheme.primary} radius={[4, 4, 0, 0]} maxBarSize={18} />
-                  <Line dataKey="forecast" name="Forecast" stroke={chartTheme.primary} strokeDasharray="5 4" strokeWidth={2.4} dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} connectNulls={false} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+      <section className="home-analytics-grid" aria-label="Tea export analytics">
+        <Card
+          className="home-chart-card home-chart-primary"
+          icon="bars"
+          title={canForecast ? 'Export demand analytics' : 'Traceability activity'}
+          description={canForecast ? 'Monthly national export volume (tonnes): recent history and the 12-month ML forecast.' : 'Recorded batch stages across your accessible traceability ledger.'}
+          actions={<Link className="home-details-link" to={canForecast ? '/demand-forecast' : '/digital-passport'}>Details <Icon name="arrowRight" size={15} /></Link>}
+        >
+          {canForecast ? demand.error
+            ? <ErrorState compact message={`Demand forecast unavailable: ${demand.error}`} onRetry={demand.reload} />
+            : !demand.data ? <LoadingState compact label="Loading export demand…" />
+              : demandChart.length ? (
+                <div className="chart-box home-chart-box">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={demandChart} margin={{ top: 8, right: 8, left: -12, bottom: 2 }}>
+                      <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+                      <XAxis dataKey="month" minTickGap={20} stroke={chartTheme.axis} tick={{ fontSize: 11 }} />
+                      <YAxis stroke={chartTheme.axis} tickFormatter={formatCompact} width={52} tick={{ fontSize: 11 }} />
+                      <Tooltip content={<DemandTooltip />} />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="historical" name="Historical" fill={chartTheme.primary} radius={[3, 3, 0, 0]} maxBarSize={20} />
+                      <Line type="monotone" dataKey="forecast" name="Forecast" stroke={chartTheme.primary} strokeWidth={2.5} strokeDasharray="5 4" dot={false} connectNulls />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : <p className="field-hint">No export demand history or forecast is available yet.</p>
+            : passports.error
+              ? <ErrorState compact message={`Traceability data unavailable: ${passports.error}`} onRetry={passports.reload} />
+              : !passports.data ? <LoadingState compact label="Loading traceability activity…" />
+                : eventChart.length ? (
+                  <div className="chart-box home-chart-box">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={eventChart} margin={{ top: 12, right: 8, left: -12, bottom: 2 }}>
+                        <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+                        <XAxis dataKey="stage" interval={0} angle={-18} textAnchor="end" height={52} stroke={chartTheme.axis} tick={{ fontSize: 10 }} />
+                        <YAxis allowDecimals={false} stroke={chartTheme.axis} width={38} tick={{ fontSize: 11 }} />
+                        <Tooltip content={<EventTooltip />} />
+                        <Bar dataKey="count" name="Events" fill={chartTheme.primary} radius={[4, 4, 0, 0]} maxBarSize={32} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : <p className="field-hint">No traceability events have been recorded yet.</p>}
         </Card>
 
-        <Card icon="clipboard" title="Export readiness" description="Your most recent Export Readiness Index.">
-          {lastEri ? (
-            <div className="eri-snapshot">
-              <div className="mini-gauge" style={{ '--progress': `${lastEri.score}%` }}><div><strong>{lastEri.score}</strong><span>/ 100</span></div></div>
-              <div className={`verdict ${lastEri.score >= 80 ? 'is-ready' : ''}`}><strong>{lastEri.band}</strong><span>{lastEri.destination_country} · {new Date(lastEri.saved_at).toLocaleDateString()}</span></div>
-              {lastEri.criteria?.length > 0 && <ul className="snapshot-list">{lastEri.criteria.map((item) => <li key={item.key}><span>{item.label}</span><b>{Math.round(item.score)}</b></li>)}</ul>}
-              <Link className="btn btn-primary btn-block" to="/export-readiness">Update assessment</Link>
+        <Card className="home-readiness-card" icon="clipboard" title={canReadiness ? 'Export readiness' : 'Your workspace'} description={canReadiness ? 'Your most recent Export Readiness Index.' : 'Quick access to the tools available for your account.'}>
+          {canReadiness && lastEri ? (
+            <div className="home-readiness">
+              <div className="home-readiness-icon"><Icon name="clipboard" size={27} /></div>
+              <strong className="home-readiness-score">{lastEri.score}<small>/100</small></strong>
+              <span className="chip">{lastEri.band || 'Latest assessment'}</span>
+              <p>{lastEri.destination_country ? `Assessment for ${lastEri.destination_country}` : 'Latest readiness assessment'}{lastEri.saved_at ? ` · ${formatDate(lastEri.saved_at)}` : ''}</p>
+              <Link className="btn btn-primary home-readiness-action" to="/export-readiness">View assessment</Link>
             </div>
-          ) : (
-            <div className="eri-snapshot is-empty">
-              <span className="empty-illustration"><Icon name="clipboard" size={34} /></span>
+          ) : canReadiness ? (
+            <div className="home-readiness is-empty">
+              <div className="home-readiness-icon"><Icon name="clipboard" size={27} /></div>
               <strong>No assessment yet</strong>
-              <p>Combine demand forecast evidence with your capacity, documents and quality status to get an explainable score.</p>
-              <Link className="btn btn-primary btn-block" to="/export-readiness">Calculate ERI</Link>
+              <p>Combine demand evidence with your capacity, documents and quality status to get an explainable score.</p>
+              <Link className="btn btn-primary home-readiness-action" to="/export-readiness">Calculate ERI</Link>
+            </div>
+          ) : (
+            <div className="home-module-shortcuts">
+              {links.slice(0, 3).map((item) => (
+                <Link key={item.key} to={item.path} className="home-module-link">
+                  <span className="stat-icon tone-green"><Icon name={item.icon} size={18} /></span>
+                  <span><strong>{item.label}</strong><small>{item.description}</small></span>
+                  <Icon name="arrowRight" size={16} />
+                </Link>
+              ))}
             </div>
           )}
         </Card>
-      </div>
+      </section>
 
-      <div className="grid-2">
-        <Card icon="coins" title="Auction price by growing zone" description="Latest zone-level average auction price (LKR/kg) and share of auction quantity." actions={<Link className="btn btn-ghost btn-sm" to="/market-analysis">Analyse<Icon name="arrowRight" size={15} /></Link>}>
-          {zones.loading ? <LoadingState compact /> : zones.error ? <ErrorState compact message={zones.error} onRetry={zones.reload} /> : (
-            <>
-              <div className="chart-box is-short">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={zoneChart} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid stroke={chartTheme.grid} horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11 }} stroke={chartTheme.axis} tickFormatter={formatCompact} />
-                    <YAxis type="category" dataKey="zone" tick={{ fontSize: 12 }} stroke={chartTheme.axis} width={64} />
-                    <Tooltip formatter={(value) => `LKR ${formatNumber(value)}/kg`} />
-                    <Bar dataKey="price" name="Avg price" radius={[0, 6, 6, 0]} maxBarSize={26}>
-                      {zoneChart.map((item, index) => <Cell key={item.zone} fill={chartTheme.palette[index % chartTheme.palette.length]} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="chip-row">{zoneChart.map((item) => <span className="chip" key={item.zone}>{item.zone}: {item.share}% of quantity</span>)}</div>
-            </>
-          )}
-        </Card>
+      <section className={`home-lower-grid ${canDashboard && canTraceability ? 'has-two-panels' : ''}`} aria-label="Additional intelligence">
+        {canDashboard && (
+          <Card
+            className="home-chart-card"
+            icon="trend"
+            title="Auction price trend"
+            description="Monthly average auction price (LKR/kg), actual history and forecast."
+            actions={<Link className="home-details-link" to="/dashboard">Details <Icon name="arrowRight" size={15} /></Link>}
+          >
+            {auction.error
+              ? <ErrorState compact message={`Auction price data unavailable: ${auction.error}`} onRetry={auction.reload} />
+              : !auction.data ? <LoadingState compact label="Loading auction price data…" />
+                : priceChart.length ? (
+                  <div className="chart-box home-chart-box">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={priceChart} margin={{ top: 8, right: 8, left: -12, bottom: 2 }}>
+                        <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+                        <XAxis dataKey="month" minTickGap={20} stroke={chartTheme.axis} tick={{ fontSize: 11 }} />
+                        <YAxis stroke={chartTheme.axis} tickFormatter={(value) => formatCompact(value)} width={52} tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
+                        <Tooltip content={<PriceTooltip />} />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                        <Line type="monotone" dataKey="actual" name="Historical price" stroke={chartTheme.primary} strokeWidth={2.3} dot={false} />
+                        <Line type="monotone" dataKey="forecast" name="Forecast" stroke={chartTheme.accent} strokeWidth={2.5} strokeDasharray="5 4" dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : <p className="field-hint">No auction price history or forecast is available yet.</p>}
+          </Card>
+        )}
 
-        <Card icon="shield" title="Recent traceability activity" description="Latest events in the hash-linked Digital Passport ledger." actions={<Link className="btn btn-ghost btn-sm" to="/digital-passport">Open ledger<Icon name="arrowRight" size={15} /></Link>}>
-          {ledger.loading ? <LoadingState compact /> : ledger.error ? <ErrorState compact message={ledger.error} onRetry={ledger.reload} /> : recentEvents.length === 0 ? (
-            <div className="state-box is-compact"><Icon name="package" size={22} /><span>No batches recorded yet.</span><Link className="btn btn-ghost btn-sm" to="/digital-passport">Register a batch</Link></div>
-          ) : (
-            <ul className="activity-list">
-              {recentEvents.map((event) => (
-                <li key={event.record_hash}>
-                  <span className="activity-dot" />
-                  <div><strong>{event.batch_id} · {event.event_type}</strong><small>{event.location} · {event.tea_grade} · {formatNumber(event.quantity_kg)} kg</small></div>
-                  <time dateTime={event.timestamp}>{new Date(event.timestamp).toLocaleDateString()}</time>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
+        {canTraceability && (
+          <Card
+            className="home-activity-card"
+            icon="shield"
+            title="Recent batch activity"
+            description="Latest events from the batches available to your account."
+            actions={<Link className="home-details-link" to="/digital-passport">All batches <Icon name="arrowRight" size={15} /></Link>}
+          >
+            {passports.error
+              ? <ErrorState compact message={`Traceability data unavailable: ${passports.error}`} onRetry={passports.reload} />
+              : !passports.data ? <LoadingState compact label="Loading batch activity…" />
+                : allEvents.length ? (
+                  <ul className="home-activity-list">
+                    {allEvents.slice(0, 5).map((event) => (
+                      <li key={event.record_hash}>
+                        <span className="activity-dot" />
+                        <div><strong>{event.batch_id} · {event.event_type}</strong><small>{event.location} · {event.tea_grade}</small></div>
+                        <time dateTime={event.timestamp}>{new Date(event.timestamp).toLocaleDateString()}</time>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="field-hint">No batches are available yet. Add an event to start a passport.</p>}
+          </Card>
+        )}
+      </section>
 
-      <section>
-        <div className="section-title"><h2>Quick access</h2><p>Jump into any module of the platform.</p></div>
+      <section className="home-modules-section">
+        <div className="home-section-heading">
+          <div><p className="eyebrow">Your workspace</p><h2>Available modules</h2></div>
+          <span>{links.length} tools for {roleLabels[role] || 'your account'}</span>
+        </div>
         <div className="quick-grid">
-          {quickLinks.map((item) => (
+          {links.map((item) => (
             <Link key={item.key} to={item.path} className="quick-card panel">
               <span className="stat-icon tone-green"><Icon name={item.icon} size={22} /></span>
               <strong>{item.label}</strong>
@@ -168,19 +345,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section>
-        <div className="section-title"><h2>Workspaces</h2><p>Role-based starting points for sellers, the Tea Board and buyers.</p></div>
-        <div className="quick-grid is-three">
-          {Object.entries(workspaceRoles).map(([key, role]) => (
-            <Link key={key} to={role.path} className={`quick-card panel workspace-card ${settings.role === key ? 'is-current' : ''}`}>
-              <span className="stat-icon tone-teal"><Icon name="user" size={22} /></span>
-              <strong>{role.title}{settings.role === key && <em className="chip">Your role</em>}</strong>
-              <p>{role.intro}</p>
-              <span className="quick-arrow"><Icon name="arrowRight" size={18} /></span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {role === 'viewer_buyer' && (
+        <Card icon="shield" title="Verify a public tea passport" description="Use the public link from a batch QR code to review its published traceability timeline.">
+          <p className="field-hint">Public passports are read-only and do not require sign-in. Private seller details and internal evidence are not included.</p>
+        </Card>
+      )}
     </div>
   )
 }

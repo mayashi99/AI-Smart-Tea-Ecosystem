@@ -16,6 +16,7 @@ export const navItems = [
   { key: 'yield-trends', group: 'plantation', label: 'Yield Prediction', path: '/yield-trends', icon: 'trend', description: 'Review historical yield and forecast trends by grown type.' },
   { key: 'harvest-quality', group: 'plantation', label: 'Harvest Quality', path: '/harvest-quality', icon: 'check', description: 'Assess tea-leaf quality and harvest conditions.' },
   { key: 'settings', group: 'system', label: 'Settings', path: '/settings', icon: 'settings', description: 'Profile, defaults and system status.' },
+  { key: 'user-management', group: 'system', label: 'User Management', path: '/user-management', icon: 'user', description: 'Manage accounts, roles and audit activity.' },
 ]
 
 export const component02Routes = [
@@ -36,7 +37,12 @@ export const workspaceRoles = {
 }
 
 export function matchRoute(path) {
-  const item = [...navItems, ...component02Routes].find((nav) => nav.path === path || nav.aliases?.includes(path))
+  const publicPassport = path.match(/^\/passport\/([A-Za-z0-9_-]{20,100})$/)
+  if (publicPassport) return { key: 'public-passport', publicId: publicPassport[1] }
+  if (path === '/login') return { key: 'login' }
+  if (path === '/signup') return { key: 'signup' }
+  if (path === '/welcome') return { key: 'landing' }
+  const item = navItems.find((nav) => nav.path === path || nav.aliases?.includes(path))
   if (item) return { key: item.key, item }
   const role = Object.keys(workspaceRoles).find((key) => workspaceRoles[key].path === path)
   if (role) return { key: 'workspace', role }

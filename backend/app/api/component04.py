@@ -2,12 +2,20 @@ import json
 from pathlib import Path
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from typing import Literal
 from urllib.parse import quote, urlsplit
 from io import BytesIO
 
+from app.core.rbac import (
+    audit,
+    ensure_passport_batch,
+    get_passport_batch,
+    get_public_batch,
+    require_permission,
+    role_has_permission,
+)
 from app.services.component04.digital_passport import add_passport_event, list_passports, verify_ledger
 from app.services.component04.export_advisor import make_recommendations
 from app.services.component04.export_readiness import calculate_export_readiness
@@ -42,6 +50,8 @@ class PassportEventRequest(BaseModel):
     tea_grade: str = Field(min_length=1, max_length=80)
     quantity_kg: float = Field(gt=0, le=100_000_000)
     note: str | None = Field(default=None, max_length=500)
+    quality_result: Literal["pass", "fail", "pending"] | None = None
+    evidence_reference: str | None = Field(default=None, max_length=300)
 
 
 class ZoneQualityRequest(BaseModel):
@@ -81,7 +91,7 @@ def read_csv(path: Path) -> pd.DataFrame:
 
 
 @router.get("/train-output")
-def get_train_output():
+def get_train_output(user: dict = Depends(require_permission("dashboard:view"))):
     metrics_df = read_csv(METRICS_FILE)
     predictions_df = read_csv(PREDICTIONS_FILE)
     forecast_df = read_csv(FORECAST_FILE)
@@ -179,7 +189,7 @@ def get_train_output():
 
 
 @router.get("/export-demand")
-def get_export_demand():
+def get_export_demand(user: dict = Depends(require_permission("forecast:view"))):
     """Return monthly export volume history, holdout predictions, and forecast."""
     if not EXPORT_METRICS_FILE.exists():
         raise HTTPException(status_code=404, detail="Export demand model is not trained yet")
@@ -201,7 +211,7 @@ def get_export_demand():
 
 
 @router.get("/combined-auction-price")
-def get_combined_auction_price():
+def get_combined_auction_price(user: dict = Depends(require_permission("dashboard:view"))):
     """Return best-model monthly price forecast from the combined workbook."""
     if not COMBINED_PRICE_METRICS_FILE.exists():
         raise HTTPException(status_code=404, detail="Combined auction price model is not trained yet")
@@ -219,7 +229,7 @@ def get_combined_auction_price():
 
 
 @router.get("/usd-forecast")
-def get_usd_forecast():
+def get_usd_forecast(user: dict = Depends(require_permission("usd_forecast:view"))):
     """Return USD/LKR model comparisons, holdout predictions, and future forecasts."""
     metadata_file = USD_FORECAST_DIR / "forecast_metadata.json"
     comparison_file = USD_FORECAST_DIR / "model_comparison.csv"
@@ -253,7 +263,7 @@ def get_usd_forecast():
 
 
 @router.post("/export-advisor")
-def post_export_advisor(request: ExportAdvisorRequest):
+def post_export_advisor(request: ExportAdvisorRequest, user: dict = Depends(require_permission("insights:view"))):
     """Generate export planning recommendations grounded in local data and RAG documents."""
     try:
         preferences = request.model_dump(exclude={"question"})
@@ -267,7 +277,7 @@ def post_export_advisor(request: ExportAdvisorRequest):
 
 
 @router.post("/export-readiness")
-def post_export_readiness(request: ExportReadinessRequest):
+def post_export_readiness(request: ExportReadinessRequest, user: dict = Depends(require_permission("readiness:calculate"))):
     expected_documents = {"business_registration", "tea_board_registration", "quality_certificate", "origin_certificate", "shipment_plan"}
     if set(request.documents) != expected_documents:
         raise HTTPException(status_code=422, detail=f"documents must contain exactly: {', '.join(sorted(expected_documents))}")
@@ -280,17 +290,62 @@ def post_export_readiness(request: ExportReadinessRequest):
 
 
 @router.get("/digital-passports")
-def get_digital_passports():
-    return list_passports()
+def get_digital_passports(user: dict = Depends(require_permission("traceability:view"))):
+    result = list_passports()
+    visible = []
+    for passport in result["passports"]:
+        batch = ensure_passport_batch(passport["batch_id"])
+        if user["role"] == "farmer_seller" and batch["owner_user_id"] != user["id"]:
+            continue
+        passport["public_id"] = batch["public_id"]
+        visible.append(passport)
+    result["passports"] = visible
+    return result
 
 
 @router.post("/digital-passports/events")
-def post_digital_passport_event(request: PassportEventRequest):
-    return add_passport_event(**request.model_dump())
+def post_digital_passport_event(
+    request: PassportEventRequest,
+    user: dict = Depends(require_permission("traceability:write")),
+):
+    quality_fields_present = bool(request.quality_result and request.evidence_reference)
+    if request.event_type == "Quality checked" and not quality_fields_present:
+        raise HTTPException(
+            status_code=422,
+            detail="A quality result and evidence reference are required; a missing evidence record cannot be marked compliant",
+        )
+    if request.event_type != "Quality checked" and (request.quality_result or request.evidence_reference):
+        raise HTTPException(status_code=422, detail="Quality evidence is only valid for a Quality checked event")
+    if user["role"] == "quality_officer" and request.event_type != "Quality checked":
+        raise HTTPException(status_code=403, detail="Quality officers may only record evidence-backed quality checks")
+    if user["role"] == "farmer_seller" and request.event_type not in {"Batch created", "Collected", "Processed", "Packed"}:
+        raise HTTPException(status_code=403, detail="Sellers may only submit batch, collection, processing, and packing events")
+
+    batch = get_passport_batch(request.batch_id)
+    if user["role"] == "farmer_seller":
+        if batch and batch["owner_user_id"] != user["id"]:
+            raise HTTPException(status_code=403, detail="You can only update batches assigned to your account")
+        if not batch:
+            batch = ensure_passport_batch(request.batch_id, user["id"])
+    else:
+        batch = batch or ensure_passport_batch(request.batch_id, user["id"])
+
+    fields = request.model_dump()
+    entry = add_passport_event(**fields, actor_user_id=user["id"])
+    audit(
+        "traceability_event_created",
+        actor=user,
+        target_type="batch",
+        target_id=request.batch_id,
+        details=f"event_type={request.event_type}",
+    )
+    return {**entry, "public_id": batch["public_id"]}
 
 
 @router.get("/digital-passports/verify")
-def get_digital_passport_verification():
+def get_digital_passport_verification(user: dict = Depends(require_permission("traceability:view"))):
+    if user["role"] == "farmer_seller":
+        raise HTTPException(status_code=403, detail="Global ledger verification is not available to seller accounts")
     return verify_ledger()
 
 
@@ -299,6 +354,7 @@ def get_digital_passport_qr(
     batch_id: str = Query(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$"),
     base_url: str = Query(min_length=8, max_length=300),
     download: bool = False,
+    user: dict = Depends(require_permission("traceability:view")),
 ):
     """Generate a downloadable PNG QR code that opens the selected batch passport."""
     parsed_url = urlsplit(base_url)
@@ -307,11 +363,14 @@ def get_digital_passport_qr(
     passport = next((item for item in list_passports()["passports"] if item["batch_id"] == batch_id), None)
     if passport is None:
         raise HTTPException(status_code=404, detail="Batch passport not found")
+    batch = ensure_passport_batch(batch_id)
+    if user["role"] == "farmer_seller" and batch["owner_user_id"] != user["id"]:
+        raise HTTPException(status_code=403, detail="You can only generate QR codes for your own batches")
     try:
         import qrcode
     except ImportError as exc:
         raise HTTPException(status_code=503, detail="Install backend QR dependency with pip install -r requirements.txt") from exc
-    passport_url = f"{base_url.rstrip('/')}/digital-passport?batch={quote(batch_id)}"
+    passport_url = f"{base_url.rstrip('/')}/passport/{quote(batch['public_id'])}"
     image = qrcode.make(passport_url)
     output = BytesIO()
     image.save(output, format="PNG")
@@ -323,8 +382,29 @@ def get_digital_passport_qr(
     )
 
 
+@router.get("/digital-passports/public/{public_id}")
+def get_public_digital_passport(public_id: str):
+    batch = get_public_batch(public_id)
+    if batch is None:
+        raise HTTPException(status_code=404, detail="Public passport not found")
+    passport = next(
+        (item for item in list_passports()["passports"] if item["batch_id"] == batch["batch_id"]),
+        None,
+    )
+    if passport is None:
+        raise HTTPException(status_code=404, detail="Public passport not found")
+    return {
+        "batch_id": passport["batch_id"],
+        "events": [
+            {"event_type": event["event_type"], "timestamp": event["timestamp"]}
+            for event in passport["events"]
+        ],
+        "ledger_verified": verify_ledger()["valid"],
+    }
+
+
 @router.get("/zone-intelligence")
-def get_zone_intelligence():
+def get_zone_intelligence(user: dict = Depends(require_permission("market:view"))):
     try:
         return get_zone_intelligence_data()
     except FileNotFoundError as exc:
@@ -334,7 +414,7 @@ def get_zone_intelligence():
 
 
 @router.post("/zone-intelligence/score")
-def post_zone_intelligence_score(request: ZoneQualityRequest):
+def post_zone_intelligence_score(request: ZoneQualityRequest, user: dict = Depends(require_permission("zone_score:calculate"))):
     try:
         return calculate_zone_quality(**request.model_dump())
     except FileNotFoundError as exc:
