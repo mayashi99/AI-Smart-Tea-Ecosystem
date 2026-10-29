@@ -1,168 +1,70 @@
-# AI Smart Tea Ecosystem
+## Component 01 — Disease Intelligence System
+**AI-Powered Climate-Aware Tea Disease Intelligence System**  
 
-AI-powered smart tea ecosystem for the Sri Lankan tea industry.
+### Overview
+TeaGuard helps explore tea-leaf disease detection, historical climate and disease patterns, and short-term plantation disease forecasting. It combines a **React frontend**, **FastAPI backend**, and trained ML models to support field-officer decisions.
 
-## Component 04
+### Main Features
+- **Disease detection:** Classifies eligible tea-leaf images as **Brown Blight, Grey Leaf, Healthy, Red Rust, or Red Spider Mite** using EfficientNet-B0.
+- **Explainable AI:** **Grad-CAM++** highlights image areas influencing a prediction.
+- **Climate & incidence:** Displays historical rainfall, temperature, humidity and disease context. Observed incidence (%) = symptomatic bushes / inspected bushes × 100.
+- **7-day forecasting:** Estimates **disease activity, incidence and new onset** for **16 conceptual estate blocks**, separately for days 1–7.
+- **Field observations:** Officers enter block, disease and inspected/symptomatic bush counts to **preview** or **save** a recalculated forecast.
+- **Alerts & guidance:** Historical/demo risk indicators and rule-based disease-management suggestions.
+- **Interface:** Seven pages—Dashboard, Disease Detection, Climate & Severity, Field Observations, Spread Forecast, Alerts & Risk, and Recommendations—with English, Sinhala and Tamil UI resources.
 
-The Component 04 dashboard has three pages:
+### Data, Models & Results
+| Area | Implementation |
+|---|---|
+| Image classification | **5 classes**, **5,767 development images** (4,041 train / 863 validation / 863 test). **White Spot is not included.** |
+| Selected CNN | Fine-tuned **EfficientNet-B0**; **98.38% development-test accuracy**, **0.9842 macro F1**. |
+| Climate data | Historical **NASA POWER** daily data (2011-01-01 to 2026-08-09). |
+| Spread forecasting | **4 disease categories**, **16 blocks**, **7 days**; uses simulated disease histories and historical climate. |
+| Forecast models | Validation-selected **Random Forest, LightGBM, XGBoost and LSTM**, depending on target/day. **GCN-LSTM** was evaluated but not selected for final inference. |
 
-- `/auction-price` — auction price forecasts, including the combined sales-and-price workbook
-- `/export-demand` — LSTM monthly tea export-volume forecast
-- `/export-advisor` — RAG-grounded, explainable export planning recommendations
-- `/export-readiness` — evidence-based Export Readiness Index (ERI)
-- `/digital-passport` — tea batch traceability passport and ledger verification
-- `/zone-intelligence` — weighted, explainable growing-zone quality scores
+For one selected disease, an officer-assisted forecast returns **16 blocks × 7 days = 112 predictions**. The submitted inspection is current input; other block/climate information comes from **historical seasonal context**, not live weather.
 
-The Export Advisor retrieves evidence from the forecast metrics, monthly history, and local planning
-guides. It shows the sources and evidence IDs behind every recommendation. It retrieves relevant
-knowledge-base passages and uses them with the export data as grounded context for LLM synthesis.
-Set `LLM_API_KEY` in `backend/.env` to use OpenAI; it defaults to `https://api.openai.com/v1`
-with model `gpt-4o-mini`. Without a key it defaults to local Ollama at
-`http://localhost:11434/v1` with model `llama3.1` (start Ollama and pull that model first).
-Override `LLM_API_BASE_URL` and `LLM_MODEL` to use another OpenAI-compatible endpoint. If the
-endpoint is unavailable, the advisor returns its explainable rule-based recommendations and
-reports the LLM status in its response.
+### Project Files
+```text
+backend/app/components/Component01/
+├── api/                 # FastAPI (step45_app.py)
+├── src/                 # M01 data, M02 CNN, M03 climate,
+│                       # M04 forecasting, M05 explanations/alerts
+├── data/                # Research and local runtime data
+├── models/              # Saved trained model files
+├── outputs/             # Reports and evaluation results
+└── requirements.txt
 
-## Component 04: Auction Price Forecasting
+frontend/src/components/Component01/
+├── pages/               # Seven TeaGuard pages
+├── services/api.js
+└── Component01App.jsx
+```
 
-This project now uses an LSTM-only model for tea auction price forecasting. The old ARIMA and ARIMA + LSTM hybrid artifacts were removed.
+### Run Locally (Windows PowerShell)
+**Requirements:** Python 3.13 (development setup), Node.js/npm, component data and saved model files. Run from the **group repository root**.
 
-### Current LSTM Output
-
-The pipeline trains one LSTM model per growing zone:
-
-| Growing zone | MAE | RMSE | Train period | Test period |
-| --- | ---: | ---: | --- | --- |
-| High Growns | 203.85 | 270.33 | Sep 2011 - Jun 2023 | Jul 2023 - May 2026 |
-| Low Growns | 961.83 | 1128.91 | Sep 2011 - Jun 2023 | Jul 2023 - May 2026 |
-| Medium Growns | 488.82 | 593.72 | Sep 2011 - May 2023 | Jun 2023 - May 2026 |
-| Total | 267.82 | 342.54 | Sep 2011 - May 2023 | Jun 2023 - May 2026 |
-
-Model setup:
-
-- Framework: TensorFlow/Keras LSTM when available, otherwise a NumPy fallback trainer
-- Lookback: 12 months
-- Hidden size: 128
-- Epochs: 200
-- Recursive prediction: enabled for multi-step forecasting
-- Forecast horizon: 12 months
-
-### Generated Files
-
-Processed data:
-
-- `backend/ml/datasets/processed/component04/auction_price_clean.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_train.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_test.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_predictions.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_future_forecast.csv`
-- `backend/ml/datasets/processed/component04/auction_price_lstm_metrics.csv`
-
-## Component 04: Export Demand Forecasting
-
-The export-volume model uses the monthly history in
-`backend/ml/datasets/raw/component04/Tea_Export_Demand_Forecast_Dataset.xlsx`. The LSTM pipeline uses
-2016-2023 for training, 2024 for recursive validation and configuration selection, and 2025 for a
-recursive test. It then refits the selected LSTM on all 2016-2025 observations for the next 12 months.
-The aggregate demand forecast does not split results by country, tea process, or package.
-
-### Train Again
-
-From the repository root:
-
+**Backend:**
 ```powershell
-backend\.venv312\Scripts\python.exe -m backend.ml.training.component04.train_export_demand_lstm
+py -3.13 -m venv backend\app\components\Component01\.venv
+.\backend\app\components\Component01\.venv\Scripts\Activate.ps1
+pip install -r backend\app\components\Component01\requirements.txt
+$env:TEA_CNN_CHECKPOINT = 'models/image/development_only/step17_step47_friend_laptop01/efficientnet_b0_finetuned_best_dev_only.pt'
+python -m uvicorn step45_app:app --app-dir backend/app/components/Component01/api --host 127.0.0.1 --port 8015 --workers 1
 ```
-
-Generated files are in `backend/ml/datasets/processed/component04/`:
-
-- `export_demand_monthly.csv`
-- `export_demand_test_predictions.csv`
-- `export_demand_forecast.csv`
-- `export_demand_metrics.json`
-
-The API endpoint is `/api/component04/export-demand`. The frontend provides a separate Export Demand
-page at `/export-demand`; the Auction Price page remains at `/`.
-
-Advisor API: `POST /api/component04/export-advisor` with JSON such as:
-
-```json
-{
-  "question": "How should we plan export volumes for the next 12 months?",
-  "destination_country": null,
-  "business_goal": "plan seasonal inventory"
-}
-```
-
-### Export Readiness Index and Digital Passport
-
-The ERI page combines export-demand forecast metrics with user-declared monthly capacity,
-document checks, and quality-control readiness. Its weighted criteria and recommendations are
-shown with the evidence used for each score. It is a planning aid, not an official certification
-or destination-specific compliance assessment. API: `POST /api/component04/export-readiness`.
-
-The conversational AI Export Advisor is at `/export-advisor`. Its optional zone context can be
-passed from the Zone Intelligence page and is added to the retrieved evidence before recommendations
-are generated.
-
-The Zone Intelligence Engine scores High, Medium, and Low Growns using the supplied weights:
-auction price (35%), export success rate (25%), buyer preference (20%), historical demand (10%),
-and climate suitability (10%). Auction price and quantity-based demand signals come from the
-zone auction dataset; quantity share is explicitly a buyer-preference proxy. The supplied data
-does not contain zone-level export success or climate observations, so those two scores are
-entered with optional evidence notes instead of being fabricated. Use “Use this score in Export
-Advisor” to pass the selected score into its grounded export recommendation. API routes:
-`GET /api/component04/zone-intelligence` and `POST /api/component04/zone-intelligence/score`.
-
-The Digital Passport page records batch events (collection, processing, quality checks, packing,
-export, and receipt) in `backend/data/component04/passport_ledger.jsonl`. Every event includes the
-previous record hash and its own SHA-256 hash; `GET /api/component04/digital-passports/verify`
-checks the chain. This local prototype is tamper-evident but is not connected to a distributed
-blockchain network. The ledger is gitignored because it can contain operational traceability data.
-After saving a batch event, its passport page displays a QR code and provides a PNG download.
-The QR opens that batch passport on the same frontend site; sellers should use the deployed,
-phone-accessible site URL when generating codes for customers.
-
-### Combined Workbook Auction Price Forecast
-
-`backend/ml/datasets/raw/component04/Combined_Sales_Quantity_and_Price_Single_Sheet_2016_2026.xlsx`
-contains weekly rows with repeated monthly price aggregates. The pipeline keeps one monthly average
-price per month, compares baselines and ML regressors using rolling validation through 2024, tests on
-2025, and refits the selected model through the latest available month for a 12-month forecast.
-
-```powershell
-.\.venv\Scripts\python.exe -m backend.ml.training.component04.train_combined_auction_price
-```
-
-The API endpoint is `/api/component04/combined-auction-price`; its chart and test predictions appear
-on the Auction Price page.
-
-The separate growing-zone auction pipeline stores its model metadata in
-`backend/ml/models/component04/auction_lstm_model_info.json`.
-
-### Train Again
-
-```powershell
-cd backend
-.\.venv\Scripts\python.exe ml\preprocessing\component04\clean_auction_data.py
-.\.venv\Scripts\python.exe ml\training\component04\train_lstm.py
-```
-
-### Run Backend
-
-```powershell
-cd backend
-.\.venv\Scripts\python.exe run.py
-```
-
-### Run Dashboard
-
+**Frontend (new terminal):**
 ```powershell
 cd frontend
+npm install
 npm run dev
 ```
+Frontend: `http://localhost:5173` (typically) · API docs: `http://127.0.0.1:8015/docs` · Health: `http://127.0.0.1:8015/health`.
 
-Open the Vite URL shown in the terminal, usually:
+**Main API routes:** `POST /api/image/analyze`, `POST /api/forecast/assisted/preview`, `POST /api/forecast/assisted/recalculate`, `GET /api/forecast/assisted/latest`, `POST /api/severity/incidence`. See `/docs` for the full active API. These commands run **Component 01 locally**; do not replace the shared group's main backend entrypoint. Trained files/data must already be available in your checkout.
 
-- `http://localhost:5173`
+### Important Limitations
+- This is a **research prototype**, not a field-validated diagnosis or production system. CNN accuracy above is from a **development test set**, not independent estate testing; the image upload allowlist may reject new photos.
+- Forecast results are evaluated on **synthetic disease data** and use **historical climate proxies**, not live infection tracking or current weather forecasts. Historical dashboard/alert snapshots do not automatically update with each saved forecast.
+- **Grad-CAM++ does not measure lesion severity**; bush-count incidence is not leaf-damage severity. Advisory outputs are **rule-based suggestions**, not automated treatment prescriptions.
+
+*Component 01 section for the shared CeylonTea IQ README. Dataset licenses and the group repository license should be checked before public distribution.*
