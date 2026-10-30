@@ -157,16 +157,20 @@ CeylonTea-IQ/
 ├── frontend/
 │   └── src/
 │       ├── components/
-│       │   └── Component01/
+│       │   ├── Component01/      # TeaGuard – disease intelligence UI
+│       │   ├── Component03/      # Tea grade, purity and defect UI
+│       │   └── Component04/      # Tea export intelligence UI
 │       └── pages/
-│           └── component02/
+│           └── component02/      # Plantation, harvest and yield UI
 ├── backend/
 │   ├── app/
 │   │   └── components/
-│   │       ├── Component01/
-│   │       └── Component02/
-│   ├── ml/
-│   └── DL/
+│   │       ├── Component01/      # TeaGuard API, models and forecasting
+│   │       ├── Component02/      # Plantation, harvest and yield API
+│   │       ├── Component03/      # Tea grade and defect analysis API
+│   │       └── Component04/      # Export, auction and RAG advisor API
+│   ├── ml/                       # Shared machine-learning code
+│   └── DL/                       # Shared deep-learning code
 ├── README.md
 └── ...
 ```
