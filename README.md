@@ -151,6 +151,8 @@ Data should be checked for missing values, duplicates, inconsistent units, incor
 
 ### Repository Structure
 The following is an illustrative high-level structure based on the supplied component files. The exact shared repository may differ.
+
+```text
 CeylonTea-IQ/
 ├── frontend/
 │   └── src/
@@ -167,6 +169,8 @@ CeylonTea-IQ/
 │   └── DL/
 ├── README.md
 └── ...
+```
+
 Add the confirmed folder names for Components 03 and 04 from the shared repository before treating this example as the exact project structure.
 Setup and Running the Project
 
