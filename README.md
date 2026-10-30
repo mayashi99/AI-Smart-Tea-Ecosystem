@@ -3,10 +3,10 @@
 An AI-enabled research platform designed to support the Sri Lankan tea industry across plantation management, tea disease intelligence, tea quality assessment, and export decision-making.
 
 The ecosystem is organized into four research components:
-### 1. Component 01 — Climate-aware tea disease intelligence.
-### 2. Component 02 — Tea Plantation Health, Harvest and Yield Intelligence.
-### 3. Component 03 — Tea Grade, Purity, Composition and Defect Analysis.
-### 4. Component 04 — AI-Powered Tea Export Intelligence Platform.
+#### 1. Component 01 — Climate-aware tea disease intelligence.
+#### 2. Component 02 — Tea Plantation Health, Harvest and Yield Intelligence.
+#### 3. Component 03 — Tea Grade, Purity, Composition and Defect Analysis.
+#### 4. Component 04 — AI-Powered Tea Export Intelligence Platform.
 
 Project note: The technical details for Components 01 and 02 below are based on the supplied component README files. Components 03 and 04 are summarized from the project scope currently available; upload their latest README files to add verified setup commands, API routes, model metrics, and exact repository paths.
   
