@@ -156,12 +156,11 @@ The following is an illustrative high-level structure based on the supplied comp
 CeylonTea-IQ/
 ├── frontend/
 │   └── src/
-│       ├── components/
-│       │   ├── Component01/      # TeaGuard – disease intelligence UI
-│       │   ├── Component03/      # Tea grade, purity and defect UI
-│       │   └── Component04/      # Tea export intelligence UI
 │       └── pages/
-│           └── component02/      # Plantation, harvest and yield UI
+│           ├── component01/      # TeaGuard – disease intelligence UI
+│           ├── component02/      # Plantation, harvest and yield UI
+│           ├── component03/      # Tea grade, purity and defect UI
+│           └── component04/      # Tea export intelligence UI
 ├── backend/
 │   ├── app/
 │   │   └── components/
